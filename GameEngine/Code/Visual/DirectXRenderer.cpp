@@ -17,9 +17,11 @@ namespace Engine::Visual
 		createShaders();
 		createViewport(window._window);
 
-		loadTexture(defaultMaterial.diffuseTexture, TEXT("C:/Users/sonia/Maksym/white_tex.jpg"));
+		loadTexture(defaultMaterial.diffuseTexture, TEXT("../Resources/cube/default.png"));
 		defaultMaterial.diffuseColor = XMFLOAT3(1.0f, 1.0f, 1.0f);
-		defaultMaterial.shininess = 10.0f;
+		defaultMaterial.ambientColor = XMFLOAT3(1.0f, 1.0f, 1.0f);
+		defaultMaterial.specularColor = XMFLOAT3(1.0f, 1.0f, 1.0f);
+		defaultMaterial.shininess = 0.0f;
 	}
 
 	void DirectXRenderer::clearBackground()
@@ -149,6 +151,37 @@ namespace Engine::Visual
 		if (FAILED(hr)) {
 			throw std::runtime_error("Failed to create constant buffer.");
 		}
+
+		D3D11_RASTERIZER_DESC rasterizerDesc;
+		ZeroMemory(&rasterizerDesc, sizeof(D3D11_RASTERIZER_DESC));
+
+		// Enable culling of backfaces
+		rasterizerDesc.CullMode = D3D11_CULL_BACK;  // Cull back-facing polygons
+		rasterizerDesc.FillMode = D3D11_FILL_SOLID; // Render polygons as solid (not wireframe)
+		rasterizerDesc.FrontCounterClockwise = FALSE; // Assume clockwise vertices are front-facing
+		rasterizerDesc.DepthClipEnable = TRUE;  // Enable depth clipping
+
+		// Create the rasterizer state
+		ID3D11RasterizerState* rasterizerState;
+		hr = device->CreateRasterizerState(&rasterizerDesc, &rasterizerState);
+		if (FAILED(hr)) {
+			throw std::runtime_error("Failed to create rasterizer state.");
+		}
+
+		// Bind the rasterizer state
+		deviceContext->RSSetState(rasterizerState);
+
+		D3D11_DEPTH_STENCIL_DESC depthStencilDesc;
+		ZeroMemory(&depthStencilDesc, sizeof(D3D11_DEPTH_STENCIL_DESC));
+		depthStencilDesc.DepthEnable = TRUE;
+		depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+		depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS;
+
+		ID3D11DepthStencilState* depthStencilState;
+		device->CreateDepthStencilState(&depthStencilDesc, &depthStencilState);
+
+		// Bind the depth stencil state
+		deviceContext->OMSetDepthStencilState(depthStencilState, 1);
 	}
 
 	void DirectXRenderer::createBuffersFromModel(Model& model) const
@@ -273,13 +306,46 @@ namespace Engine::Visual
 			{
 				loadTexture(matX.diffuseTexture, Utils::stringToWString((matDir / mat.diffuse_texname).string()));
 			}
+			else
+			{
+				loadTexture(matX.diffuseTexture, TEXT("../Resources/cube/default.png"));
+			}
 			model.materials.emplace_back(matX);
 		}
 	}
 
-	void DirectXRenderer::setCameraProperties(const Utils::Vector& position)
+	void DirectXRenderer::setCameraProperties(const Utils::Vector3& position, const Utils::Vector3& rotation)
 	{
-		viewMatrix = XMMatrixLookAtLH(XMVectorSet(position.x, position.y, position.z, 0.0f), XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
+		XMVECTOR rotationQuaternion = XMQuaternionRotationRollPitchYaw(rotation.x, rotation.y, rotation.z);
+    
+		// Define the forward and up vectors
+		XMVECTOR forward = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
+		XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+    
+		// Rotate forward and up vectors by the camera's rotation
+		forward = XMVector3Rotate(forward, rotationQuaternion);
+		up = XMVector3Rotate(up, rotationQuaternion);
+    
+		XMFLOAT3 positionX(position.x, position.y, position.z);
+		// Calculate the target position based on forward direction
+		XMVECTOR target = XMVectorAdd(XMLoadFloat3(&positionX), forward);
+    
+		// Create the view matrix using LookAt
+		viewMatrix = XMMatrixLookAtLH(XMLoadFloat3(&positionX), target, up);
+	}
+
+	void DirectXRenderer::transformModel(Model& model, const Utils::Vector3& position, const Utils::Vector3& rotation, const Utils::Vector3& scale)
+	{
+		XMMATRIX scalingMatrix = XMMatrixScaling(scale.x, scale.y, scale.z);
+
+		XMMATRIX rotationMatrix = XMMatrixRotationRollPitchYaw(rotation.x, rotation.y, rotation.z);
+
+		// Create a translation matrix from the position vector
+		XMMATRIX translationMatrix = XMMatrixTranslation(position.x, position.y, position.z);
+
+		// Combine the rotation and translation matrices to form the world matrix
+		model.worldMatrix = XMMatrixMultiply(scalingMatrix, XMMatrixMultiply(rotationMatrix, translationMatrix));
+		
 	}
 
 	// Set up the viewport
@@ -301,7 +367,7 @@ namespace Engine::Visual
 
 		// Set up camera view and projection matrices
 		viewMatrix = XMMatrixLookAtLH(XMVectorSet(0.0f, 2.0f, -5.0f, 0.0f), XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
-		projectionMatrix = XMMatrixPerspectiveFovLH(XM_PIDIV4, width / height, 0.1f, 1000.0f);
+		projectionMatrix = XMMatrixPerspectiveFovLH(XM_PIDIV4, width / height, 0.1f, 100.0f);
 	}
 
 	XMFLOAT3 DirectXRenderer::computeFaceNormal(const XMFLOAT3& v0, const XMFLOAT3& v1, const XMFLOAT3& v2) {

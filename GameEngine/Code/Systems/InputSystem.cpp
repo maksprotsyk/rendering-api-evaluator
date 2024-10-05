@@ -31,36 +31,28 @@ namespace Engine::Systems
 	void InputSystem::onUpdate(float dt)
 	{
 		float distance = dt;
+		float angleDistance = dt;
 		Components::Transform& transform = ComponentsManager::get().getComponentSet<Components::Transform>().getElement(_cameraId);
-		if (isPressed('W'))
-		{
-			transform.position.z += distance;
-		}
 
-		if (isPressed('S'))
-		{
-			transform.position.z -= distance;
-		}
+		Utils::Vector3& rotation = transform.rotation;
+		float rotationY = getAxisInput((char)37, (char)39);
+		rotation.y += angleDistance * rotationY;
 
-		if (isPressed('A'))
-		{
-			transform.position.x += distance;
-		}
+		float rotationX = getAxisInput((char)38, (char)40);
+		rotation.x += angleDistance * rotationX;
 
-		if (isPressed('D'))
-		{
-			transform.position.x -= distance;
-		}
+		float movementX = getAxisInput('A', 'D');
+		float movementZ = getAxisInput('S', 'W');
 
-		if (isPressed('Z'))
-		{
-			transform.position.y += distance;
-		}
+		auto forwardDir = Utils::Vector3(0, 0, 1);
+		forwardDir.rotateArroundVector(Utils::Vector3(0, 1, 0), rotation.y);
+		forwardDir.rotateArroundVector(Utils::Vector3(1, 0, 0), rotation.x);
 
-		if (isPressed('X'))
-		{
-			transform.position.y -= distance;
-		}
+		auto rightDir = Utils::Vector3::crossProduct(forwardDir, Utils::Vector3(0.0f, -1.0f, 0.0f));
+
+		Utils::Vector3& position = transform.position;
+		position += rightDir * distance * movementX;
+		position += forwardDir * distance * movementZ;
 
 	}
 
@@ -74,7 +66,7 @@ namespace Engine::Systems
 		return 0;
 	}
 
-	bool InputSystem::isPressed(char key)
+	bool InputSystem::isPressed(char key) const
 	{
 		auto itr = _keyStates.find(key);
 		if (itr == _keyStates.end())
@@ -82,5 +74,21 @@ namespace Engine::Systems
 			return false;
 		}
 		return itr->second;
+	}
+
+	float InputSystem::getAxisInput(char negativeKey, char positiveKey) const
+	{
+		float input = 0;
+		if (isPressed(negativeKey))
+		{
+			input -= 1.0f;
+		}
+
+		if (isPressed(positiveKey))
+		{
+			input += 1.0f;
+		}
+
+		return input;
 	}
 }

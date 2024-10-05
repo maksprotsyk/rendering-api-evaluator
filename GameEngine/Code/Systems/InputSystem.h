@@ -22,6 +22,8 @@ namespace Engine::Systems
 
 		EntityID _cameraId = -1;
 
-		bool isPressed(char key);
+		bool isPressed(char key) const;
+
+		float getAxisInput(char negativeKey, char positiveKey) const;
 	};
 }

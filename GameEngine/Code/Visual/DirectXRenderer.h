@@ -73,7 +73,9 @@ namespace Engine::Visual
         void createBuffersFromModel(Model& model) const;
 
         void loadModel(Model& model, const std::string& filename);
-        void setCameraProperties(const Utils::Vector& position);
+        void setCameraProperties(const Utils::Vector3& position, const Utils::Vector3& rotation);
+
+        static void transformModel(Model& model, const Utils::Vector3& position, const Utils::Vector3& rotation, const Utils::Vector3& scale);
 
     private:
         // DirectX components

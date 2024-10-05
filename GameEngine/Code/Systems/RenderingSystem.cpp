@@ -23,8 +23,8 @@ namespace Engine::Systems
 			_renderer.loadModel(model.model, model.path);
 
 			const Components::Transform& transform = transformSet.getElement(id);
-			const Utils::Vector& position = transform.position;
-			model.model.worldMatrix = XMMatrixTranslation(position.x, position.y, position.z);
+			const Utils::Vector3& position = transform.position;
+			Visual::DirectXRenderer::transformModel(model.model, transform.position, transform.rotation, transform.scale);
 
 			_renderer.createBuffersFromModel(model.model);
 		}
@@ -44,14 +44,19 @@ namespace Engine::Systems
 	void RenderingSystem::onUpdate(float dt)
 	{
 		auto& compManager = ComponentsManager::get();
-
-		_renderer.setCameraProperties(compManager.getComponentSet<Components::Transform>().getElement(_cameraId).position);
+		const auto& cameraTransform = compManager.getComponentSet<Components::Transform>().getElement(_cameraId);
+		_renderer.setCameraProperties(cameraTransform.position, cameraTransform.rotation);
 
 		auto& modelSet = compManager.getComponentSet<Components::Model>();
+		const auto& transformSet = compManager.getComponentSet<Components::Transform>();
+
 		_renderer.clearBackground();
-		for (EntityID id : compManager.entitiesWithComponents<Components::Model>())
+		for (EntityID id : compManager.entitiesWithComponents<Components::Model, Components::Transform>())
 		{
-			const Components::Model& model = modelSet.getElement(id);
+			Components::Model& model = modelSet.getElement(id);
+			const Components::Transform& transform = transformSet.getElement(id);
+			Visual::DirectXRenderer::transformModel(model.model, transform.position, transform.rotation, transform.scale);
+
 			_renderer.draw(model.model);
 		}
 		_renderer.render();

@@ -42,7 +42,7 @@ float4 main(PSInput input) : SV_TARGET
     float3 specular = specFactor * specularColor;
 
     // Combine all components
-    float3 finalColor = ambient + diffuse + specular;
+    float3 finalColor = ambient; // + specular;
     
     return float4(finalColor, texColor.a);
 }

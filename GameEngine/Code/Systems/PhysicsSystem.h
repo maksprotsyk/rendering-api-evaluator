@@ -11,5 +11,8 @@ namespace Engine::Systems
 		void onUpdate(float dt) override;
 		void onStop() override;
 		int getPriority() const override;
+
+	private:
+		float _scalingTime = 0;
 	};
 }
