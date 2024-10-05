@@ -42,7 +42,7 @@ namespace Engine::Visual
         {
             std::vector<unsigned int> indices;
             ComPtr<ID3D11Buffer> indexBuffer;
-            std::string material;
+            int materialId;
         };
 
         struct Material
@@ -59,7 +59,7 @@ namespace Engine::Visual
             std::vector<SubMesh> meshes;
             ComPtr<ID3D11Buffer> vertexBuffer;
             std::vector<Vertex> vertices;
-            std::unordered_map<std::string, Material> materials;
+            std::vector<Material> materials;
             XMMATRIX worldMatrix;
         };
 
@@ -94,7 +94,6 @@ namespace Engine::Visual
         Material defaultMaterial;
 
         static XMFLOAT3 computeFaceNormal(const XMFLOAT3& v0, const XMFLOAT3& v1, const XMFLOAT3& v2);
-        static std::vector<Vertex> parseIndicesLine(const std::string& line, const std::vector<XMFLOAT3>& position, const std::vector<XMFLOAT3>& normals, const std::vector<XMFLOAT2>& texCoords);
 
         void createDeviceAndSwapChain(HWND hwnd);
         void createRenderTarget();
@@ -102,7 +101,6 @@ namespace Engine::Visual
         void createViewport(HWND hwnd);
 
         void loadTexture(ComPtr<ID3D11ShaderResourceView>& texture, const std::wstring& filename) const;
-        void loadMaterials(std::unordered_map<std::string, Material>& materials, const std::string& filename) const;
         
     };
 

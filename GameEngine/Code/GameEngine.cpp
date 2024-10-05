@@ -56,7 +56,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     Engine::ComponentsManager& componentsManager = Engine::ComponentsManager::get();
     Engine::EntitiesManager& entitiesManager = Engine::EntitiesManager::get();
 
-    const nlohmann::json& json = Engine::Utils::Parser::readJson("C:/Users/sonia/Maksym/test.json");
+    const nlohmann::json& json = Engine::Utils::Parser::readJson("../Resources/test.json");
     for (const nlohmann::json& entityJson: json["Entities"])
     {
         Engine::EntityID id = entitiesManager.createEntity();

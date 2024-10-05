@@ -6,6 +6,8 @@
 #include <sstream>
 #include <filesystem>
 
+#include "tiny_obj_loader.h"
+
 namespace Engine::Visual
 {
 	DirectXRenderer::DirectXRenderer(const Window& window)
@@ -44,8 +46,7 @@ namespace Engine::Visual
 			cb.viewMatrix = XMMatrixTranspose(viewMatrix);
 			cb.projectionMatrix = XMMatrixTranspose(projectionMatrix);
 
-			auto itr = model.materials.find(mesh.material);
-			const Material& material = itr != model.materials.end() ? itr->second: defaultMaterial;
+			const Material& material = mesh.materialId != -1 ? model.materials[mesh.materialId] : defaultMaterial;
 			cb.ambientColor = material.ambientColor;
 			cb.diffuseColor = material.diffuseColor;
 			cb.specularColor = material.specularColor;
@@ -191,142 +192,89 @@ namespace Engine::Visual
 		}
 	}
 
-	void DirectXRenderer::loadMaterials(std::unordered_map<std::string, Material>& materials, const std::string& filename) const
+	void DirectXRenderer::loadModel(Model& model, const std::string& filename)
 	{
-		std::ifstream file(filename);
-		if (!file.is_open())
+		tinyobj::attrib_t attrib;
+		std::vector<tinyobj::shape_t> shapes;
+		std::vector<tinyobj::material_t> materials;
+		std::string warn, err;
+
+		std::filesystem::path fullPath(filename);
+		std::filesystem::path matDir = fullPath.parent_path();
+		bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filename.c_str(), matDir.string().c_str());
+		if (!ret) 
 		{
 			return;
 		}
-		std::string currentMaterial = "";
 
-		std::string line;
-		while (std::getline(file, line))
+		std::vector<DirectX::XMFLOAT3> positions;
+		std::vector<DirectX::XMFLOAT3> normals;
+		std::vector<DirectX::XMFLOAT2> texcoords;
+		std::vector<unsigned int> indices;
+		
+		for (const auto& shape : shapes)
 		{
-			std::stringstream ss(line);
-			std::string prefix;
-			ss >> prefix;
-			if (prefix != "newmtl")
+			model.meshes.emplace_back();
+			SubMesh& mesh = model.meshes.back();
+			mesh.materialId = shape.mesh.material_ids.empty() ? -1 : shape.mesh.material_ids[0];
+			for (const auto& index : shape.mesh.indices) 
 			{
-				if (currentMaterial.empty())
-				{
-					continue;
+				positions.emplace_back(
+					attrib.vertices[3 * index.vertex_index + 0],
+					attrib.vertices[3 * index.vertex_index + 1],
+					attrib.vertices[3 * index.vertex_index + 2]
+				);
+
+				if (!attrib.normals.empty()) {
+					normals.emplace_back(
+						attrib.normals[3 * index.normal_index + 0],
+						attrib.normals[3 * index.normal_index + 1],
+						attrib.normals[3 * index.normal_index + 2]
+					);
 				}
-			}
-			else
-			{
-				ss >> currentMaterial;
-				materials[currentMaterial] = Material{};
-			}
 
-			Material& material = materials[currentMaterial];
+				if (!attrib.texcoords.empty())
+				{
+					texcoords.emplace_back(
+						attrib.texcoords[2 * index.texcoord_index + 0],
+						attrib.texcoords[2 * index.texcoord_index + 1]
+					);
+				}
 
-			if (prefix == "Ka")
-			{
-				ss >> material.ambientColor.x >> material.ambientColor.y >> material.ambientColor.z;
-			}
-			else if (prefix == "Kd")
-			{
-				ss >> material.diffuseColor.x >> material.diffuseColor.y >> material.diffuseColor.z;
-			}
-			else if (prefix == "Ks")
-			{
-				ss >> material.specularColor.x >> material.specularColor.y >> material.specularColor.z;
-			}
-			else if (prefix == "Ns")
-			{
-				ss >> material.shininess;
-			}
-			else if (prefix == "map_Kd")
-			{
-				std::string textureFile;
-				ss >> textureFile;
-
-				std::filesystem::path fullPath(filename);
-				std::filesystem::path directoryPath = fullPath.parent_path();
-				std::string texturePath = (directoryPath / textureFile).string();
-
-				loadTexture(material.diffuseTexture, Utils::stringToWString(texturePath));
+				mesh.indices.push_back(positions.size() - 1);
 			}
 		}
 
-	}
-
-	void DirectXRenderer::loadModel(Model& model, const std::string& filename)
-	{
-
-		std::ifstream file(filename);
-		if (!file.is_open())
+		if (normals.empty())
 		{
-			throw std::runtime_error("Failed to open OBJ file.");
-		}
-
-		std::string line;
-		int currentSubMeshIdx = -1;
-
-		std::vector<XMFLOAT3> positions;
-		std::vector<XMFLOAT3> normals;
-		std::vector<XMFLOAT2> texCoords;
-
-		while (std::getline(file, line))
-		{
-			std::stringstream ss(line);
-			std::string prefix;
-			ss >> prefix;
-
-			if (prefix == "v")
+			for (size_t i = 0; i + 2 < positions.size(); i += 3)
 			{
-				XMFLOAT3 pos;
-				ss >> pos.x >> pos.y >> pos.z;
-				positions.push_back(pos);
-			}
-			else if (prefix == "vt")
-			{
-				XMFLOAT2 tex;
-				ss >> tex.x >> tex.y;
-				texCoords.push_back(tex);
-			}
-			else if (prefix == "vn")
-			{
-				XMFLOAT3 norm;
-				ss >> norm.x >> norm.y >> norm.z;
-				normals.push_back(norm);
-			}
-			else if (prefix == "f")
-			{
-				// If currentSubMesh is valid, add face indices to it
-				if (currentSubMeshIdx == - 1) 
+				XMFLOAT3 normal = computeFaceNormal(positions[i], positions[i + 1], positions[i + 2]);
+				for (int j = 0; j < 3; j++)
 				{
-					continue;
+					normals.push_back(normal);
 				}
-				SubMesh& mesh = model.meshes[currentSubMeshIdx];
-				for (const auto& vertex : parseIndicesLine(ss.str(), positions, normals, texCoords))
-				{
-					model.vertices.push_back(vertex);
-					mesh.indices.push_back(model.vertices.size() - 1);
-				}
-			}
-			else if (prefix == "usemtl")
-			{
-				// Create a new sub-mesh with a new material
-				std::string materialName;
-				ss >> materialName;
-
-				SubMesh subMesh;
-				subMesh.material = materialName;
-				model.meshes.push_back(subMesh);
-				currentSubMeshIdx++;
-			}
-			else if (prefix == "mtllib")
-			{
-				std::string mtlFile;
-				ss >> mtlFile;
-				std::filesystem::path fullPath(filename);
-				std::filesystem::path directoryPath = fullPath.parent_path();
-				loadMaterials(model.materials, (directoryPath / mtlFile).string());
 			}
 		}
 
+		for (int i = 0; i < positions.size(); i++)
+		{
+			model.vertices.emplace_back(Vertex{ positions[i], normals[i], texcoords[i] });
+		}
+
+		for (const tinyobj::material_t& mat : materials)
+		{
+			Material matX;
+			matX.ambientColor = XMFLOAT3(mat.ambient);
+			matX.diffuseColor = XMFLOAT3(mat.diffuse);
+			matX.shininess = mat.shininess;
+			matX.specularColor = XMFLOAT3(mat.specular);
+			if (!mat.diffuse_texname.empty())
+			{
+				loadTexture(matX.diffuseTexture, Utils::stringToWString((matDir / mat.diffuse_texname).string()));
+			}
+			model.materials.emplace_back(matX);
+		}
 	}
 
 	void DirectXRenderer::setCameraProperties(const Utils::Vector& position)
@@ -376,77 +324,5 @@ namespace Engine::Visual
 
 		return normal;
 	}
-
-	std::vector<DirectXRenderer::Vertex> DirectXRenderer::parseIndicesLine(const std::string& line, const std::vector<XMFLOAT3>& positions, const std::vector<XMFLOAT3>& normals, const std::vector<XMFLOAT2>& texCoords)
-	{
-		std::vector<std::string> verticesStr = Utils::splitString(line, ' ');
-		verticesStr.erase(verticesStr.begin());
-		std::vector<std::array<int, 3>> indices;
-		for (const std::string& vStr : verticesStr)
-		{
-			if (vStr.empty())
-			{
-				continue;
-			}
-
-			std::vector<std::string> indicesStr = Utils::splitString(vStr, '/');
-			if (indicesStr.size() == 2)
-			{
-				indices.emplace_back(std::array<int, 3>{ std::stoi(indicesStr[0]), std::stoi(indicesStr[1]), -1});
-			}
-			else
-			{
-				indices.emplace_back(std::array<int, 3>{ std::stoi(indicesStr[0]), std::stoi(indicesStr[1]), std::stoi(indicesStr[2])});
-			}
-		}
-
-		std::vector<Vertex> vertices;
-		if (indices[0][2] < 0)
-		{
-			XMFLOAT3 faceNormal = computeFaceNormal(positions[indices[0][0] - 1], positions[indices[2][0] - 1], positions[indices[1][0] - 1]);
-			for (int i = 0; i < 3; i++)
-			{
-				const auto& vertIndex = indices[i];
-				Vertex vertex { positions[vertIndex[0] - 1], faceNormal, texCoords[vertIndex[1] - 1] };
-				vertices.emplace_back(std::move(vertex));
-			}
-
-			if (indices.size() >= 4)
-			{
-				faceNormal = computeFaceNormal(positions[indices[1][0] - 1], positions[indices[2][0] - 1], positions[indices[3][0] - 1]);
-				for (int i = 1; i < 4; i++)
-				{
-					const auto& vertIndex = indices[i];
-					Vertex vertex { positions[vertIndex[0] - 1], faceNormal, texCoords[vertIndex[1] - 1] };
-					vertices.emplace_back(std::move(vertex));
-				}
-			}
-		}
-		else
-		{
-			for (int i = 0; i < 3; i++)
-			{
-				const auto& vertIndex = indices[i];
-				Vertex vertex{ positions[vertIndex[0] - 1], normals[vertIndex[2] - 1], texCoords[vertIndex[1] - 1]};
-				vertices.emplace_back(std::move(vertex));
-			}
-
-			if (indices.size() >= 4)
-			{
-				for (int i = 1; i < 4; i++)
-				{
-					const auto& vertIndex = indices[i];
-					Vertex vertex{ positions[vertIndex[0] - 1], normals[vertIndex[2] - 1], texCoords[vertIndex[1] - 1] };
-					vertices.emplace_back(std::move(vertex));
-				}
-			}
-		}
-
-		return vertices;
-
-	
-	}
-
-
 
 }
