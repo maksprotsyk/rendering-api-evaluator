@@ -1,0 +1,147 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Code">
+      <UniqueIdentifier>{3dff3cb4-ca98-4b07-a3aa-c75781a5b339}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\Components">
+      <UniqueIdentifier>{fcd95f13-9229-4c2d-a109-4eab888b29aa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\Managers">
+      <UniqueIdentifier>{bd5c0554-a048-4134-b87a-e8ca126caeba}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\Utils">
+      <UniqueIdentifier>{231cbf46-189c-474a-8d42-67e2b6b2f1e3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\Systems">
+      <UniqueIdentifier>{9bcf835b-6ff5-44bf-ba10-242a3a9fd412}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\Events">
+      <UniqueIdentifier>{298d408a-794f-4e87-a1ec-de06d270d0cd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\Visual">
+      <UniqueIdentifier>{25872830-670f-46ea-aba1-abe9adc0dce2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shaders">
+      <UniqueIdentifier>{25903f38-4d64-4c75-a71d-7fc94c80f4de}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Code\GameEngine.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Components\Transform.cpp">
+      <Filter>Code\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Managers\ComponentsManager.cpp">
+      <Filter>Code\Managers</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Managers\SystemsManager.cpp">
+      <Filter>Code\Managers</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Managers\EventsManager.cpp">
+      <Filter>Code\Managers</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Systems\InputSystem.cpp">
+      <Filter>Code\Systems</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Systems\PhysicsSystem.cpp">
+      <Filter>Code\Systems</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Systems\RenderingSystem.cpp">
+      <Filter>Code\Systems</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Managers\EntitiesManager.cpp">
+      <Filter>Code\Managers</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Utils\Parser.cpp">
+      <Filter>Code\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Visual\Window.cpp">
+      <Filter>Code\Visual</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Visual\DirectXRenderer.cpp">
+      <Filter>Code\Visual</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Components\Model.cpp">
+      <Filter>Code\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Utils\BasicUtils.cpp">
+      <Filter>Code\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Components\Tag.cpp">
+      <Filter>Code\Components</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Code\Components\Transform.h">
+      <Filter>Code\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Managers\ComponentsManager.h">
+      <Filter>Code\Managers</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Utils\BasicUtils.h">
+      <Filter>Code\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Utils\SparseSet.h">
+      <Filter>Code\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Systems\ISystem.h">
+      <Filter>Code\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Managers\EventsManager.h">
+      <Filter>Code\Managers</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Managers\SystemsManager.h">
+      <Filter>Code\Managers</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Systems\InputSystem.h">
+      <Filter>Code\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Systems\PhysicsSystem.h">
+      <Filter>Code\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Systems\RenderingSystem.h">
+      <Filter>Code\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Events\NativeInputEvents.h">
+      <Filter>Code\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Managers\EntitiesManager.h">
+      <Filter>Code\Managers</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Utils\Parser.h">
+      <Filter>Code\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Visual\Window.h">
+      <Filter>Code\Visual</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Visual\DirectXRenderer.h">
+      <Filter>Code\Visual</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Components\Model.h">
+      <Filter>Code\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Utils\Vector.h">
+      <Filter>Code\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Components\Tag.h">
+      <Filter>Code\Components</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="Shaders\PixelShader.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="Shaders\VertexShader.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+  </ItemGroup>
+</Project>
