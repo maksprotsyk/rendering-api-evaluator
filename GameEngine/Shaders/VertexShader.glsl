@@ -14,9 +14,15 @@ uniform mat4 projectionMatrix;
 
 void main()
 {
+    // Transform vertex position to world space using model matrix
     FragPos = vec3(modelMatrix * vec4(aPos, 1.0));
+    
+    // Pass normal transformed by model matrix (no translation)
     Normal = mat3(transpose(inverse(modelMatrix))) * aNormal;
+
+    // Pass texture coordinate
     TexCoord = aTexCoord;
 
+    // Apply model, view, and projection transformations
     gl_Position = projectionMatrix * viewMatrix * vec4(FragPos, 1.0);
 }

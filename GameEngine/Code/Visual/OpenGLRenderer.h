@@ -66,6 +66,9 @@ namespace Engine::Visual
         GLuint projectionMatrixLoc;
         GLuint modelMatrixLoc;
         Material defaultMaterial;
+        glm::mat4 viewMatrix;
+        glm::mat4 projectionMatrix;
+        float aspectRatio = 1.0f;
 
         GLuint createShader(const std::string& source, GLenum shaderType);
         GLuint createShaderProgram(const std::string& vsSource, const std::string& fsSource);

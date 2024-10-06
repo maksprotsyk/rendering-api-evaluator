@@ -1,3 +1,5 @@
+#define GLM_FORCE_LEFT_HANDED
+
 #include "OpenGLRenderer.h"
 #include <stdexcept>
 #include <iostream>
@@ -89,6 +91,8 @@ namespace Engine::Visual
         // Set up the initial OpenGL state
         glClearColor(0.0f, 0.2f, 0.4f, 1.0f); // Set the clear color
         glEnable(GL_DEPTH_TEST);
+        glEnable(GL_CULL_FACE);
+        glFrontFace(GL_CW);
 
         // Create and compile shaders (using GLSL files)
         shaderProgram = createShaderProgram("VertexShader.glsl", "FragmentShader.glsl");
@@ -104,11 +108,15 @@ namespace Engine::Visual
         defaultMaterial.ambientColor = glm::vec3(1.0f, 1.0f, 1.0f);
         defaultMaterial.specularColor = glm::vec3(1.0f, 1.0f, 1.0f);
         defaultMaterial.shininess = 0.0f;
+
+        RECT rect;
+        GetClientRect(window.getHandle(), &rect);
+        glViewport(0, 0, rect.right - rect.left, rect.bottom - rect.top);
+        aspectRatio = (float)(rect.right - rect.left) / (float)(rect.bottom - rect.top);
     }
 
     void OpenGLRenderer::clearBackground()
     {
-
         glClearColor(0.0f, 0.5f, 0.5f, 1.0f); 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
@@ -117,37 +125,49 @@ namespace Engine::Visual
     {
         const auto& model = (const Model&)abstractModel;
 
+        // Use the shader program
+        glUseProgram(shaderProgram);
+        checkError();
+
+        // Bind the VAO
         glBindVertexArray(model.vao);
-        glBindBuffer(GL_ARRAY_BUFFER, model.vertexBuffer);
+        checkError();
+
+        // Set view and projection matrices
+        glUniformMatrix4fv(viewMatrixLoc, 1, GL_FALSE, glm::value_ptr(viewMatrix));
+        glUniformMatrix4fv(projectionMatrixLoc, 1, GL_FALSE, glm::value_ptr(projectionMatrix));
+        glUniformMatrix4fv(modelMatrixLoc, 1, GL_FALSE, glm::value_ptr(model.worldMatrix));
+        checkError();
+
+        // Iterate through the meshes in the model and render each
         for (const auto& mesh : model.meshes)
         {
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.indexBuffer);
-
             checkError();
 
             // Set the material properties in the shader
-            const Material& material = mesh.materialId != -1 ? model.materials[mesh.materialId]: defaultMaterial;
+            const Material& material = mesh.materialId != -1 ? model.materials[mesh.materialId] : defaultMaterial;
             glUniform3fv(glGetUniformLocation(shaderProgram, "ambientColor"), 1, glm::value_ptr(material.ambientColor));
             glUniform3fv(glGetUniformLocation(shaderProgram, "diffuseColor"), 1, glm::value_ptr(material.diffuseColor));
             glUniform3fv(glGetUniformLocation(shaderProgram, "specularColor"), 1, glm::value_ptr(material.specularColor));
             glUniform1f(glGetUniformLocation(shaderProgram, "shininess"), material.shininess);
-
             checkError();
+
             // Bind texture
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, material.diffuseTexture);
-            glUniform1i(glGetUniformLocation(shaderProgram, "diffuseTexture"), 0);
-
-            checkError();
-            // Set the model matrix
-            glUniformMatrix4fv(modelMatrixLoc, 1, GL_FALSE, glm::value_ptr(model.worldMatrix));
+            if (material.diffuseTexture)
+            {
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, material.diffuseTexture);
+                glUniform1i(glGetUniformLocation(shaderProgram, "diffuseTexture"), 0);
+                checkError();
+            }
 
             // Draw the mesh
             glDrawElements(GL_TRIANGLES, mesh.indices.size(), GL_UNSIGNED_INT, 0);
-
             checkError();
         }
 
+        // Unbind the VAO
         glBindVertexArray(0);
     }
 
@@ -169,21 +189,35 @@ namespace Engine::Visual
     {
         auto& model = (Model&)abstractModel;
 
+        // Create and bind the VAO
         glGenVertexArrays(1, &model.vao);
         glBindVertexArray(model.vao);
 
-        // Create vertex buffer
+        // Create and bind the vertex buffer
         glGenBuffers(1, &model.vertexBuffer);
         glBindBuffer(GL_ARRAY_BUFFER, model.vertexBuffer);
         glBufferData(GL_ARRAY_BUFFER, model.vertices.size() * sizeof(Vertex), model.vertices.data(), GL_STATIC_DRAW);
 
+        // Define the vertex attributes (position, normal, texCoord)
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
+        glEnableVertexAttribArray(0);
+
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
+        glEnableVertexAttribArray(1);
+
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texCoord));
+        glEnableVertexAttribArray(2);
+
+        // Create and bind the element buffer (EBO) for each sub-mesh
         for (auto& subMesh : model.meshes)
         {
-            // Create index buffer for this sub-mesh
             glGenBuffers(1, &subMesh.indexBuffer);
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, subMesh.indexBuffer);
             glBufferData(GL_ELEMENT_ARRAY_BUFFER, subMesh.indices.size() * sizeof(unsigned int), subMesh.indices.data(), GL_STATIC_DRAW);
         }
+
+        // Unbind the VAO
+        glBindVertexArray(0);
     }
 
     void OpenGLRenderer::loadModel(AbstractModel& abstractModel, const std::string& filename)
@@ -221,6 +255,10 @@ namespace Engine::Visual
 
                 std::string texturePath = (matDir / mat.diffuse_texname).string();
                 loadTexture(material.diffuseTexture, texturePath);
+            }
+            else
+            {
+                material.diffuseTexture = 0;
             }
 
             model.materials.push_back(material);
@@ -266,18 +304,21 @@ namespace Engine::Visual
 
     void OpenGLRenderer::setCameraProperties(const Utils::Vector3& position, const Utils::Vector3& rotation)
     {
+        Utils::Vector3 forward(0.0f, 0.0f, 1.0f);
+        forward.rotateArroundVector(Utils::Vector3(1.0f, 0.0f, 0.0f), rotation.x);
+        forward.rotateArroundVector(Utils::Vector3(0.0f, 1.0f, 0.0f), rotation.y);
+
+        Utils::Vector3 up = Utils::Vector3::crossProduct(forward, Utils::Vector3(1.0f, 0.0f, 0.0f));
+
         glm::vec3 pos(position.x, position.y, position.z);
-        glm::vec3 rot(rotation.x, rotation.y, rotation.z);
 
-        glm::mat4 view = glm::lookAt(pos, pos + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        view = glm::rotate(view, glm::radians(rot.x), glm::vec3(1.0f, 0.0f, 0.0f));
-        view = glm::rotate(view, glm::radians(rot.y), glm::vec3(0.0f, 1.0f, 0.0f));
-        view = glm::rotate(view, glm::radians(rot.z), glm::vec3(0.0f, 0.0f, 1.0f));
+        viewMatrix = glm::lookAt(
+            pos,
+            pos + glm::vec3(forward.x, forward.y, forward.z),
+            glm::vec3(up.x, up.y, up.z)
+        );
 
-        glUniformMatrix4fv(viewMatrixLoc, 1, GL_FALSE, glm::value_ptr(view));
-
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
-        glUniformMatrix4fv(projectionMatrixLoc, 1, GL_FALSE, glm::value_ptr(projection));
+        projectionMatrix = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 100.0f);
     }
 
     void OpenGLRenderer::transformModel(AbstractModel& abstractModel, const Utils::Vector3& position, const Utils::Vector3& rotation, const Utils::Vector3& scale)
@@ -285,9 +326,9 @@ namespace Engine::Visual
         auto& model = (Model&)abstractModel;
 
         glm::mat4 translation = glm::translate(glm::mat4(1.0f), glm::vec3(position.x, position.y, position.z));
-        glm::mat4 rotationX = glm::rotate(glm::mat4(1.0f), glm::radians(rotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
-        glm::mat4 rotationY = glm::rotate(glm::mat4(1.0f), glm::radians(rotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
-        glm::mat4 rotationZ = glm::rotate(glm::mat4(1.0f), glm::radians(rotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
+        glm::mat4 rotationX = glm::rotate(glm::mat4(1.0f), rotation.x, glm::vec3(1.0f, 0.0f, 0.0f));
+        glm::mat4 rotationY = glm::rotate(glm::mat4(1.0f), rotation.y, glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::mat4 rotationZ = glm::rotate(glm::mat4(1.0f), rotation.z, glm::vec3(0.0f, 0.0f, 1.0f));
         glm::mat4 scaling = glm::scale(glm::mat4(1.0f), glm::vec3(scale.x, scale.y, scale.z));
 
         model.worldMatrix = translation * rotationX * rotationY * rotationZ * scaling;
