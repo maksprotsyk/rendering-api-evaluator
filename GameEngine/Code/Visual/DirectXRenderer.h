@@ -7,8 +7,10 @@
 #include <WICTextureLoader.h>
 #include <string>
 
-#include "Window.h"
-#include "Utils/Vector.h"
+#include "GL/glew.h"
+#include "GL/wglext.h"
+
+#include "IRenderer.h"
 
 using namespace DirectX;
 using Microsoft::WRL::ComPtr;
@@ -16,7 +18,7 @@ using Microsoft::WRL::ComPtr;
 namespace Engine::Visual
 {
 
-    class DirectXRenderer
+    class DirectXRenderer: public IRenderer
     {
     public:
         struct Vertex
@@ -24,18 +26,6 @@ namespace Engine::Visual
             XMFLOAT3 position;
             XMFLOAT3 normal;
             XMFLOAT2 texCoord;
-        };
-
-        // Constant buffer structure for transformation matrices
-        struct ConstantBuffer
-        {
-            XMMATRIX worldMatrix;
-            XMMATRIX viewMatrix;
-            XMMATRIX projectionMatrix;
-            XMFLOAT3 ambientColor;
-            XMFLOAT3 diffuseColor;
-            XMFLOAT3 specularColor;  // Material's specular color
-            float shininess;         // Material's shininess (specular exponent)
         };
 
         struct SubMesh
@@ -54,7 +44,7 @@ namespace Engine::Visual
             ComPtr<ID3D11ShaderResourceView> diffuseTexture; 
         };
 
-        struct Model
+        struct Model: public AbstractModel
         {
             std::vector<SubMesh> meshes;
             ComPtr<ID3D11Buffer> vertexBuffer;
@@ -63,19 +53,35 @@ namespace Engine::Visual
             XMMATRIX worldMatrix;
         };
 
+        struct ConstantBuffer
+        {
+            XMMATRIX worldMatrix;
+            XMMATRIX viewMatrix;
+            XMMATRIX projectionMatrix;
+            XMFLOAT3 ambientColor;
+            XMFLOAT3 diffuseColor;
+            XMFLOAT3 specularColor;
+            float shininess;
+        };
 
-        explicit DirectXRenderer(const Window& window);
 
-        void clearBackground();
-        void draw(const Model& model);
-        void render();
+        void init(const Window& window) override;
+        void clearBackground() override;
 
-        void createBuffersFromModel(Model& model) const;
+        void draw(const AbstractModel& model) override;
+        void render() override;
 
-        void loadModel(Model& model, const std::string& filename);
-        void setCameraProperties(const Utils::Vector3& position, const Utils::Vector3& rotation);
+        void createBuffersFromModel(AbstractModel& model) override;
+        std::unique_ptr<AbstractModel> createModel() override;
+        void loadModel(AbstractModel& model, const std::string& filename) override;
 
-        static void transformModel(Model& model, const Utils::Vector3& position, const Utils::Vector3& rotation, const Utils::Vector3& scale);
+        void setCameraProperties(const Utils::Vector3& position, const Utils::Vector3& rotation) override;
+
+        void transformModel(
+            AbstractModel& model,
+            const Utils::Vector3& position,
+            const Utils::Vector3& rotation,
+            const Utils::Vector3& scale) override;
 
     private:
         // DirectX components

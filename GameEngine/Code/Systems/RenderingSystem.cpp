@@ -10,8 +10,9 @@
 
 namespace Engine::Systems
 {
-	RenderingSystem::RenderingSystem(const Visual::Window& window): _renderer(window)
+	RenderingSystem::RenderingSystem(const Visual::Window& window)
 	{
+		_renderer.init(window);
 	}
 	void RenderingSystem::onStart()
 	{
@@ -20,13 +21,14 @@ namespace Engine::Systems
 		for (EntityID id : ComponentsManager::get().entitiesWithComponents<Components::Model, Components::Transform>())
 		{
 			Components::Model& model = modelSet.getElement(id);
-			_renderer.loadModel(model.model, model.path);
+
+			model.model = _renderer.createModel();
+			_renderer.loadModel(*model.model, model.path);
 
 			const Components::Transform& transform = transformSet.getElement(id);
-			const Utils::Vector3& position = transform.position;
-			Visual::DirectXRenderer::transformModel(model.model, transform.position, transform.rotation, transform.scale);
+			_renderer.transformModel(*model.model, transform.position, transform.rotation, transform.scale);
 
-			_renderer.createBuffersFromModel(model.model);
+			_renderer.createBuffersFromModel(*model.model);
 		}
 
 
@@ -55,9 +57,9 @@ namespace Engine::Systems
 		{
 			Components::Model& model = modelSet.getElement(id);
 			const Components::Transform& transform = transformSet.getElement(id);
-			Visual::DirectXRenderer::transformModel(model.model, transform.position, transform.rotation, transform.scale);
+			_renderer.transformModel(*model.model, transform.position, transform.rotation, transform.scale);
 
-			_renderer.draw(model.model);
+			_renderer.draw(*model.model);
 		}
 		_renderer.render();
 	}

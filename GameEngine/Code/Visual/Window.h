@@ -5,8 +5,6 @@
 
 namespace Engine::Visual
 {
-	class DirectXRenderer;
-
 	class Window
 	{
 	public:
@@ -14,9 +12,9 @@ namespace Engine::Visual
 		void showWindow(int nCmdShow);
 		bool update();
 		void SetOnKetStateChanged(const std::function<void(WPARAM, bool)>& callback);
+		HWND getHandle() const;
 
 	private:
-		friend DirectXRenderer;
 
 		HWND _window;
 		std::function<void(WPARAM, bool)> _onKeyStateChanged = nullptr;

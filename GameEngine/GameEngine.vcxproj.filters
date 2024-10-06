@@ -32,6 +32,9 @@
     <Filter Include="Externals">
       <UniqueIdentifier>{cd1c799e-6385-40b6-8a77-8f7f4936f38b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Externals\GL">
+      <UniqueIdentifier>{c5f77ae7-f56e-4cb2-8026-715ffa57a606}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\GameEngine.cpp">
@@ -87,6 +90,12 @@
     </ClCompile>
     <ClCompile Include="Code\Utils\Quaternion.cpp">
       <Filter>Code\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Externals\stb_image.cc">
+      <Filter>Externals</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Visual\OpenGLRenderer.cpp">
+      <Filter>Code\Visual</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -150,9 +159,27 @@
     <ClInclude Include="Code\Utils\Quaternion.h">
       <Filter>Code\Utils</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Visual\IRenderer.h">
+      <Filter>Code\Visual</Filter>
+    </ClInclude>
+    <ClInclude Include="Externals\GL\wglext.h">
+      <Filter>Externals\GL</Filter>
+    </ClInclude>
+    <ClInclude Include="Externals\stb_image.h">
+      <Filter>Externals</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Visual\OpenGLRenderer.h">
+      <Filter>Code\Visual</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="Shaders\FragmentShader.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\VertexShader.glsl">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Shaders\PixelShader.hlsl">

@@ -3,7 +3,7 @@
 #include <string>
 
 #include "Managers/ComponentsManager.h"
-#include "Visual/DirectXRenderer.h"
+#include "Visual/IRenderer.h"
 
 namespace Engine::Components
 {
@@ -11,7 +11,8 @@ namespace Engine::Components
 	class Model
 	{
 	public:
-		Visual::DirectXRenderer::Model model;
+		std::unique_ptr<Visual::IRenderer::AbstractModel> model = nullptr;
+
 		std::string path;
 
 		SERIALIZABLE(

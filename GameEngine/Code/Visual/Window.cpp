@@ -106,6 +106,11 @@ namespace Engine::Visual
         _onKeyStateChanged = callback;
     }
 
+    HWND Window::getHandle() const
+    {
+        return _window;
+    }
+
     LRESULT CALLBACK Window::windowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
         Window* pThis;

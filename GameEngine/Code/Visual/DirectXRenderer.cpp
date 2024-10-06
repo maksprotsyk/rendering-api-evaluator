@@ -10,14 +10,14 @@
 
 namespace Engine::Visual
 {
-	DirectXRenderer::DirectXRenderer(const Window& window)
+	void DirectXRenderer::init(const Window& window)
 	{
-		createDeviceAndSwapChain(window._window);
+		createDeviceAndSwapChain(window.getHandle());
 		createRenderTarget();
 		createShaders();
-		createViewport(window._window);
+		createViewport(window.getHandle());
 
-		loadTexture(defaultMaterial.diffuseTexture, TEXT("../Resources/cube/default.png"));
+		loadTexture(defaultMaterial.diffuseTexture, TEXT("../Resources/white_tex.jpg"));
 		defaultMaterial.diffuseColor = XMFLOAT3(1.0f, 1.0f, 1.0f);
 		defaultMaterial.ambientColor = XMFLOAT3(1.0f, 1.0f, 1.0f);
 		defaultMaterial.specularColor = XMFLOAT3(1.0f, 1.0f, 1.0f);
@@ -31,8 +31,10 @@ namespace Engine::Visual
 		deviceContext->ClearRenderTargetView(renderTargetView.Get(), clearColor);
 	}
 
-	void DirectXRenderer::draw(const Model& model)
+	void DirectXRenderer::draw(const AbstractModel& abstractModel)
 	{
+		const auto& model = (const Model&)abstractModel;
+
 		// Bind the vertex and index buffers
 		UINT stride = sizeof(Vertex);
 		UINT offset = 0;
@@ -184,8 +186,9 @@ namespace Engine::Visual
 		deviceContext->OMSetDepthStencilState(depthStencilState, 1);
 	}
 
-	void DirectXRenderer::createBuffersFromModel(Model& model) const
+	void DirectXRenderer::createBuffersFromModel(AbstractModel& abstractModel)
 	{
+		auto& model = (Model&)abstractModel;
 		// Create vertex buffer
 		D3D11_BUFFER_DESC vertexBufferDesc = {};
 		vertexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
@@ -216,6 +219,11 @@ namespace Engine::Visual
 		}
 	}
 
+	std::unique_ptr<IRenderer::AbstractModel> DirectXRenderer::createModel()
+	{
+		return std::make_unique<Model>();
+	}
+
 	void DirectXRenderer::loadTexture(ComPtr<ID3D11ShaderResourceView>& texture, const std::wstring& filename) const
 	{
 		HRESULT hr = DirectX::CreateWICTextureFromFile(device.Get(), deviceContext.Get(), filename.c_str(), nullptr, texture.GetAddressOf());
@@ -225,8 +233,10 @@ namespace Engine::Visual
 		}
 	}
 
-	void DirectXRenderer::loadModel(Model& model, const std::string& filename)
+	void DirectXRenderer::loadModel(AbstractModel& abstractModel, const std::string& filename)
 	{
+		auto& model = (Model&)abstractModel;
+
 		tinyobj::attrib_t attrib;
 		std::vector<tinyobj::shape_t> shapes;
 		std::vector<tinyobj::material_t> materials;
@@ -334,8 +344,11 @@ namespace Engine::Visual
 		viewMatrix = XMMatrixLookAtLH(XMLoadFloat3(&positionX), target, up);
 	}
 
-	void DirectXRenderer::transformModel(Model& model, const Utils::Vector3& position, const Utils::Vector3& rotation, const Utils::Vector3& scale)
+	void DirectXRenderer::transformModel(AbstractModel& abstractModel, const Utils::Vector3& position,
+		const Utils::Vector3& rotation, const Utils::Vector3& scale)
 	{
+		auto& model = (Model&)abstractModel;
+
 		XMMATRIX scalingMatrix = XMMatrixScaling(scale.x, scale.y, scale.z);
 
 		XMMATRIX rotationMatrix = XMMatrixRotationRollPitchYaw(rotation.x, rotation.y, rotation.z);
@@ -353,8 +366,8 @@ namespace Engine::Visual
 	{
 		RECT rect;
 		GetClientRect(hwnd, &rect);
-		float width = static_cast<float>(rect.right - rect.left);
-		float height = static_cast<float>(rect.bottom - rect.top);
+		auto width = static_cast<float>(rect.right - rect.left);
+		auto height = static_cast<float>(rect.bottom - rect.top);
 
 		D3D11_VIEWPORT viewport = {};
 		viewport.TopLeftX = 0.0f;

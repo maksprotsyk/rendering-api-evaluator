@@ -13,6 +13,8 @@ namespace Engine::Utils
 
 	std::vector<std::string> splitString(const std::string& str, char delimiter);
 
+	std::string readFile(const std::string& filename);
+
 	template<typename T>
 	std::string getTypeName()
 	{

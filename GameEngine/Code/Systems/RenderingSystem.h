@@ -2,6 +2,7 @@
 
 #include "ISystem.h"
 #include "Visual/DirectXRenderer.h"
+#include "Visual/OpenGLRenderer.h"
 #include "Visual/Window.h"
 #include "Components/Transform.h"
 
@@ -17,7 +18,7 @@ namespace Engine::Systems
 		int getPriority() const override;
 
 	private:
-		Visual::DirectXRenderer _renderer;
+		Visual::OpenGLRenderer _renderer;
 
 		EntityID _cameraId = -1;
 	};
