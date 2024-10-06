@@ -32,8 +32,11 @@
     <ClCompile Include="Code\Systems\RenderingSystem.cpp" />
     <ClCompile Include="Code\Utils\BasicUtils.cpp" />
     <ClCompile Include="Code\Utils\Parser.cpp" />
+    <ClCompile Include="Code\Utils\Quaternion.cpp" />
+    <ClCompile Include="Code\Utils\Vector.cpp" />
     <ClCompile Include="Code\Visual\DirectXRenderer.cpp" />
     <ClCompile Include="Code\Visual\Window.cpp" />
+    <ClCompile Include="Externals\tiny_obj_loader.cc" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Code\Components\Model.h" />
@@ -50,10 +53,12 @@
     <ClInclude Include="Code\Systems\RenderingSystem.h" />
     <ClInclude Include="Code\Utils\BasicUtils.h" />
     <ClInclude Include="Code\Utils\Parser.h" />
+    <ClInclude Include="Code\Utils\Quaternion.h" />
     <ClInclude Include="Code\Utils\SparseSet.h" />
     <ClInclude Include="Code\Utils\Vector.h" />
     <ClInclude Include="Code\Visual\DirectXRenderer.h" />
     <ClInclude Include="Code\Visual\Window.h" />
+    <ClInclude Include="Externals\tiny_obj_loader.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -122,8 +127,8 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>Code;$(IncludePath)</IncludePath>
-    <SourcePath>Code;$(VC_SourcePath);</SourcePath>
+    <IncludePath>Code;Externals;$(IncludePath)</IncludePath>
+    <SourcePath>Code;Externals;$(VC_SourcePath);</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>

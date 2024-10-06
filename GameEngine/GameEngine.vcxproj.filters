@@ -29,6 +29,9 @@
     <Filter Include="Shaders">
       <UniqueIdentifier>{25903f38-4d64-4c75-a71d-7fc94c80f4de}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Externals">
+      <UniqueIdentifier>{cd1c799e-6385-40b6-8a77-8f7f4936f38b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\GameEngine.cpp">
@@ -75,6 +78,15 @@
     </ClCompile>
     <ClCompile Include="Code\Components\Tag.cpp">
       <Filter>Code\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="Externals\tiny_obj_loader.cc">
+      <Filter>Externals</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Utils\Vector.cpp">
+      <Filter>Code\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Utils\Quaternion.cpp">
+      <Filter>Code\Utils</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -131,6 +143,12 @@
     </ClInclude>
     <ClInclude Include="Code\Components\Tag.h">
       <Filter>Code\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Externals\tiny_obj_loader.h">
+      <Filter>Externals</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Utils\Quaternion.h">
+      <Filter>Code\Utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
