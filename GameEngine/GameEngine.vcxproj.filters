@@ -97,6 +97,9 @@
     <ClCompile Include="Code\Visual\OpenGLRenderer.cpp">
       <Filter>Code\Visual</Filter>
     </ClCompile>
+    <ClCompile Include="Code\Visual\VulkanRenderer.cpp">
+      <Filter>Code\Visual</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Code\Components\Transform.h">
@@ -171,6 +174,9 @@
     <ClInclude Include="Code\Visual\OpenGLRenderer.h">
       <Filter>Code\Visual</Filter>
     </ClInclude>
+    <ClInclude Include="Code\Visual\VulkanRenderer.h">
+      <Filter>Code\Visual</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -178,6 +184,12 @@
       <Filter>Shaders</Filter>
     </None>
     <None Include="Shaders\VertexShader.glsl">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\shader.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Shaders\shader.vert">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>

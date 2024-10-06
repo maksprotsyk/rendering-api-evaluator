@@ -36,6 +36,7 @@
     <ClCompile Include="Code\Utils\Vector.cpp" />
     <ClCompile Include="Code\Visual\DirectXRenderer.cpp" />
     <ClCompile Include="Code\Visual\OpenGLRenderer.cpp" />
+    <ClCompile Include="Code\Visual\VulkanRenderer.cpp" />
     <ClCompile Include="Code\Visual\Window.cpp" />
     <ClCompile Include="Externals\stb_image.cc" />
     <ClCompile Include="Externals\tiny_obj_loader.cc" />
@@ -61,6 +62,7 @@
     <ClInclude Include="Code\Visual\DirectXRenderer.h" />
     <ClInclude Include="Code\Visual\IRenderer.h" />
     <ClInclude Include="Code\Visual\OpenGLRenderer.h" />
+    <ClInclude Include="Code\Visual\VulkanRenderer.h" />
     <ClInclude Include="Code\Visual\Window.h" />
     <ClInclude Include="Externals\GL\wglext.h" />
     <ClInclude Include="Externals\stb_image.h" />
@@ -69,6 +71,8 @@
   <ItemGroup>
     <None Include="packages.config" />
     <None Include="Shaders\FragmentShader.glsl" />
+    <None Include="Shaders\shader.frag" />
+    <None Include="Shaders\shader.vert" />
     <None Include="Shaders\VertexShader.glsl" />
   </ItemGroup>
   <ItemGroup>
@@ -177,14 +181,18 @@
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <AdditionalIncludeDirectories>$(VULKAN_SDK)/Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>opengl32.lib;d3d11.lib;d3dcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;d3d11.lib;d3dcompiler.lib;vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(VULKAN_SDK)/Lib</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy "$(ProjectDir)Shaders" "$(OutDir)" /E /Y</Command>
+      <Command>xcopy "$(ProjectDir)Shaders" "$(OutDir)" /E /Y
+glslc $(OutDir)shader.vert -o $(OutDir)vert.spv
+glslc $(OutDir)shader.frag -o $(OutDir)frag.spv</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -198,16 +206,20 @@
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <AdditionalIncludeDirectories>$(VULKAN_SDK)/Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>opengl32.lib;d3d11.lib;d3dcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;d3d11.lib;d3dcompiler.lib;vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(VULKAN_SDK)/Lib</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy "$(ProjectDir)Shaders" "$(OutDir)" /E /Y</Command>
+      <Command>xcopy "$(ProjectDir)Shaders" "$(OutDir)" /E /Y
+glslc $(OutDir)shader.vert -o $(OutDir)vert.spv
+glslc $(OutDir)shader.frag -o $(OutDir)frag.spv</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -218,14 +230,18 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <AdditionalIncludeDirectories>$(VULKAN_SDK)/Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>opengl32.lib;d3d11.lib;d3dcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;d3d11.lib;d3dcompiler.lib;vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(VULKAN_SDK)/Lib</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy "$(ProjectDir)Shaders" "$(OutDir)" /E /Y</Command>
+      <Command>xcopy "$(ProjectDir)Shaders" "$(OutDir)" /E /Y
+glslc $(OutDir)shader.vert -o $(OutDir)vert.spv
+glslc $(OutDir)shader.frag -o $(OutDir)frag.spv</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -238,16 +254,20 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <AdditionalIncludeDirectories>$(VULKAN_SDK)/Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>opengl32.lib;d3d11.lib;d3dcompiler.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;d3d11.lib;d3dcompiler.lib;vulkan-1.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(VULKAN_SDK)/Lib</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy "$(ProjectDir)Shaders" "$(OutDir)" /E /Y</Command>
+      <Command>xcopy "$(ProjectDir)Shaders" "$(OutDir)" /E /Y
+glslc $(OutDir)shader.vert -o $(OutDir)vert.spv
+glslc $(OutDir)shader.frag -o $(OutDir)frag.spv</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

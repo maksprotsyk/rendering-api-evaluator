@@ -103,7 +103,7 @@ namespace Engine::Visual
         projectionMatrixLoc = glGetUniformLocation(shaderProgram, "projectionMatrix");
         modelMatrixLoc = glGetUniformLocation(shaderProgram, "modelMatrix");
 
-        loadTexture(defaultMaterial.diffuseTexture, "../Resources/cube/default.png");
+        loadTexture(defaultMaterial.diffuseTexture, "../../Resources/cube/default.png");
         defaultMaterial.diffuseColor = glm::vec3(1.0f, 1.0f, 1.0f);
         defaultMaterial.ambientColor = glm::vec3(1.0f, 1.0f, 1.0f);
         defaultMaterial.specularColor = glm::vec3(1.0f, 1.0f, 1.0f);

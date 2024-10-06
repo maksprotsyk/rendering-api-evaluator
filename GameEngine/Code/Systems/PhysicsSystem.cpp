@@ -28,9 +28,10 @@ namespace Engine::Systems
 			{
 				continue;
 			}
-			/*
+			
 			Components::Transform& transform = transformSet.getElement(id);
-			transform.rotation.y += dt;
+			//transform.rotation.y += dt;
+			/*
 			if (_scalingTime < 0.5f)
 			{
 				transform.scale.x -= dt;
