@@ -104,10 +104,10 @@ namespace Engine::Visual
         modelMatrixLoc = glGetUniformLocation(shaderProgram, "modelMatrix");
 
         loadTexture(defaultMaterial.diffuseTexture, "../../Resources/cube/default.png");
-        defaultMaterial.diffuseColor = glm::vec3(1.0f, 1.0f, 1.0f);
-        defaultMaterial.ambientColor = glm::vec3(1.0f, 1.0f, 1.0f);
-        defaultMaterial.specularColor = glm::vec3(1.0f, 1.0f, 1.0f);
-        defaultMaterial.shininess = 0.0f;
+        defaultMaterial.diffuseColor = glm::vec3(0.1f, 0.1f, 0.1f);
+        defaultMaterial.ambientColor = glm::vec3(0.5f, 0.5f, 0.5f);
+        defaultMaterial.specularColor = glm::vec3(0.5f, 0.5f, 0.5f);
+        defaultMaterial.shininess = 32.0f;
 
         RECT rect;
         GetClientRect(window.getHandle(), &rect);
@@ -117,7 +117,7 @@ namespace Engine::Visual
 
     void OpenGLRenderer::clearBackground()
     {
-        glClearColor(0.0f, 0.5f, 0.5f, 1.0f); 
+        glClearColor(0.0f, 0.2f, 0.4f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 

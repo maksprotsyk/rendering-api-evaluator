@@ -18,6 +18,16 @@ namespace Engine::Utils
         return wstr;
     }
 
+    std::string wstringToString(const std::wstring& wstr)
+    {
+        if (wstr.empty()) return std::string();
+
+        int sizeNeeded = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), NULL, 0, NULL, NULL);
+        std::string str(sizeNeeded, 0);
+        WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), &str[0], sizeNeeded, NULL, NULL);
+        return str;
+    }
+
     std::vector<char> loadBytesFromFile(const std::string& filename)
     {
         std::ifstream file(filename, std::ios::binary);

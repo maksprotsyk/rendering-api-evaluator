@@ -66,7 +66,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     Engine::ComponentsManager& componentsManager = Engine::ComponentsManager::get();
     Engine::EntitiesManager& entitiesManager = Engine::EntitiesManager::get();
 
-    const nlohmann::json& json = Engine::Utils::Parser::readJson("../../Resources/test.json");
+    LPWSTR cmdLine = GetCommandLineW();
+    int argc;
+    LPWSTR* argv = CommandLineToArgvW(cmdLine, &argc);
+    std::string jsonPath = "../../Resources/inputs/entities_5_Vulkan_cube.json";
+    if (argc > 1)
+    {
+        jsonPath = Engine::Utils::wstringToString(argv[1]);
+    }
+
+    const nlohmann::json& json = Engine::Utils::Parser::readJson(jsonPath);
     for (const nlohmann::json& entityJson: json["Entities"])
     {
         Engine::EntityID id = entitiesManager.createEntity();

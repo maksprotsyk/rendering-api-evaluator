@@ -17,11 +17,11 @@ namespace Engine::Visual
 		createShaders();
 		createViewport(window.getHandle());
 
-		loadTexture(defaultMaterial.diffuseTexture, TEXT("../../Resources/white_tex.jpg"));
-		defaultMaterial.diffuseColor = XMFLOAT3(1.0f, 1.0f, 1.0f);
-		defaultMaterial.ambientColor = XMFLOAT3(1.0f, 1.0f, 1.0f);
-		defaultMaterial.specularColor = XMFLOAT3(1.0f, 1.0f, 1.0f);
-		defaultMaterial.shininess = 0.0f;
+		loadTexture(defaultMaterial.diffuseTexture, TEXT("../../Resources/cube/default.png"));
+		defaultMaterial.diffuseColor = XMFLOAT3(0.1f, 0.1f, 0.1f);
+		defaultMaterial.ambientColor = XMFLOAT3(0.5f, 0.5f, 0.5f);
+		defaultMaterial.specularColor = XMFLOAT3(0.5f, 0.5f, 0.5f);
+		defaultMaterial.shininess = 32.0f;
 	}
 
 	void DirectXRenderer::clearBackground()

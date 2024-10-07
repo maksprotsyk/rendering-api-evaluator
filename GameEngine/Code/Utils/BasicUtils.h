@@ -9,6 +9,8 @@ namespace Engine::Utils
 
 	std::wstring stringToWString(const std::string& str);
 
+	std::string wstringToString(const std::wstring& wstr);
+
 	std::vector<char> loadBytesFromFile(const std::string& filename);
 
 	std::vector<std::string> splitString(const std::string& str, char delimiter);
