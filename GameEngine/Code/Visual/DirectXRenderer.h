@@ -110,7 +110,7 @@ namespace Engine::Visual
 
         void createDeviceAndSwapChain(HWND hwnd);
         void createRenderTarget();
-        void createShaders();
+        void createShaders(HWND hwnd);
         void createViewport(HWND hwnd);
 
         void loadTexture(ComPtr<ID3D11ShaderResourceView>& texture, const std::wstring& filename) const;
