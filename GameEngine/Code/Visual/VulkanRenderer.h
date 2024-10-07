@@ -8,22 +8,73 @@
 
 namespace Engine::Visual
 {
+    const std::vector<const char*> deviceExtensions = {
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME
+    };
+
     class VulkanRenderer : public IRenderer
     {
     public:
+
+        struct QueueFamilyIndices {
+            std::optional<uint32_t> graphicsFamily;
+            std::optional<uint32_t> presentFamily;
+
+            [[nodiscard]] bool isComplete() const {
+                return graphicsFamily.has_value() && presentFamily.has_value();
+            }
+        };
+
+        struct SwapChainSupportDetails {
+            VkSurfaceCapabilitiesKHR capabilities;
+            std::vector<VkSurfaceFormatKHR> formats;
+            std::vector<VkPresentModeKHR> presentModes;
+        };
+
         struct Vertex
         {
             glm::vec3 position;
             glm::vec3 normal;
             glm::vec2 texCoord;
+
+            static VkVertexInputBindingDescription getBindingDescription() {
+                VkVertexInputBindingDescription bindingDescription{};
+                bindingDescription.binding = 0;
+                bindingDescription.stride = sizeof(Vertex);
+                bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+                return bindingDescription;
+            }
+
+            static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions() {
+                std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{};
+
+                attributeDescriptions[0].binding = 0;
+                attributeDescriptions[0].location = 0;
+                attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+                attributeDescriptions[0].offset = offsetof(Vertex, position);
+
+                attributeDescriptions[1].binding = 0;
+                attributeDescriptions[1].location = 1;
+                attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+                attributeDescriptions[1].offset = offsetof(Vertex, normal);
+
+                attributeDescriptions[2].binding = 0;
+                attributeDescriptions[2].location = 2;
+                attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
+                attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
+
+                return attributeDescriptions;
+            }
         };
 
         struct SubMesh
         {
             std::vector<uint32_t> indices;
+            int materialId;
+
             VkBuffer indexBuffer;
             VkDeviceMemory indexBufferMemory;
-            int materialId;
         };
 
         struct Material
@@ -32,17 +83,27 @@ namespace Engine::Visual
             glm::vec3 diffuseColor;
             glm::vec3 specularColor;
             float shininess;
-            VkImageView diffuseTexture;
+            VkImage textureImage;
+            VkDeviceMemory textureImageMemory;
+            VkImageView textureImageView;
         };
 
         struct Model : public AbstractModel
         {
             std::vector<SubMesh> meshes;
-            VkBuffer vertexBuffer;
             std::vector<Vertex> vertices;
             std::vector<Material> materials;
-            VkDescriptorSet descriptorSet;
+            glm::mat4 worldMatrix;
+
+            VkBuffer vertexBuffer;
             VkDeviceMemory vertexBufferMemory;
+        };
+
+        struct UniformBufferObject
+        {
+            alignas(16) glm::mat4 worldMatrix;
+            alignas(16) glm::mat4 viewMatrix;
+            alignas(16) glm::mat4 projectionMatrix;
         };
 
         void init(const Window& window) override;
@@ -62,47 +123,113 @@ namespace Engine::Visual
             const Utils::Vector3& scale) override;
 
     private:
-        // Vulkan components
-        VkInstance instance;
-        VkDevice device;
-        VkPhysicalDevice physicalDevice;
-        VkQueue graphicsQueue;
-        VkQueue presentQueue;
-        VkSwapchainKHR swapChain;
+
+
+        VkInstance instance{};
+        VkDebugUtilsMessengerEXT debugMessenger{};
+        VkSurfaceKHR surface{};
+
+        VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+        VkDevice device{};
+
+        VkQueue graphicsQueue{};
+        VkQueue presentQueue{};
+
+        VkSwapchainKHR swapChain{};
         std::vector<VkImage> swapChainImages;
-        VkRenderPass renderPass;
-        VkPipeline graphicsPipeline;
-        VkPipelineLayout pipelineLayout;
-        VkCommandPool commandPool;
-        VkDescriptorPool descriptorPool;
-        VkCommandBuffer commandBuffer;
-        VkExtent2D swapChainExtent;
-        VkFormat swapChainImageFormat;
-        VkDescriptorSetLayout descriptorSetLayout;
-        std::vector<VkFramebuffer> framebuffers;
+        VkFormat swapChainImageFormat{};
+        VkExtent2D swapChainExtent{};
+        std::vector<VkImageView> swapChainImageViews;
+        std::vector<VkFramebuffer> swapChainFramebuffers;
+
+        VkRenderPass renderPass{};
+        VkDescriptorSetLayout descriptorSetLayout{};
+        VkPipelineLayout pipelineLayout{};
+        VkPipeline graphicsPipeline{};
+
+        VkCommandPool commandPool{};
+
+        VkImage depthImage{};
+        VkDeviceMemory depthImageMemory{};
+        VkImageView depthImageView{};
+
+        VkSampler textureSampler{};
+
+        std::vector<VkBuffer> uniformBuffers;
+        std::vector<VkDeviceMemory> uniformBuffersMemory;
+
+        VkDescriptorPool descriptorPool{};
+        std::vector<VkDescriptorSet> descriptorSets{};
+
+        std::vector<VkCommandBuffer> commandBuffers;
+
+        std::vector<VkSemaphore> imageAvailableSemaphores;
+        std::vector<VkSemaphore> renderFinishedSemaphores;
+        std::vector<VkFence> inFlightFences;
+        std::vector<VkFence> imagesInFlight;
+        size_t currentFrame = 0;
         uint32_t imageIndex = 0;
 
+        UniformBufferObject ubo{};
+
         void createInstance();
+        void createSurface(const Window& window);
         void pickPhysicalDevice();
         void createLogicalDevice();
-        void createSwapChain(const Window& window);
+        void createSwapChain();
+        void createImageViews();
         void createRenderPass();
+        void createDescriptorSetLayout();
+        void createDescriptorPool();
+        void createDescriptorSets();
         void createGraphicsPipeline();
         void createFramebuffers();
         void createCommandPool();
-        void createCommandBuffer();
-        void createDescriptorPool();
-        VkShaderModule createShaderModule(const std::vector<char>& code);
-        void loadTexture(VkImageView& textureImageView, const std::string& texturePath);
+        void createDepthResources();
+        void createSyncObjects();
+        void createTextureSampler();
 
-        void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
-        void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
-        void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
+        void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer&
+            buffer, VkDeviceMemory& bufferMemory);
+
+        void createUniformBuffers();
+        void createCommandBuffers();
+
+        void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling,
+            VkImageUsageFlags usage,
+            VkMemoryPropertyFlags properties, VkImage& img,
+            VkDeviceMemory& imageMemory);
+
+        void createVertexBuffer(Model& model);
+        void createIndexBuffer(Model& model);
+        void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+
+        void createTextureImage(const std::string& filename, VkImage& textureImage, VkDeviceMemory& textureImageMemory);
         void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
+        void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
+        void createTextureImageView(VkImageView& imageView, const VkImage& image);
+
+        VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates,
+            VkImageTiling tiling, VkFormatFeatureFlags features);
+
+        VkShaderModule createShaderModule(const std::vector<char>& code);
+        VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
+
         VkCommandBuffer beginSingleTimeCommands();
         void endSingleTimeCommands(VkCommandBuffer commandBuffer);
+
+        QueueFamilyIndices findQueueFamilies(VkPhysicalDevice dev);
+        bool isDeviceSuitable(VkPhysicalDevice dev);
+
         uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
-        void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+        SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice dev);
+        VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
+        VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
+
+        VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
+
+        static bool checkDeviceExtensionSupport(VkPhysicalDevice dev);
+        VkFormat findDepthFormat();
 
     };
 }
