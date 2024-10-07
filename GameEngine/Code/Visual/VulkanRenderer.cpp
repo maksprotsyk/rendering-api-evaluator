@@ -29,12 +29,10 @@ namespace Engine::Visual
 		createDepthResources();
 		createFramebuffers();
 		createDescriptorPool();
-		createDescriptorSets();
 		createSyncObjects();
-
-		createUniformBuffers();
 		createCommandBuffers();
 		createTextureSampler();
+		createDefaultMaterial();
 	}
 
 	void VulkanRenderer::clearBackground()
@@ -86,9 +84,9 @@ namespace Engine::Visual
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
 		void* data;
-		vkMapMemory(device, uniformBuffersMemory[imageIndex], 0, sizeof(ubo), 0, &data);
+		vkMapMemory(device, model.uniformBufferMemory, 0, sizeof(ubo), 0, &data);
 		memcpy(data, &ubo, sizeof(ubo));
-		vkUnmapMemory(device, uniformBuffersMemory[imageIndex]);
+		vkUnmapMemory(device, model.uniformBufferMemory);
 
 		VkBuffer vertexBuffers[] = { model.vertexBuffer };
 		VkDeviceSize offsets[] = { 0 };
@@ -97,19 +95,19 @@ namespace Engine::Visual
 		for (const auto& mesh : model.meshes)
 		{
 			VkDescriptorBufferInfo bufferInfo{};
-			bufferInfo.buffer = uniformBuffers[imageIndex];
+			bufferInfo.buffer = model.uniformBuffer;
 			bufferInfo.offset = 0;
 			bufferInfo.range = sizeof(UniformBufferObject);
 
 			VkDescriptorImageInfo imageInfo{};
 			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			imageInfo.imageView = model.materials[mesh.materialId].textureImageView;
+			imageInfo.imageView = mesh.materialId != -1 ? model.materials[mesh.materialId].textureImageView: defaultMaterial.textureImageView;
 			imageInfo.sampler = textureSampler;
 
 			std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
 
 			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[0].dstSet = descriptorSets[imageIndex];
+			descriptorWrites[0].dstSet = mesh.descriptorSet;
 			descriptorWrites[0].dstBinding = 0;
 			descriptorWrites[0].dstArrayElement = 0;
 			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -117,7 +115,7 @@ namespace Engine::Visual
 			descriptorWrites[0].pBufferInfo = &bufferInfo;
 
 			descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[1].dstSet = descriptorSets[imageIndex];
+			descriptorWrites[1].dstSet = mesh.descriptorSet;
 			descriptorWrites[1].dstBinding = 1;
 			descriptorWrites[1].dstArrayElement = 0;
 			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -128,7 +126,7 @@ namespace Engine::Visual
 
 			vkCmdBindIndexBuffer(commandBuffer, mesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1,
-				&descriptorSets[imageIndex], 0, nullptr);
+				&mesh.descriptorSet, 0, nullptr);
 			vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(mesh.indices.size()), 1, 0, 0, 0);
 		}
 
@@ -151,6 +149,8 @@ namespace Engine::Visual
 		if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, nullptr) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to submit draw command buffer!");
 		}
+
+		vkQueueWaitIdle(graphicsQueue);
 
 		VkPresentInfoKHR presentInfo{};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -181,6 +181,12 @@ namespace Engine::Visual
 		auto& model = (Model&)(abstractModel);
 		createVertexBuffer(model);
 		createIndexBuffer(model);
+
+		createUniformBuffers(model);
+		for (auto& mesh : model.meshes)
+		{
+			createDescriptorSets(mesh);
+		}
 	}
 
 	void VulkanRenderer::loadModel(AbstractModel& abstractModel, const std::string& filename)
@@ -301,6 +307,16 @@ namespace Engine::Visual
 		}
 	}
 
+	void VulkanRenderer::createDefaultMaterial()
+	{
+		defaultMaterial.ambientColor = glm::vec3(0.1f, 0.1f, 0.1f);
+		defaultMaterial.diffuseColor = glm::vec3(0.5f, 0.5f, 0.5f);
+		defaultMaterial.specularColor = glm::vec3(0.5f, 0.5f, 0.5f);
+		defaultMaterial.shininess = 32.0f;
+		createTextureImage("../../Resources/cube/default.png", defaultMaterial.textureImage, defaultMaterial.textureImageMemory);
+		createTextureImageView(defaultMaterial.textureImageView, defaultMaterial.textureImage);
+	}
+
 	void VulkanRenderer::createTextureSampler() {
 		VkPhysicalDeviceProperties properties{};
 		vkGetPhysicalDeviceProperties(physicalDevice, &properties);
@@ -352,17 +368,14 @@ namespace Engine::Visual
 		vkBindBufferMemory(device, buffer, bufferMemory, 0);
 	}
 
-	void VulkanRenderer::createUniformBuffers()
+	void VulkanRenderer::createUniformBuffers(Model& model)
 	{
 		VkDeviceSize bufferSize = sizeof(UniformBufferObject);
-
-		uniformBuffers.resize(swapChainImages.size());
-		uniformBuffersMemory.resize(swapChainImages.size());
 
 		for (size_t i = 0; i < swapChainImages.size(); ++i) {
 			createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-				uniformBuffers[i], uniformBuffersMemory[i]);
+				model.uniformBuffer, model.uniformBufferMemory);
 		}
 	}
 
@@ -1114,21 +1127,6 @@ namespace Engine::Visual
 		}
 	}
 
-	void VulkanRenderer::createDescriptorSets()
-	{
-		std::vector<VkDescriptorSetLayout> layouts(swapChainImages.size(), descriptorSetLayout);
-		VkDescriptorSetAllocateInfo allocateInfo{};
-		allocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		allocateInfo.descriptorPool = descriptorPool;
-		allocateInfo.descriptorSetCount = static_cast<uint32_t>(swapChainImages.size());
-		allocateInfo.pSetLayouts = layouts.data();
-
-		descriptorSets.resize(swapChainImages.size());
-		if (vkAllocateDescriptorSets(device, &allocateInfo, descriptorSets.data()) != VK_SUCCESS) {
-			throw std::runtime_error("Failed to allocate descriptor sets!");
-		}
-	}
-
 	void VulkanRenderer::createGraphicsPipeline()
 	{
 		auto vertShaderCode = Utils::loadBytesFromFile("vert.spv");
@@ -1335,6 +1333,20 @@ namespace Engine::Visual
 
 		if (vkCreateDescriptorPool(device, &poolCreateInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to create descriptor pool!");
+		}
+	}
+
+	void VulkanRenderer::createDescriptorSets(SubMesh& mesh)
+	{
+		std::vector<VkDescriptorSetLayout> layouts(1, descriptorSetLayout);
+		VkDescriptorSetAllocateInfo allocateInfo{};
+		allocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		allocateInfo.descriptorPool = descriptorPool;
+		allocateInfo.descriptorSetCount = 1;
+		allocateInfo.pSetLayouts = layouts.data();
+
+		if (vkAllocateDescriptorSets(device, &allocateInfo, &mesh.descriptorSet) != VK_SUCCESS) {
+			throw std::runtime_error("Failed to allocate descriptor sets!");
 		}
 	}
 

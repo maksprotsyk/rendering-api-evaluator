@@ -75,6 +75,7 @@ namespace Engine::Visual
 
             VkBuffer indexBuffer;
             VkDeviceMemory indexBufferMemory;
+            VkDescriptorSet descriptorSet;
         };
 
         struct Material
@@ -97,6 +98,8 @@ namespace Engine::Visual
 
             VkBuffer vertexBuffer;
             VkDeviceMemory vertexBufferMemory;
+            VkBuffer uniformBuffer;
+            VkDeviceMemory uniformBufferMemory;
         };
 
         struct UniformBufferObject
@@ -155,11 +158,7 @@ namespace Engine::Visual
 
         VkSampler textureSampler{};
 
-        std::vector<VkBuffer> uniformBuffers;
-        std::vector<VkDeviceMemory> uniformBuffersMemory;
-
         VkDescriptorPool descriptorPool{};
-        std::vector<VkDescriptorSet> descriptorSets{};
 
         std::vector<VkCommandBuffer> commandBuffers;
 
@@ -167,8 +166,9 @@ namespace Engine::Visual
         std::vector<VkSemaphore> renderFinishedSemaphores;
         std::vector<VkFence> inFlightFences;
         std::vector<VkFence> imagesInFlight;
-        size_t currentFrame = 0;
         uint32_t imageIndex = 0;
+
+        Material defaultMaterial;
 
         UniformBufferObject ubo{};
 
@@ -181,18 +181,19 @@ namespace Engine::Visual
         void createRenderPass();
         void createDescriptorSetLayout();
         void createDescriptorPool();
-        void createDescriptorSets();
+        void createDescriptorSets(SubMesh& mesh);
         void createGraphicsPipeline();
         void createFramebuffers();
         void createCommandPool();
         void createDepthResources();
         void createSyncObjects();
         void createTextureSampler();
+        void createDefaultMaterial();
 
         void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer&
             buffer, VkDeviceMemory& bufferMemory);
 
-        void createUniformBuffers();
+        void createUniformBuffers(Model& model);
         void createCommandBuffers();
 
         void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling,
