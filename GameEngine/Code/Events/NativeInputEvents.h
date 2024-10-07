@@ -10,6 +10,10 @@ namespace Engine::Events
 		WPARAM key;
 		bool pressed;
 	};
+	
+	struct NativeExitRequested
+	{
 
+	};
 }
 

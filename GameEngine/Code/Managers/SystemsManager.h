@@ -18,6 +18,7 @@ namespace Engine
 		void addSystem(std::unique_ptr<Systems::ISystem>&& system);
 		void removeSystem(Systems::ISystem* system);
 		void update(float dt);
+		void stop() const;
 
 	private:
 

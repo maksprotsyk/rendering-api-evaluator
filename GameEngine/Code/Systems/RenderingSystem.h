@@ -20,7 +20,8 @@ namespace Engine::Systems
 		int getPriority() const override;
 
 	private:
-		Visual::VulkanRenderer _renderer;
+		const Visual::Window& _window;
+		std::unique_ptr<Visual::IRenderer> _renderer;
 
 		EntityID _cameraId = -1;
 	};

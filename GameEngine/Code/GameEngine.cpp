@@ -16,6 +16,7 @@
 #include "Systems/RenderingSystem.h"
 #include "Systems/PhysicsSystem.h"
 #include "Systems/InputSystem.h"
+#include "Systems/StatsSystem.h"
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
@@ -48,10 +49,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             Engine::EventsManager::get().emit(Engine::Events::NativeKeyStateChanged{ param, state });
         });
 
+    bool nativeExitRequested = false;
+    Engine::EventsManager::get().subscribe<Engine::Events::NativeExitRequested>(
+		[&nativeExitRequested](const Engine::Events::NativeExitRequested&)
+		{
+			nativeExitRequested = true;
+		}
+	);
+
     Engine::SystemsManager& systemsManager = Engine::SystemsManager::get();
     systemsManager.addSystem(std::make_unique<Engine::Systems::RenderingSystem>(window));
     systemsManager.addSystem(std::make_unique<Engine::Systems::PhysicsSystem>());
     systemsManager.addSystem(std::make_unique<Engine::Systems::InputSystem>());
+    systemsManager.addSystem(std::make_unique<Engine::Systems::StatsSystem>());
 
     Engine::ComponentsManager& componentsManager = Engine::ComponentsManager::get();
     Engine::EntitiesManager& entitiesManager = Engine::EntitiesManager::get();
@@ -66,11 +76,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         }
     }
 
-    const float targetFrameTime = 1.0f / 60.0f; // 60 FPS
-    while (true)
+    auto start = std::chrono::high_resolution_clock::now();
+    while (!nativeExitRequested)
     {
         // Measure the time taken for the frame
-        auto start = std::chrono::high_resolution_clock::now();
 
         bool needToExit = window.update();
         if (needToExit)
@@ -78,19 +87,18 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
             break;
         }
 
-        // Update all systems
-        systemsManager.update(targetFrameTime);
-
-        // Measure the time taken for the frame
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<float> elapsed = end - start;
-
-        // Sleep to maintain consistent frame time
-        if (elapsed.count() < targetFrameTime)
-        {
-            std::this_thread::sleep_for(std::chrono::duration<float>(targetFrameTime - elapsed.count()));
-        }
+        
+        start = end;
+        // Update all systems
+        systemsManager.update(elapsed.count());
+    
     }
+
+    systemsManager.stop();
+
+    
 
     return 0;
 }

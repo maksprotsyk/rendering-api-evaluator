@@ -100,6 +100,11 @@ namespace Engine::Visual
             VkDeviceMemory vertexBufferMemory;
             VkBuffer uniformBuffer;
             VkDeviceMemory uniformBufferMemory;
+
+			int GetVertexCount() const override 
+            {
+				return static_cast<int>(vertices.size());
+			}
         };
 
         struct UniformBufferObject

@@ -46,6 +46,11 @@ namespace Engine::Visual
             std::vector<Vertex> vertices;
             std::vector<Material> materials;
             glm::mat4 worldMatrix;
+
+			int GetVertexCount() const override
+			{
+				return static_cast<int>(vertices.size());
+			}
         };
 
         void init(const Window& window) override;
