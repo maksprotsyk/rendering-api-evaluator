@@ -94,6 +94,7 @@ namespace Engine::Visual
         ComPtr<ID3D11DeviceContext> deviceContext;
         ComPtr<IDXGISwapChain> swapChain;
         ComPtr<ID3D11RenderTargetView> renderTargetView;
+        ComPtr<ID3D11DepthStencilView> depthStencilView;
         ComPtr<ID3D11VertexShader> vertexShader;
         ComPtr<ID3D11PixelShader> pixelShader;
         ComPtr<ID3D11InputLayout> inputLayout;
@@ -109,8 +110,8 @@ namespace Engine::Visual
         static XMFLOAT3 computeFaceNormal(const XMFLOAT3& v0, const XMFLOAT3& v1, const XMFLOAT3& v2);
 
         void createDeviceAndSwapChain(HWND hwnd);
-        void createRenderTarget();
-        void createShaders(HWND hwnd);
+        void createRenderTarget(HWND hwnd);
+        void createShaders();
         void createViewport(HWND hwnd);
 
         void loadTexture(ComPtr<ID3D11ShaderResourceView>& texture, const std::wstring& filename) const;

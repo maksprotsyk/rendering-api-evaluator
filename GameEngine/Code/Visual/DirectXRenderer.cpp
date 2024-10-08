@@ -13,7 +13,7 @@ namespace Engine::Visual
 	void DirectXRenderer::init(const Window& window)
 	{
 		createDeviceAndSwapChain(window.getHandle());
-		createRenderTarget();
+		createRenderTarget(window.getHandle());
 		createShaders();
 		createViewport(window.getHandle());
 
@@ -29,6 +29,7 @@ namespace Engine::Visual
 		// Clear the render target with a solid color
 		float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f }; // RGBA
 		deviceContext->ClearRenderTargetView(renderTargetView.Get(), clearColor);
+		deviceContext->ClearDepthStencilView(depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 	}
 
 	void DirectXRenderer::draw(const AbstractModel& abstractModel)
@@ -114,12 +115,44 @@ namespace Engine::Visual
 	}
 
 	// Create the render target
-	void DirectXRenderer::createRenderTarget()
+	void DirectXRenderer::createRenderTarget(HWND hwnd)
 	{
 		ComPtr<ID3D11Texture2D> backBuffer;
 		swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer));
 		device->CreateRenderTargetView(backBuffer.Get(), nullptr, renderTargetView.GetAddressOf());
-		deviceContext->OMSetRenderTargets(1, renderTargetView.GetAddressOf(), nullptr);
+
+		RECT rect;
+		GetClientRect(hwnd, &rect);
+		auto width = static_cast<float>(rect.right - rect.left);
+		auto height = static_cast<float>(rect.bottom - rect.top);
+
+		// Create the depth stencil buffer
+		D3D11_TEXTURE2D_DESC depthStencilDesc = {};
+		depthStencilDesc.Width = static_cast<UINT>(width);
+		depthStencilDesc.Height = static_cast<UINT>(height);
+		depthStencilDesc.MipLevels = 1;
+		depthStencilDesc.ArraySize = 1;
+		depthStencilDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+		depthStencilDesc.SampleDesc.Count = 1;
+		depthStencilDesc.Usage = D3D11_USAGE_DEFAULT;
+		depthStencilDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+
+		ComPtr<ID3D11Texture2D> depthStencilBuffer;
+		HRESULT hr = device->CreateTexture2D(&depthStencilDesc, nullptr, depthStencilBuffer.GetAddressOf());
+		if (FAILED(hr))
+		{
+			throw std::runtime_error("Failed to create depth stencil buffer.");
+		}
+
+		// Create the depth stencil view
+		hr = device->CreateDepthStencilView(depthStencilBuffer.Get(), nullptr, depthStencilView.GetAddressOf());
+		if (FAILED(hr))
+		{
+			throw std::runtime_error("Failed to create depth stencil view.");
+		}
+
+		// Set the render target and depth stencil
+		deviceContext->OMSetRenderTargets(1, renderTargetView.GetAddressOf(), depthStencilView.Get());
 	}
 
 	// Create the shaders and input layout
@@ -179,11 +212,15 @@ namespace Engine::Visual
 		depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
 		depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS;
 
-		ID3D11DepthStencilState* depthStencilState;
-		device->CreateDepthStencilState(&depthStencilDesc, &depthStencilState);
+		ComPtr<ID3D11DepthStencilState> depthStencilState;
+		hr = device->CreateDepthStencilState(&depthStencilDesc, depthStencilState.GetAddressOf());
+		if (FAILED(hr))
+		{
+			throw std::runtime_error("Failed to create depth stencil state.");
+		}
 
-		// Bind the depth stencil state
-		deviceContext->OMSetDepthStencilState(depthStencilState, 1);
+		// Set the depth stencil state
+		deviceContext->OMSetDepthStencilState(depthStencilState.Get(), 1);
 	}
 
 	void DirectXRenderer::createBuffersFromModel(AbstractModel& abstractModel)
