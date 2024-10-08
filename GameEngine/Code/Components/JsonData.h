@@ -1,19 +1,18 @@
 #pragma once
 
 #include "Managers/ComponentsManager.h"
+#include "nlohmann/json.hpp"
 
 namespace Engine::Components
 {
 
-	class FileLocation
+	class JsonData
 	{
 	public:
-		std::string path;
+		nlohmann::json data;
 
-		SERIALIZABLE(PROPERTY(FileLocation, path))
-
+		SERIALIZABLE(PROPERTY(JsonData, data))
 	};
-
 
 
 }

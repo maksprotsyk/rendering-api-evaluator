@@ -5,6 +5,7 @@
 #include "Components/Transform.h"
 #include "Components/Tag.h"
 #include "Components/Model.h"
+#include "Components/JsonData.h"
 #include "Utils/BasicUtils.h"
 
 
@@ -15,24 +16,32 @@ namespace Engine::Systems
 	}
 	void RenderingSystem::onStart()
 	{
-		auto& tagSet = ComponentsManager::get().getComponentSet<Components::Tag>();
-		for (const Components::Tag& tag : tagSet.getElements())
-		{
-			if (tag.tag == "DirectX")
-			{
-				_renderer = std::make_unique<Visual::DirectXRenderer>();
-			}
-			else if (tag.tag == "Vulkan")
-			{
-				_renderer = std::make_unique<Visual::VulkanRenderer>();
-			}
-			else if (tag.tag == "OpenGL")
-			{
-				_renderer = std::make_unique<Visual::OpenGLRenderer>();
-			}
+		auto& compManager = ComponentsManager::get();
 
-			if (_renderer)
+		const auto& tagSet = compManager.getComponentSet<Components::Tag>();
+		const auto& jsonDataSet = compManager.getComponentSet<Components::JsonData>();
+		for (EntityID id: compManager.entitiesWithComponents<Components::JsonData, Components::Tag>())
+		{
+			const std::string& tag = tagSet.getElement(id).tag;
+			if (tag == "Config")
 			{
+				const nlohmann::json& data = jsonDataSet.getElement(id).data;
+				if (data.contains("Renderer"))
+				{
+					const std::string& renderer = data["Renderer"];
+					if (renderer == "DirectX")
+					{
+						_renderer = std::make_unique<Visual::DirectXRenderer>();
+					}
+					else if (renderer == "Vulkan")
+					{
+						_renderer = std::make_unique<Visual::VulkanRenderer>();
+					}
+					else if (renderer == "OpenGL")
+					{
+						_renderer = std::make_unique<Visual::OpenGLRenderer>();
+					}
+				}
 				break;
 			}
 		}
@@ -44,9 +53,10 @@ namespace Engine::Systems
 
 		_renderer->init(_window);
 
-		auto& modelSet = ComponentsManager::get().getComponentSet<Components::Model>();
-		auto& transformSet = ComponentsManager::get().getComponentSet<Components::Transform>();
-		for (EntityID id : ComponentsManager::get().entitiesWithComponents<Components::Model, Components::Transform>())
+
+		auto& modelSet = compManager.getComponentSet<Components::Model>();
+		auto& transformSet = compManager.getComponentSet<Components::Transform>();
+		for (EntityID id : compManager.entitiesWithComponents<Components::Model, Components::Transform>())
 		{
 			Components::Model& model = modelSet.getElement(id);
 
@@ -59,7 +69,8 @@ namespace Engine::Systems
 			_renderer->createBuffersFromModel(*model.model);
 		}
 
-		for (EntityID id : ComponentsManager::get().entitiesWithComponents<Components::Tag>())
+
+		for (EntityID id : compManager.entitiesWithComponents<Components::Tag>())
 		{
 			if (tagSet.getElement(id).tag == "MainCamera")
 			{
@@ -84,7 +95,6 @@ namespace Engine::Systems
 			Components::Model& model = modelSet.getElement(id);
 			const Components::Transform& transform = transformSet.getElement(id);
 			_renderer->transformModel(*model.model, transform.position, transform.rotation, transform.scale);
-
 			_renderer->draw(*model.model);
 		}
 		_renderer->render();

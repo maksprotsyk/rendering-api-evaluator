@@ -5,7 +5,7 @@
 #include "Components/Transform.h"
 #include "Components/Tag.h"
 #include "Components/Model.h"
-#include "Components/FileLocation.h"
+#include "Components/JsonData.h"
 
 #include <iostream>
 #include <fstream>
@@ -14,7 +14,6 @@ namespace Engine::Systems
 {
 	void StatsSystem::onStart()
 	{
-
 	}
 
 	void StatsSystem::onUpdate(float dt)
@@ -42,43 +41,42 @@ namespace Engine::Systems
 
 	void StatsSystem::onStop()
 	{
-		auto const& models = ComponentsManager::get().getComponentSet<Components::Model>();
-		objectsCount = models.size();
+		auto& compManager = ComponentsManager::get();
 
-		for (const auto& model : models.getElements())
+		const auto& tagSet = compManager.getComponentSet<Components::Tag>();
+		const auto& jsonDataSet = compManager.getComponentSet<Components::JsonData>();
+
+		std::string rendererName = "DirectX";
+		std::string outputPath = "";
+		for (EntityID id : compManager.entitiesWithComponents<Components::JsonData, Components::Tag>())
 		{
-			totalNumberOfVertices += model.model->GetVertexCount();
-		}
-
-		auto& tagSet = ComponentsManager::get().getComponentSet<Components::Tag>();
-		auto& fileSets = ComponentsManager::get().getComponentSet<Components::FileLocation>();
-		std::string outputFilePath = "";
-
-		for (EntityID id : tagSet.getIds())
-		{
-			if (tagSet.getElement(id).tag == "StatsConfiguration")
+			const std::string& tag = tagSet.getElement(id).tag;
+			if (tag == "Config")
 			{
-				outputFilePath = fileSets.getElement(id).path;
+				const nlohmann::json& data = jsonDataSet.getElement(id).data;
+				if (data.contains("Renderer"))
+				{
+					rendererName = data["Renderer"];
+				}
+				if (data.contains("OutputStatsFile"))
+				{
+					outputPath = data["OutputStatsFile"];
+				}
+				break;
 			}
 		}
 
-		if (outputFilePath.empty())
+		if (outputPath.empty())
 		{
 			return;
 		}
-
-		for (const Components::Tag& tag : tagSet.getElements())
+		
+		auto const& models = compManager.getComponentSet<Components::Model>();
+		size_t objectsCount = models.size();
+		size_t totalNumberOfVertices = 0;
+		for (const auto& model : models.getElements())
 		{
-			if (tag.tag == "DirectX" || tag.tag == "Vulkan" || tag.tag == "OpenGL")
-			{
-				rendererName = tag.tag;
-			}
-
-		}
-
-		if (rendererName.empty())
-		{
-			rendererName = "DirectX";
+			totalNumberOfVertices += model.model->GetVertexCount();
 		}
 
 		std::sort(frameTimes.begin(), frameTimes.end());
@@ -90,7 +88,7 @@ namespace Engine::Systems
 		float percentile5 = frameTimes[fivePercents];
 
 
-		std::ofstream outFile(outputFilePath);
+		std::ofstream outFile(outputPath);
 
 		if (!outFile.is_open()) {
 			return;

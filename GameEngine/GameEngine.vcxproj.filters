@@ -103,7 +103,7 @@
     <ClCompile Include="Code\Systems\StatsSystem.cpp">
       <Filter>Code\Systems</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Components\FileLocation.cpp">
+    <ClCompile Include="Code\Components\JsonData.cpp">
       <Filter>Code\Components</Filter>
     </ClCompile>
   </ItemGroup>
@@ -186,7 +186,7 @@
     <ClInclude Include="Code\Systems\StatsSystem.h">
       <Filter>Code\Systems</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Components\FileLocation.h">
+    <ClInclude Include="Code\Components\JsonData.h">
       <Filter>Code\Components</Filter>
     </ClInclude>
   </ItemGroup>

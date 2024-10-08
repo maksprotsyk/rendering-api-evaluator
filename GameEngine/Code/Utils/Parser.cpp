@@ -47,4 +47,10 @@ namespace Engine::Utils
         obj = data.get<bool>();
     }
 
+    template<>
+    void Parser::fillFromJson(nlohmann::json& obj, const nlohmann::json& data)
+    {
+		obj = data;
+    }
+
 }

@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Code\Components\FileLocation.cpp" />
+    <ClCompile Include="Code\Components\JsonData.cpp" />
     <ClCompile Include="Code\Components\Model.cpp" />
     <ClCompile Include="Code\Components\Tag.cpp" />
     <ClCompile Include="Code\Components\Transform.cpp" />
@@ -44,7 +44,7 @@
     <ClCompile Include="Externals\tiny_obj_loader.cc" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Code\Components\FileLocation.h" />
+    <ClInclude Include="Code\Components\JsonData.h" />
     <ClInclude Include="Code\Components\Model.h" />
     <ClInclude Include="Code\Components\Tag.h" />
     <ClInclude Include="Code\Components\Transform.h" />

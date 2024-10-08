@@ -51,6 +51,9 @@ namespace Engine::Utils
 
         template<>
         static void fillFromJson(bool& obj, const nlohmann::json& data);
+
+        template<>
+        static void fillFromJson(nlohmann::json& obj, const nlohmann::json& data);
     };
 
 

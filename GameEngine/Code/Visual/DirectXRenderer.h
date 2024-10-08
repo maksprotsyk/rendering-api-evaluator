@@ -52,9 +52,9 @@ namespace Engine::Visual
             std::vector<Material> materials;
             XMMATRIX worldMatrix;
 
-			int GetVertexCount() const override
+			size_t GetVertexCount() const override
 			{
-				return static_cast<int>(vertices.size());
+				return vertices.size();
 			}
         };
 

@@ -13,7 +13,7 @@ def generate_entity_json(num_models, render_method, model):
                 {
                     "typename": "Engine::Components::Transform",
                     "position": {
-                        "x": i * 2,  # Increment x position for each model
+                        "x": -num_models + i * 2,  # Increment x position for each model
                         "y": 0,
                         "z": 0
                     },
@@ -50,36 +50,28 @@ def generate_entity_json(num_models, render_method, model):
     }
     entities.append(camera_entity)
 
-    # Add rendering method entity
-    render_entity = {
-        "Components": [
-            {
-                "typename": "Engine::Components::Tag",
-                "tag": render_method
-            }
-        ]
-    }
-    entities.append(render_entity)
-    
     model_name = model.split("/")[-1].split(".")[0]
 
     # Generate filename for StatsConfiguration
     stats_filename = f"../../Resources/Stats/stats_{num_models}_{render_method}_{model_name}.txt"
 
     # Add StatsConfiguration entity
-    stats_entity = {
+    config_entity = {
         "Components": [
             {
-                "typename": "Engine::Components::FileLocation",
-                "path": stats_filename
+                "typename": "Engine::Components::JsonData",
+                "data": {
+                    "OutputStatsFile": stats_filename,
+                    "Renderer": render_method
+                }
             },
             {
                 "typename": "Engine::Components::Tag",
-                "tag": "StatsConfiguration"
+                "tag": "Config"
             }
         ]
     }
-    entities.append(stats_entity)
+    entities.append(config_entity)
 
     # Construct the final JSON data
     json_data = {

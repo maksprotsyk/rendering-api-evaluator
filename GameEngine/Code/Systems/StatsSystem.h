@@ -17,12 +17,8 @@ namespace Engine::Systems
 
 	private:
 
-		std::string rendererName;
-		size_t objectsCount = 0;
-		int totalNumberOfVertices = 0;
 		float creationTime;
 		std::vector<float> frameTimes;
-
 		int updatesPerformed = 0;
 	};
 }

@@ -13,7 +13,7 @@ namespace Engine::Visual
     public:
         struct AbstractModel
         {
-            virtual int GetVertexCount() const = 0;
+            virtual size_t GetVertexCount() const = 0;
             virtual ~AbstractModel() = default;
         };
 
