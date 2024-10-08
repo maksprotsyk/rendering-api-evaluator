@@ -17,8 +17,10 @@ namespace Engine
 		static SystemsManager& get();
 		void addSystem(std::unique_ptr<Systems::ISystem>&& system);
 		void removeSystem(Systems::ISystem* system);
-		void update(float dt);
+		void update(float dt) const;
 		void stop() const;
+		void processAddedSystems();
+		void processRemovedSystems();
 
 	private:
 

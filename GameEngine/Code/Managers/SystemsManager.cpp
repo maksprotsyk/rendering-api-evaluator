@@ -24,7 +24,7 @@ namespace Engine
 		_removedSystems.emplace(system);
 	}
 
-	void SystemsManager::update(float dt)
+	void SystemsManager::processAddedSystems()
 	{
 		while (!_addedSystems.empty())
 		{
@@ -32,7 +32,10 @@ namespace Engine
 			_systems.emplace(std::move(_addedSystems.front()));
 			_addedSystems.pop();
 		}
+	}
 
+	void SystemsManager::processRemovedSystems()
+	{
 		while (!_removedSystems.empty())
 		{
 			auto itr = std::find_if(_systems.begin(), _systems.end(), [this](const std::unique_ptr<Systems::ISystem>& s) {return s.get() == _removedSystems.front(); });
@@ -43,7 +46,10 @@ namespace Engine
 			}
 			_removedSystems.pop();
 		}
+	}
 
+	void SystemsManager::update(float dt) const
+	{
 		for (const std::unique_ptr<Systems::ISystem>& system : _systems)
 		{
 			system->onUpdate(dt);

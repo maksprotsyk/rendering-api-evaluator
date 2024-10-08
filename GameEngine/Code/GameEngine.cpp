@@ -58,10 +58,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	);
 
     Engine::SystemsManager& systemsManager = Engine::SystemsManager::get();
+    systemsManager.addSystem(std::make_unique<Engine::Systems::StatsSystem>());
     systemsManager.addSystem(std::make_unique<Engine::Systems::RenderingSystem>(window));
     systemsManager.addSystem(std::make_unique<Engine::Systems::PhysicsSystem>());
     systemsManager.addSystem(std::make_unique<Engine::Systems::InputSystem>());
-    systemsManager.addSystem(std::make_unique<Engine::Systems::StatsSystem>());
 
     Engine::ComponentsManager& componentsManager = Engine::ComponentsManager::get();
     Engine::EntitiesManager& entitiesManager = Engine::EntitiesManager::get();
@@ -95,6 +95,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         {
             break;
         }
+
+		systemsManager.processAddedSystems();
+		systemsManager.processRemovedSystems();
 
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<float> elapsed = end - start;

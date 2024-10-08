@@ -14,25 +14,21 @@ namespace Engine::Systems
 {
 	void StatsSystem::onStart()
 	{
+		firstUpdate = true;
 	}
 
 	void StatsSystem::onUpdate(float dt)
 	{
-		updatesPerformed += 1;
-		if (updatesPerformed < 2)
-		{
-			return;
-		}
-		if (updatesPerformed == 2)
+		if (firstUpdate)
 		{
 			creationTime = dt;
-		}
-		else
-		{
-			frameTimes.push_back(dt);
+			firstUpdate = false;
+			return;
 		}
 
-		if (frameTimes.size() > 1000)
+		frameTimes.push_back(dt);
+
+		if (frameTimes.size() >= 1000)
 		{
 			EventsManager::get().emit<Events::NativeExitRequested>({});
 		}

@@ -19,6 +19,6 @@ namespace Engine::Systems
 
 		float creationTime;
 		std::vector<float> frameTimes;
-		int updatesPerformed = 0;
+		bool firstUpdate = true;
 	};
 }
