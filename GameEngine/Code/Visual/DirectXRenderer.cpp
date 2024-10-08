@@ -355,7 +355,7 @@ namespace Engine::Visual
 			}
 			else
 			{
-				loadTexture(matX.diffuseTexture, TEXT("../Resources/cube/default.png"));
+				loadTexture(matX.diffuseTexture, TEXT("../../Resources/cube/default.png"));
 			}
 			model.materials.emplace_back(matX);
 		}
@@ -417,7 +417,7 @@ namespace Engine::Visual
 
 		// Set up camera view and projection matrices
 		viewMatrix = XMMatrixLookAtLH(XMVectorSet(0.0f, 2.0f, -5.0f, 0.0f), XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
-		projectionMatrix = XMMatrixPerspectiveFovLH(XM_PIDIV4, width / height, 0.1f, 100.0f);
+		projectionMatrix = XMMatrixPerspectiveFovLH(XM_PIDIV4, width / height, 0.1f, 1000.0f);
 	}
 
 	XMFLOAT3 DirectXRenderer::computeFaceNormal(const XMFLOAT3& v0, const XMFLOAT3& v1, const XMFLOAT3& v2) {
