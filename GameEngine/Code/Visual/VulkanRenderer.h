@@ -76,6 +76,9 @@ namespace Engine::Visual
             VkBuffer indexBuffer;
             VkDeviceMemory indexBufferMemory;
             VkDescriptorSet descriptorSet;
+
+            VkBuffer uniformBuffer;
+            VkDeviceMemory uniformBufferMemory;
         };
 
         struct Material
@@ -98,8 +101,6 @@ namespace Engine::Visual
 
             VkBuffer vertexBuffer;
             VkDeviceMemory vertexBufferMemory;
-            VkBuffer uniformBuffer;
-            VkDeviceMemory uniformBufferMemory;
 
 			size_t GetVertexCount() const override 
             {
@@ -109,13 +110,22 @@ namespace Engine::Visual
 
         struct UniformBufferObject
         {
-            alignas(16) glm::mat4 worldMatrix;
-            alignas(16) glm::mat4 viewMatrix;
-            alignas(16) glm::mat4 projectionMatrix;
+            glm::mat4 worldMatrix;
+            glm::mat4 viewMatrix;
+            glm::mat4 projectionMatrix;
+
+            glm::vec3 ambientColor;
+            float shininess; 
+
+            glm::vec3 diffuseColor;
+            float padding1;
+
+            glm::vec3 specularColor;
+            float padding2;
         };
 
         void init(const Window& window) override;
-        void clearBackground() override;
+        void clearBackground(float r, float g, float b, float a) override;
         void draw(const AbstractModel& model) override;
         void render() override;
 

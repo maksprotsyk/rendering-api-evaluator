@@ -117,9 +117,9 @@ namespace Engine::Visual
         projectionMatrix = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 1000.0f);
     }
 
-    void OpenGLRenderer::clearBackground()
+    void OpenGLRenderer::clearBackground(float r, float g, float b, float a)
     {
-        glClearColor(0.0f, 0.2f, 0.4f, 1.0f);
+        glClearColor(r, g, b, a);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 

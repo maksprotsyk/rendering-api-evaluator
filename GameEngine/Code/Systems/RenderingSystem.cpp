@@ -89,7 +89,7 @@ namespace Engine::Systems
 		auto& modelSet = compManager.getComponentSet<Components::Model>();
 		const auto& transformSet = compManager.getComponentSet<Components::Transform>();
 
-		_renderer->clearBackground();
+		_renderer->clearBackground(0.0f, 0.2f, 0.4f, 1.0f);
 		for (EntityID id : compManager.entitiesWithComponents<Components::Model, Components::Transform>())
 		{
 			Components::Model& model = modelSet.getElement(id);

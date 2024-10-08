@@ -54,7 +54,7 @@ namespace Engine::Visual
         };
 
         void init(const Window& window) override;
-        void clearBackground() override;
+        void clearBackground(float r, float g, float b, float a) override;
         void draw(const AbstractModel& model) override;
         void render() override;
         std::unique_ptr<AbstractModel> createModel() override;

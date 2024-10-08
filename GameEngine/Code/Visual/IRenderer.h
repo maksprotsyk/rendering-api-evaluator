@@ -18,7 +18,7 @@ namespace Engine::Visual
         };
 
         virtual void init(const Window& window) = 0;
-        virtual void clearBackground() = 0;
+        virtual void clearBackground(float r, float g, float b, float a) = 0;
         virtual void draw(const AbstractModel& model) = 0;
         virtual void render() = 0;
 

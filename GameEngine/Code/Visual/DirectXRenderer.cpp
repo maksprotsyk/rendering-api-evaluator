@@ -24,10 +24,10 @@ namespace Engine::Visual
 		defaultMaterial.shininess = 32.0f;
 	}
 
-	void DirectXRenderer::clearBackground()
+	void DirectXRenderer::clearBackground(float r, float g, float b, float a)
 	{
 		// Clear the render target with a solid color
-		float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f }; // RGBA
+		float clearColor[] = { r, g, b, a }; // RGBA
 		deviceContext->ClearRenderTargetView(renderTargetView.Get(), clearColor);
 		deviceContext->ClearDepthStencilView(depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 	}

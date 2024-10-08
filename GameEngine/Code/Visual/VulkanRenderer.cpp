@@ -39,7 +39,7 @@ namespace Engine::Visual
 		ubo.projectionMatrix[1][1] *= -1;
 	}
 
-	void VulkanRenderer::clearBackground()
+	void VulkanRenderer::clearBackground(float r, float g, float b, float a)
 	{
 		VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, VK_NULL_HANDLE,
 			VK_NULL_HANDLE, &imageIndex);
@@ -65,7 +65,7 @@ namespace Engine::Visual
 		renderPassInfo.renderArea.extent = swapChainExtent;
 
 		std::array<VkClearValue, 2> clearValues{};
-		clearValues[0].color = { 0.0f, 0.2f, 0.4f, 1.0f };;
+		clearValues[0].color = { r, g, b, a };
 		clearValues[1].depthStencil = { 1.0f, 0 };
 
 		renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
@@ -85,27 +85,33 @@ namespace Engine::Visual
 
 		ubo.worldMatrix = model.worldMatrix;
 
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
-
-		void* data;
-		vkMapMemory(device, model.uniformBufferMemory, 0, sizeof(ubo), 0, &data);
-		memcpy(data, &ubo, sizeof(ubo));
-		vkUnmapMemory(device, model.uniformBufferMemory);
-
 		VkBuffer vertexBuffers[] = { model.vertexBuffer };
 		VkDeviceSize offsets[] = { 0 };
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
 		for (const auto& mesh : model.meshes)
 		{
+			Material material = mesh.materialId != -1 ? model.materials[mesh.materialId] : defaultMaterial;
+			ubo.ambientColor = material.ambientColor;
+			ubo.specularColor = material.specularColor;
+			ubo.diffuseColor = material.diffuseColor;
+			ubo.shininess = material.shininess;
+
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+
+			void* data;
+			vkMapMemory(device, mesh.uniformBufferMemory, 0, sizeof(ubo), 0, &data);
+			memcpy(data, &ubo, sizeof(ubo));
+			vkUnmapMemory(device, mesh.uniformBufferMemory);
+
 			VkDescriptorBufferInfo bufferInfo{};
-			bufferInfo.buffer = model.uniformBuffer;
+			bufferInfo.buffer = mesh.uniformBuffer;
 			bufferInfo.offset = 0;
 			bufferInfo.range = sizeof(UniformBufferObject);
 
 			VkDescriptorImageInfo imageInfo{};
 			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			imageInfo.imageView = mesh.materialId != -1 ? model.materials[mesh.materialId].textureImageView: defaultMaterial.textureImageView;
+			imageInfo.imageView = material.textureImageView;
 			imageInfo.sampler = textureSampler;
 
 			std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
@@ -376,10 +382,10 @@ namespace Engine::Visual
 	{
 		VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
-		for (size_t i = 0; i < swapChainImages.size(); ++i) {
+		for (SubMesh& mesh: model.meshes) {
 			createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-				model.uniformBuffer, model.uniformBufferMemory);
+				mesh.uniformBuffer, mesh.uniformBufferMemory);
 		}
 	}
 

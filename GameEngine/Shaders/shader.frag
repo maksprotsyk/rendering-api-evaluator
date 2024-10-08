@@ -1,32 +1,59 @@
 #version 450
-#extension GL_ARB_separate_shader_objects : enable
 
-layout(location = 0) in vec3 FragPos;      // World-space position of the fragment
-layout(location = 1) in vec3 Normal;       // World-space normal vector of the fragment
-layout(location = 2) in vec2 TexCoord;     // Texture coordinates
+layout(binding = 0) uniform ConstantBuffer {
+    mat4 worldMatrix;
+    mat4 viewMatrix;
+    mat4 projectionMatrix;
 
-layout(location = 0) out vec4 outColor;
+    vec3 ambientColor; // 12 bytes
+    float shininess;   // 4 bytes to align to 16 bytes
 
-layout(binding = 1) uniform sampler2D texSampler;
+    vec3 diffuseColor; // 12 bytes
+    float padding1;    // 4 bytes of padding
 
-// Uniform block for non-opaque uniforms
-layout(binding = 2) uniform LightingUniforms {
-    vec3 lightPos;       // Light position in world space
-    vec3 viewPos;        // View (camera) position in world space
-    vec3 lightColor;     // Light color
-    vec3 ambientColor;   // Ambient light color
-} lighting;
+    vec3 specularColor; // 12 bytes
+    float padding2;     // 4 bytes of padding
+} ubo;
 
-void main() {
-    // Sample the texture color
-    vec4 texColor = texture(texSampler, TexCoord);
 
-    // Calculate ambient lighting
-    vec3 ambient = lighting.ambientColor * texColor.rgb;
+layout(binding = 1) uniform sampler2D texture0;
 
-    // Calculate diffuse lighting
-    vec3 norm = normalize(Normal);
-    vec3 lightDir = normalize(lighting.lightPos - FragPos);
-    float diff = max(dot(norm, lightDir), 0.0);
-    outColor = texColor;
+// Inputs from vertex shader
+layout(location = 0) in vec3 FragPos;
+layout(location = 1) in vec3 Normal; 
+layout(location = 2) in vec2 TexCoord;  
+
+// Output color
+layout(location = 0) out vec4 fragColor;
+
+void main()
+{
+    // Sample the diffuse texture
+    vec4 texColor = texture(texture0, TexCoord);
+
+    // Light direction (assuming a directional light)
+    vec3 lightDir = normalize(vec3(0.0, 0.0, -1.0)); // Direction towards the light
+
+    // Normalized normal vector from the fragment
+    vec3 normal = normalize(Normal);
+
+    // Ambient component
+    vec3 ambient = ubo.ambientColor * texColor.rgb;
+
+    // Diffuse component
+    float diffuseFactor = max(dot(normal, lightDir), 0.0);
+    vec3 diffuse = diffuseFactor * ubo.diffuseColor * texColor.rgb;
+
+    // Specular component (using Blinn-Phong model)
+    vec3 viewDir = normalize(-FragPos); // Assume the camera is at (0, 0, 0)
+    vec3 halfwayDir = normalize(lightDir + viewDir);
+    float specFactor = pow(max(dot(normal, halfwayDir), 0.0), ubo.shininess);
+    vec3 specular = specFactor * ubo.specularColor;
+
+    // Combine all components
+    vec3 finalColor = ambient + diffuse + specular;
+
+    finalColor = clamp(finalColor, 0.0, 1.0);
+
+    fragColor = vec4(finalColor, texColor.a);
 }

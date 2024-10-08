@@ -1,10 +1,19 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
-layout(binding = 0) uniform UniformBufferObject {
+layout(binding = 0) uniform ConstantBuffer {
     mat4 worldMatrix;
     mat4 viewMatrix;
     mat4 projectionMatrix;
+
+    vec3 ambientColor; // 12 bytes
+    float shininess;   // 4 bytes to align to 16 bytes
+
+    vec3 diffuseColor; // 12 bytes
+    float padding1;    // 4 bytes of padding
+
+    vec3 specularColor; // 12 bytes
+    float padding2;     // 4 bytes of padding
 } ubo;
 
 layout(location = 0) in vec3 inPosition;
