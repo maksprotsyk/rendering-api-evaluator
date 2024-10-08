@@ -32,28 +32,31 @@ namespace Engine::Systems
 	{
 		float distance = dt;
 		float angleDistance = dt;
-		Components::Transform& transform = ComponentsManager::get().getComponentSet<Components::Transform>().getElement(_cameraId);
 
-		Utils::Vector3& rotation = transform.rotation;
 		float rotationY = getAxisInput((char)37, (char)39);
-		rotation.y += angleDistance * rotationY;
-
 		float rotationX = getAxisInput((char)38, (char)40);
-		rotation.x += angleDistance * rotationX;
 
 		float movementX = getAxisInput('A', 'D');
 		float movementZ = getAxisInput('S', 'W');
+		float movementY = getAxisInput('Q', 'E');
 
-		auto forwardDir = Utils::Vector3(0, 0, 1);
-		forwardDir.rotateArroundVector(Utils::Vector3(0, 1, 0), rotation.y);
-		forwardDir.rotateArroundVector(Utils::Vector3(1, 0, 0), rotation.x);
-
-		auto rightDir = Utils::Vector3::crossProduct(forwardDir, Utils::Vector3(0.0f, -1.0f, 0.0f));
+		Components::Transform& transform = ComponentsManager::get().getComponentSet<Components::Transform>().getElement(_cameraId);
 
 		Utils::Vector3& position = transform.position;
-		position += rightDir * distance * movementX;
-		position += forwardDir * distance * movementZ;
 
+		Utils::Vector3 forward = Utils::Vector3(0, 0, 1);
+		forward.rotateArroundVector(Utils::Vector3(0, 1, 0), transform.rotation.y);
+
+		Utils::Vector3 right = Utils::Vector3(1, 0, 0);
+		right.rotateArroundVector(Utils::Vector3(0, 1, 0), transform.rotation.y);
+
+		position += forward * distance * movementZ;
+		position += right * distance * movementX;
+		position.y += distance * movementY;
+
+		Utils::Vector3& rotation = transform.rotation;
+		rotation.y += angleDistance * rotationY;
+		rotation.x += angleDistance * rotationX;
 	}
 
 	void InputSystem::onStop()

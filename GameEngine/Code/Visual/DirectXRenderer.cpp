@@ -355,7 +355,7 @@ namespace Engine::Visual
 			}
 			else
 			{
-				loadTexture(matX.diffuseTexture, TEXT("../../Resources/cube/default.png"));
+				matX.diffuseTexture = defaultMaterial.diffuseTexture;
 			}
 			model.materials.emplace_back(matX);
 		}

@@ -33,6 +33,10 @@ namespace Engine::Visual
 		createCommandBuffers();
 		createTextureSampler();
 		createDefaultMaterial();
+
+		float aspectRatio = (float)swapChainExtent.width / (float)swapChainExtent.height;
+		ubo.projectionMatrix = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 1000.0f);
+		ubo.projectionMatrix[1][1] *= -1;
 	}
 
 	void VulkanRenderer::clearBackground()
@@ -833,24 +837,31 @@ namespace Engine::Visual
 
 	void VulkanRenderer::setCameraProperties(const Utils::Vector3& position, const Utils::Vector3& rotation)
 	{
-		Utils::Vector3 forward(0.0f, 0.0f, 1.0f);
-		forward.rotateArroundVector(Utils::Vector3(1.0f, 0.0f, 0.0f), rotation.x);
-		forward.rotateArroundVector(Utils::Vector3(0.0f, 1.0f, 0.0f), rotation.y);
+		glm::vec3 pos = glm::vec3(position.x, position.y, position.z);
 
-		Utils::Vector3 up = Utils::Vector3::crossProduct(forward, Utils::Vector3(1.0f, 0.0f, 0.0f));
+		float pitch = -rotation.x;
+		float yaw = rotation.y;
+		float roll = rotation.z;
 
-		glm::vec3 pos(position.x, position.y, position.z);
+		glm::vec3 forward;
+		forward.x = cos(pitch) * sin(yaw);
+		forward.y = sin(pitch);
+		forward.z = cos(pitch) * cos(yaw);
+		forward = glm::normalize(forward);
+
+		glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+
+		glm::vec3 right = glm::normalize(glm::cross(up, forward));
+
+		glm::mat4 rollMatrix = glm::rotate(glm::mat4(1.0f), roll, forward);
+		right = glm::vec3(rollMatrix * glm::vec4(right, 0.0f));
+		up = glm::normalize(glm::cross(forward, right));
 
 		ubo.viewMatrix = glm::lookAt(
 			pos,
-			pos + glm::vec3(forward.x, forward.y, forward.z),
-			glm::vec3(up.x, up.y, up.z)
+			pos + forward,
+			up
 		);
-
-		float aspectRatio = (float)swapChainExtent.width / (float)swapChainExtent.height;
-
-		ubo.projectionMatrix = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 100.0f);
-		ubo.projectionMatrix[1][1] *= -1;
 
 	}
 
