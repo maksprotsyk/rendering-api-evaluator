@@ -64,9 +64,13 @@ namespace Engine::Visual
             XMMATRIX viewMatrix;
             XMMATRIX projectionMatrix;
             XMFLOAT3 ambientColor;
-            XMFLOAT3 diffuseColor;
-            XMFLOAT3 specularColor;
             float shininess;
+
+            XMFLOAT3 diffuseColor;
+            float padding1;
+
+            XMFLOAT3 specularColor;
+            float padding2;
         };
 
 
