@@ -37,8 +37,27 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         return 1;
     }
 
+    LPWSTR cmdLine = GetCommandLineW();
+    int argc;
+    LPWSTR* argv = CommandLineToArgvW(cmdLine, &argc);
+    std::string jsonPath = "../../Resources/test.json";
+    if (argc > 1)
+    {
+        jsonPath = Engine::Utils::wstringToString(argv[1]);
+    }
+
+    int width = 1280;
+    int height = 720;
+    if (argc > 3)
+    {
+        width = std::stoi(Engine::Utils::wstringToString(argv[2]));
+        height = std::stoi(Engine::Utils::wstringToString(argv[3]));
+    }
+
     Engine::Visual::Window window;
-    if (!window.initWindow(hInstance))
+
+
+    if (!window.initWindow(hInstance, width, height))
     {
         return 0;
     }
@@ -66,14 +85,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     Engine::ComponentsManager& componentsManager = Engine::ComponentsManager::get();
     Engine::EntitiesManager& entitiesManager = Engine::EntitiesManager::get();
 
-    LPWSTR cmdLine = GetCommandLineW();
-    int argc;
-    LPWSTR* argv = CommandLineToArgvW(cmdLine, &argc);
-    std::string jsonPath = "../../Resources/inputs/entities_5_Vulkan_cube.json";
-    if (argc > 1)
-    {
-        jsonPath = Engine::Utils::wstringToString(argv[1]);
-    }
 
     const nlohmann::json& json = Engine::Utils::Parser::readJson(jsonPath);
     for (const nlohmann::json& entityJson: json["Entities"])

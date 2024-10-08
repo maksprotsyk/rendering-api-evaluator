@@ -1330,18 +1330,17 @@ namespace Engine::Visual
 
 	void VulkanRenderer::createDescriptorPool()
 	{
-		int totalDescriptors = 1000;
 		std::array<VkDescriptorPoolSize, 2> poolSizes{};
 		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSizes[0].descriptorCount = static_cast<uint32_t>(totalDescriptors);
+		poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_MESHES_NUM);
 		poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		poolSizes[1].descriptorCount = static_cast<uint32_t>(totalDescriptors);
+		poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_MESHES_NUM);
 
 		VkDescriptorPoolCreateInfo poolCreateInfo{};
 		poolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		poolCreateInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
 		poolCreateInfo.pPoolSizes = poolSizes.data();
-		poolCreateInfo.maxSets = totalDescriptors;
+		poolCreateInfo.maxSets = MAX_MESHES_NUM;
 
 		if (vkCreateDescriptorPool(device, &poolCreateInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to create descriptor pool!");

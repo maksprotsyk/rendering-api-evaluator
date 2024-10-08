@@ -8,7 +8,7 @@ namespace Engine::Visual
 	class Window
 	{
 	public:
-		bool initWindow(HINSTANCE hInstance);
+		bool initWindow(HINSTANCE hInstance, int width, int height);
 		void showWindow(int nCmdShow);
 		bool update();
 		void SetOnKetStateChanged(const std::function<void(WPARAM, bool)>& callback);

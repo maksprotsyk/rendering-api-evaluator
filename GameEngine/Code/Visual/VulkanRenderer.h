@@ -132,6 +132,7 @@ namespace Engine::Visual
 
     private:
 
+        static const int MAX_MESHES_NUM = 1000;
 
         VkInstance instance{};
         VkDebugUtilsMessengerEXT debugMessenger{};

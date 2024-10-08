@@ -4,7 +4,7 @@
 
 namespace Engine::Visual
 {
-    bool Window::initWindow(HINSTANCE hInstance)
+    bool Window::initWindow(HINSTANCE hInstance, int width, int height)
     {
         const wchar_t* CLASS_NAME = TEXT("Sample Window Class");
 
@@ -18,9 +18,9 @@ namespace Engine::Visual
         _window = CreateWindowEx(
             0,
             CLASS_NAME,
-            TEXT("WinAPI Input Example"),
+            TEXT("Render Tester"),
             WS_OVERLAPPEDWINDOW,
-            CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
+            CW_USEDEFAULT, CW_USEDEFAULT, width, height,
             nullptr,
             nullptr,
             hInstance,
