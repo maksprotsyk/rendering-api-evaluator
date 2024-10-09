@@ -1,4 +1,5 @@
 #define GLM_FORCE_LEFT_HANDED
+#define WGL_WGLEXT_PROTOTYPES
 
 #include "OpenGLRenderer.h"
 #include <stdexcept>
@@ -6,6 +7,7 @@
 #include "stb_image.h"
 #include "tiny_obj_loader.h"
 #include <GL/wglext.h>
+#include <GL/glew.h>
 #include <fstream>
 
 namespace Engine::Visual
@@ -121,6 +123,15 @@ namespace Engine::Visual
         float aspectRatio = (float)(rect.right - rect.left) / (float)(rect.bottom - rect.top);
 
         projectionMatrix = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 1000.0f);
+
+        auto wglSwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC)wglGetProcAddress("wglSwapIntervalEXT");
+        if (wglSwapIntervalEXT) {
+            wglSwapIntervalEXT(0); // Enable VSync
+            std::cout << "VSync enabled successfully." << std::endl;
+        }
+        else {
+            std::cerr << "Failed to load wglSwapIntervalEXT. VSync control is not available." << std::endl;
+        }
     }
 
     void OpenGLRenderer::clearBackground(float r, float g, float b, float a)

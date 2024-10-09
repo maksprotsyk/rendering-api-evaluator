@@ -88,7 +88,7 @@ namespace Engine::Visual
 	void DirectXRenderer::render()
 	{
 		// Present the frame
-		swapChain->Present(1, 0);
+		swapChain->Present(0, 0);
 	}
 
 
