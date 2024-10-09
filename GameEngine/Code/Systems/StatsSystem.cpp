@@ -53,7 +53,7 @@ namespace Engine::Systems
 		}
 
 
-		if (frameTimes.size() >= 10000)
+		if (frameTimes.size() >= 1000)
 		{
 			EventsManager::get().emit<Events::NativeExitRequested>({});
 		}

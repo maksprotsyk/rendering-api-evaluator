@@ -88,8 +88,8 @@ def generate_entity_json(num_models, render_method, model):
 # Usage example
 
 rendering_methods = ["DirectX", "OpenGL", "Vulkan"]
-models = ["../../Resources/cube/cube.obj", "../../Resources/bunny/bunny.obj", "../../Resources/cup.obj"]
-nums = [0, 5, 10, 15, 20, 25]
+models = ["../../Resources/cube/cube.obj", "../../Resources/bunny/bunny.obj"]
+nums = [0, 1, 5, 10, 15, 20, 25]
 for m in models:
     for r in rendering_methods:
         for n in nums:

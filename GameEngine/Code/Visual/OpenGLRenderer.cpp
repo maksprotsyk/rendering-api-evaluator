@@ -10,9 +10,15 @@
 
 namespace Engine::Visual
 {
+
+    static float gammaCorrection(float value)
+    {
+        return std::pow(value, 1.0f / 2.2f);
+    }
+
+
     static void checkError()
     {
-
         GLenum error = glGetError();
         if (error != GL_NO_ERROR) {
             std::cerr << "OpenGL Error: " << error << std::endl;
@@ -119,7 +125,12 @@ namespace Engine::Visual
 
     void OpenGLRenderer::clearBackground(float r, float g, float b, float a)
     {
-        glClearColor(r, g, b, a);
+        glClearColor(
+            gammaCorrection(r),
+            gammaCorrection(g),
+            gammaCorrection(b),
+            gammaCorrection(a)
+        );
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 

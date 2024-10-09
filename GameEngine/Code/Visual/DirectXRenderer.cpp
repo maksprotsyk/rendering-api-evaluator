@@ -10,6 +10,12 @@
 
 namespace Engine::Visual
 {
+
+	static float gammaCorrection(float value)
+	{
+		return std::pow(value, 1.0f / 2.2f);
+	}
+
 	void DirectXRenderer::init(const Window& window)
 	{
 		createDeviceAndSwapChain(window.getHandle());
@@ -27,7 +33,12 @@ namespace Engine::Visual
 	void DirectXRenderer::clearBackground(float r, float g, float b, float a)
 	{
 		// Clear the render target with a solid color
-		float clearColor[] = { r, g, b, a }; // RGBA
+		float clearColor[] = {
+			gammaCorrection(r),
+			gammaCorrection(g),
+			gammaCorrection(b),
+			gammaCorrection(a)
+		}; // RGBA
 		deviceContext->ClearRenderTargetView(renderTargetView.Get(), clearColor);
 		deviceContext->ClearDepthStencilView(depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 	}
