@@ -82,6 +82,7 @@ namespace Engine::Visual
 		const auto& model = (const Model&)abstractModel;
 
 		auto commandBuffer = commandBuffers[imageIndex];
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
 		ubo.worldMatrix = model.worldMatrix;
 
@@ -96,8 +97,6 @@ namespace Engine::Visual
 			ubo.specularColor = material.specularColor;
 			ubo.diffuseColor = material.diffuseColor;
 			ubo.shininess = material.shininess;
-
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
 			void* data;
 			vkMapMemory(device, mesh.uniformBufferMemory, 0, sizeof(ubo), 0, &data);
@@ -1124,7 +1123,7 @@ namespace Engine::Visual
 		uboLayoutBinding.descriptorCount = 1;
 		uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		uboLayoutBinding.pImmutableSamplers = nullptr;
-		uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
 		VkDescriptorSetLayoutBinding samplerLayoutBinding{};
 		samplerLayoutBinding.binding = 1;
