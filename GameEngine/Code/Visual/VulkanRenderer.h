@@ -75,10 +75,8 @@ namespace Engine::Visual
 
             VkBuffer indexBuffer;
             VkDeviceMemory indexBufferMemory;
-            VkDescriptorSet descriptorSet;
 
-            VkBuffer uniformBuffer;
-            VkDeviceMemory uniformBufferMemory;
+            VkDescriptorSet descriptorSet;
         };
 
         struct Material
@@ -87,9 +85,13 @@ namespace Engine::Visual
             glm::vec3 diffuseColor;
             glm::vec3 specularColor;
             float shininess;
+
             VkImage textureImage;
             VkDeviceMemory textureImageMemory;
             VkImageView textureImageView;
+
+            VkBuffer materialBuffer;
+            VkDeviceMemory materialBufferMemory;
         };
 
         struct Model : public AbstractModel
@@ -102,6 +104,9 @@ namespace Engine::Visual
             VkBuffer vertexBuffer;
             VkDeviceMemory vertexBufferMemory;
 
+            VkBuffer uniformBuffer;
+            VkDeviceMemory uniformBufferMemory;
+
 			size_t GetVertexCount() const override 
             {
 				return vertices.size();
@@ -113,9 +118,12 @@ namespace Engine::Visual
             glm::mat4 worldMatrix;
             glm::mat4 viewMatrix;
             glm::mat4 projectionMatrix;
+        };
 
+        struct MaterialBufferObject
+        {
             glm::vec3 ambientColor;
-            float shininess; 
+            float shininess;
 
             glm::vec3 diffuseColor;
             float padding1;
@@ -142,7 +150,8 @@ namespace Engine::Visual
 
     private:
 
-        static const int MAX_MESHES_NUM = 1000;
+        static const int MAX_MESHES_NUM = 50;
+        static const int MAX_FRAMES_IN_FLIGHT = 3;
 
         VkInstance instance{};
         VkDebugUtilsMessengerEXT debugMessenger{};
@@ -163,6 +172,7 @@ namespace Engine::Visual
 
         VkRenderPass renderPass{};
         VkDescriptorSetLayout descriptorSetLayout{};
+
         VkPipelineLayout pipelineLayout{};
         VkPipeline graphicsPipeline{};
 
@@ -183,6 +193,7 @@ namespace Engine::Visual
         std::vector<VkFence> inFlightFences;
         std::vector<VkFence> imagesInFlight;
         uint32_t imageIndex = 0;
+        uint32_t currentImageInFlight = 0;
 
         Material defaultMaterial;
 
@@ -197,7 +208,7 @@ namespace Engine::Visual
         void createRenderPass();
         void createDescriptorSetLayout();
         void createDescriptorPool();
-        void createDescriptorSets(SubMesh& mesh);
+        void createDescriptorSets(Model& model);
         void createGraphicsPipeline();
         void createFramebuffers();
         void createCommandPool();

@@ -12,7 +12,6 @@
 
 namespace Engine::Visual
 {
-	static const int MAX_FRAMES_IN_FLIGHT = 2;
 
 	void VulkanRenderer::init(const Window& window)
 	{
@@ -41,7 +40,7 @@ namespace Engine::Visual
 
 	void VulkanRenderer::clearBackground(float r, float g, float b, float a)
 	{
-		VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, VK_NULL_HANDLE,
+		VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentImageInFlight],
 			VK_NULL_HANDLE, &imageIndex);
 
 		if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
@@ -73,8 +72,7 @@ namespace Engine::Visual
 
 		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-
-
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 	}
 
 	void VulkanRenderer::draw(const AbstractModel& abstractModel)
@@ -82,38 +80,52 @@ namespace Engine::Visual
 		const auto& model = (const Model&)abstractModel;
 
 		auto commandBuffer = commandBuffers[imageIndex];
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 
 		ubo.worldMatrix = model.worldMatrix;
+
+		void* data;
+		vkMapMemory(device, model.uniformBufferMemory, 0, sizeof(ubo), 0, &data);
+		memcpy(data, &ubo, sizeof(ubo));
+		vkUnmapMemory(device, model.uniformBufferMemory);
+
+		VkDescriptorBufferInfo uniformBufferInfo{};
+		uniformBufferInfo.buffer = model.uniformBuffer;
+		uniformBufferInfo.offset = 0;
+		uniformBufferInfo.range = sizeof(UniformBufferObject);
 
 		VkBuffer vertexBuffers[] = { model.vertexBuffer };
 		VkDeviceSize offsets[] = { 0 };
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
+		for (const auto& mat : model.materials)
+		{
+			MaterialBufferObject mbo{};
+			mbo.ambientColor = mat.ambientColor;
+			mbo.specularColor = mat.specularColor;
+			mbo.diffuseColor = mat.diffuseColor;
+			mbo.shininess = mat.shininess;
+
+			void* matData;
+			vkMapMemory(device, mat.materialBufferMemory, 0, sizeof(mbo), 0, &matData);
+			memcpy(matData, &mbo, sizeof(mbo));
+			vkUnmapMemory(device, mat.materialBufferMemory);
+		}
+
 		for (const auto& mesh : model.meshes)
 		{
 			Material material = mesh.materialId != -1 ? model.materials[mesh.materialId] : defaultMaterial;
-			ubo.ambientColor = material.ambientColor;
-			ubo.specularColor = material.specularColor;
-			ubo.diffuseColor = material.diffuseColor;
-			ubo.shininess = material.shininess;
 
-			void* data;
-			vkMapMemory(device, mesh.uniformBufferMemory, 0, sizeof(ubo), 0, &data);
-			memcpy(data, &ubo, sizeof(ubo));
-			vkUnmapMemory(device, mesh.uniformBufferMemory);
-
-			VkDescriptorBufferInfo bufferInfo{};
-			bufferInfo.buffer = mesh.uniformBuffer;
-			bufferInfo.offset = 0;
-			bufferInfo.range = sizeof(UniformBufferObject);
+			VkDescriptorBufferInfo materialBufferInfo{};
+			materialBufferInfo.buffer = material.materialBuffer;
+			materialBufferInfo.offset = 0;
+			materialBufferInfo.range = sizeof(MaterialBufferObject);
 
 			VkDescriptorImageInfo imageInfo{};
 			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 			imageInfo.imageView = material.textureImageView;
 			imageInfo.sampler = textureSampler;
 
-			std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+			std::array<VkWriteDescriptorSet, 3> descriptorWrites{};
 
 			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[0].dstSet = mesh.descriptorSet;
@@ -121,15 +133,23 @@ namespace Engine::Visual
 			descriptorWrites[0].dstArrayElement = 0;
 			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].pBufferInfo = &bufferInfo;
-
+			descriptorWrites[0].pBufferInfo = &uniformBufferInfo;
+			
 			descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[1].dstSet = mesh.descriptorSet;
 			descriptorWrites[1].dstBinding = 1;
 			descriptorWrites[1].dstArrayElement = 0;
-			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 			descriptorWrites[1].descriptorCount = 1;
-			descriptorWrites[1].pImageInfo = &imageInfo;
+			descriptorWrites[1].pBufferInfo = &materialBufferInfo;
+
+			descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrites[2].dstSet = mesh.descriptorSet;
+			descriptorWrites[2].dstBinding = 2;
+			descriptorWrites[2].dstArrayElement = 0;
+			descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			descriptorWrites[2].descriptorCount = 1;
+			descriptorWrites[2].pImageInfo = &imageInfo;
 
 			vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 
@@ -143,6 +163,7 @@ namespace Engine::Visual
 
 	void VulkanRenderer::render()
 	{
+
 		auto commandBuffer = commandBuffers[imageIndex];
 
 		vkCmdEndRenderPass(commandBuffer);
@@ -155,14 +176,25 @@ namespace Engine::Visual
 		submitInfo.commandBufferCount = 1;
 		submitInfo.pCommandBuffers = &commandBuffers[imageIndex];
 
+		VkSemaphore waitSemaphores[] = { imageAvailableSemaphores[currentImageInFlight] };
+		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+		submitInfo.waitSemaphoreCount = 1;
+		submitInfo.pWaitSemaphores = waitSemaphores;
+		submitInfo.pWaitDstStageMask = waitStages;
+
+		VkSemaphore signalSemaphores[] = { renderFinishedSemaphores[currentImageInFlight] };
+		submitInfo.signalSemaphoreCount = 1;
+		submitInfo.pSignalSemaphores = signalSemaphores;
+
+
 		if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, nullptr) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to submit draw command buffer!");
 		}
 
-		vkQueueWaitIdle(graphicsQueue);
-
 		VkPresentInfoKHR presentInfo{};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+		presentInfo.waitSemaphoreCount = 1;
+		presentInfo.pWaitSemaphores = signalSemaphores;
 
 		VkSwapchainKHR swapChains[] = { swapChain };
 		presentInfo.swapchainCount = 1;
@@ -177,7 +209,8 @@ namespace Engine::Visual
 			throw std::runtime_error("Failed to present swapchain image!");
 		}
 
-		vkQueueWaitIdle(presentQueue);
+		currentImageInFlight = (currentImageInFlight + 1) % MAX_FRAMES_IN_FLIGHT;
+
 	}
 
 	std::unique_ptr<IRenderer::AbstractModel> VulkanRenderer::createModel()
@@ -192,10 +225,7 @@ namespace Engine::Visual
 		createIndexBuffer(model);
 
 		createUniformBuffers(model);
-		for (auto& mesh : model.meshes)
-		{
-			createDescriptorSets(mesh);
-		}
+		createDescriptorSets(model);
 	}
 
 	void VulkanRenderer::loadModel(AbstractModel& abstractModel, const std::string& filename)
@@ -296,21 +326,14 @@ namespace Engine::Visual
 	{
 		imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
 		renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-		inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
-		imagesInFlight.resize(swapChainImages.size(), VK_NULL_HANDLE);
 
 		VkSemaphoreCreateInfo semaphoreInfo{};
 		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-		VkFenceCreateInfo fenceInfo{};
-		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
 
 			if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
-				vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
-				vkCreateFence(device, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
+				vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS) {
 				throw std::runtime_error("Failed to create synchronization object for frame!");
 			}
 		}
@@ -324,6 +347,21 @@ namespace Engine::Visual
 		defaultMaterial.shininess = 32.0f;
 		createTextureImage("../../Resources/cube/default.png", defaultMaterial.textureImage, defaultMaterial.textureImageMemory);
 		createTextureImageView(defaultMaterial.textureImageView, defaultMaterial.textureImage);
+
+		createBuffer(sizeof(MaterialBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			defaultMaterial.materialBuffer, defaultMaterial.materialBufferMemory);
+
+		MaterialBufferObject mbo{};
+		mbo.ambientColor = defaultMaterial.ambientColor;
+		mbo.specularColor = defaultMaterial.specularColor;
+		mbo.diffuseColor = defaultMaterial.diffuseColor;
+		mbo.shininess = defaultMaterial.shininess;
+
+		void* matData;
+		vkMapMemory(device, defaultMaterial.materialBufferMemory, 0, sizeof(mbo), 0, &matData);
+		memcpy(matData, &mbo, sizeof(mbo));
+		vkUnmapMemory(device, defaultMaterial.materialBufferMemory);
 	}
 
 	void VulkanRenderer::createTextureSampler() {
@@ -379,12 +417,14 @@ namespace Engine::Visual
 
 	void VulkanRenderer::createUniformBuffers(Model& model)
 	{
-		VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+		createBuffer(sizeof(UniformBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			model.uniformBuffer, model.uniformBufferMemory);
 
-		for (SubMesh& mesh: model.meshes) {
-			createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+		for (Material& mat: model.materials) {
+			createBuffer(sizeof(MaterialBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-				mesh.uniformBuffer, mesh.uniformBufferMemory);
+				mat.materialBuffer, mat.materialBufferMemory);
 		}
 	}
 
@@ -799,7 +839,8 @@ namespace Engine::Visual
 			*/
 
 			for (const auto& availablePresentMode : availablePresentModes) {
-				if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
+				if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR ||
+					availablePresentMode == VK_PRESENT_MODE_IMMEDIATE_KHR) {
 					return availablePresentMode;
 				}
 			}
@@ -1125,14 +1166,22 @@ namespace Engine::Visual
 		uboLayoutBinding.pImmutableSamplers = nullptr;
 		uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
+		VkDescriptorSetLayoutBinding mboLayoutBinding{};
+		mboLayoutBinding.binding = 1;
+		mboLayoutBinding.descriptorCount = 1;
+		mboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		mboLayoutBinding.pImmutableSamplers = nullptr;
+		mboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+
 		VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-		samplerLayoutBinding.binding = 1;
+		samplerLayoutBinding.binding = 2;
 		samplerLayoutBinding.descriptorCount = 1;
 		samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		samplerLayoutBinding.pImmutableSamplers = nullptr;
 		samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-		std::array<VkDescriptorSetLayoutBinding, 2> bindings = { uboLayoutBinding, samplerLayoutBinding };
+
+		std::array<VkDescriptorSetLayoutBinding, 3> bindings = {uboLayoutBinding, mboLayoutBinding, samplerLayoutBinding };
 		VkDescriptorSetLayoutCreateInfo layoutInfo{};
 		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 		layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -1141,6 +1190,7 @@ namespace Engine::Visual
 		if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to create descriptor set layout!");
 		}
+
 	}
 
 	void VulkanRenderer::createGraphicsPipeline()
@@ -1259,6 +1309,7 @@ namespace Engine::Visual
 		dynamicState.dynamicStateCount = 2;
 		dynamicState.pDynamicStates = dynamicStates;
 
+
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipelineLayoutInfo.setLayoutCount = 1;
@@ -1352,17 +1403,22 @@ namespace Engine::Visual
 		}
 	}
 
-	void VulkanRenderer::createDescriptorSets(SubMesh& mesh)
+	void VulkanRenderer::createDescriptorSets(Model& model)
 	{
-		std::vector<VkDescriptorSetLayout> layouts(1, descriptorSetLayout);
-		VkDescriptorSetAllocateInfo allocateInfo{};
-		allocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		allocateInfo.descriptorPool = descriptorPool;
-		allocateInfo.descriptorSetCount = 1;
-		allocateInfo.pSetLayouts = layouts.data();
 
-		if (vkAllocateDescriptorSets(device, &allocateInfo, &mesh.descriptorSet) != VK_SUCCESS) {
-			throw std::runtime_error("Failed to allocate descriptor sets!");
+
+		for (SubMesh& mesh : model.meshes)
+		{
+			std::vector<VkDescriptorSetLayout> meshLayouts(1, descriptorSetLayout);
+			VkDescriptorSetAllocateInfo allocateInfoMesh{};
+			allocateInfoMesh.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+			allocateInfoMesh.descriptorPool = descriptorPool;
+			allocateInfoMesh.descriptorSetCount = 1;
+			allocateInfoMesh.pSetLayouts = meshLayouts.data();
+
+			if (vkAllocateDescriptorSets(device, &allocateInfoMesh, &mesh.descriptorSet) != VK_SUCCESS) {
+				throw std::runtime_error("Failed to allocate descriptor sets!");
+			}
 		}
 	}
 
