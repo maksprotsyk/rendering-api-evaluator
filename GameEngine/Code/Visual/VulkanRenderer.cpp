@@ -101,11 +101,6 @@ namespace Engine::Visual
 		memcpy(data, &m_ubo, sizeof(m_ubo));
 		vkUnmapMemory(m_device, modelInstance.uniformBufferMemory);
 
-		VkDescriptorBufferInfo uniformBufferInfo{};
-		uniformBufferInfo.buffer = modelInstance.uniformBuffer;
-		uniformBufferInfo.offset = 0;
-		uniformBufferInfo.range = sizeof(UniformBufferObject);
-
 		VkBuffer vertexBuffers[] = { modelData.vertexBuffer };
 		VkDeviceSize offsets[] = { 0 };
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
@@ -126,49 +121,9 @@ namespace Engine::Visual
 
 		for (const auto& mesh : modelData.meshes)
 		{
-			Material material = mesh.materialId != -1 ? modelData.materials[mesh.materialId] : m_defaultMaterial;
-
-			VkDescriptorBufferInfo materialBufferInfo{};
-			materialBufferInfo.buffer = material.materialBuffer;
-			materialBufferInfo.offset = 0;
-			materialBufferInfo.range = sizeof(MaterialBufferObject);
-
-			VkDescriptorImageInfo imageInfo{};
-			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			imageInfo.imageView = getTexture(material.diffuseTextureId).textureImageView;
-			imageInfo.sampler = m_textureSampler;
-
-			std::array<VkWriteDescriptorSet, 3> descriptorWrites{};
-
-			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[0].dstSet = mesh.descriptorSet;
-			descriptorWrites[0].dstBinding = 0;
-			descriptorWrites[0].dstArrayElement = 0;
-			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].pBufferInfo = &uniformBufferInfo;
-			
-			descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[1].dstSet = mesh.descriptorSet;
-			descriptorWrites[1].dstBinding = 1;
-			descriptorWrites[1].dstArrayElement = 0;
-			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			descriptorWrites[1].descriptorCount = 1;
-			descriptorWrites[1].pBufferInfo = &materialBufferInfo;
-
-			descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[2].dstSet = mesh.descriptorSet;
-			descriptorWrites[2].dstBinding = 2;
-			descriptorWrites[2].dstArrayElement = 0;
-			descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			descriptorWrites[2].descriptorCount = 1;
-			descriptorWrites[2].pImageInfo = &imageInfo;
-
-			vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
-
+			std::array<VkDescriptorSet, 2> descriptorSets{modelInstance.descriptorSet, mesh.descriptorSet};
 			vkCmdBindIndexBuffer(commandBuffer, mesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1,
-				&mesh.descriptorSet, 0, nullptr);
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
 			vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(mesh.indices.size()), 1, 0, 0, 0);
 		}
 
@@ -1059,6 +1014,7 @@ namespace Engine::Visual
 	std::unique_ptr<IModelInstance> VulkanRenderer::createModelInstance(const std::string& filename)
 	{
 		auto modelInstance = std::make_unique<VulkanModelInstance>(filename);
+
 		createBuffer(
 			sizeof(UniformBufferObject),
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
@@ -1066,6 +1022,36 @@ namespace Engine::Visual
 			modelInstance->uniformBuffer,
 			modelInstance->uniformBufferMemory
 		);
+
+		std::vector<VkDescriptorSetLayout> instanceLayouts(1, m_instanceSetLayout);
+		VkDescriptorSetAllocateInfo allocateInfoMesh{};
+		allocateInfoMesh.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		allocateInfoMesh.descriptorPool = m_descriptorPool;
+		allocateInfoMesh.descriptorSetCount = 1;
+		allocateInfoMesh.pSetLayouts = instanceLayouts.data();
+
+		if (vkAllocateDescriptorSets(m_device, &allocateInfoMesh, &modelInstance->descriptorSet) != VK_SUCCESS)
+		{
+			// TODO: asserts
+			return nullptr;
+		}
+
+		VkDescriptorBufferInfo uniformBufferInfo{};
+		uniformBufferInfo.buffer = modelInstance->uniformBuffer;
+		uniformBufferInfo.offset = 0;
+		uniformBufferInfo.range = sizeof(UniformBufferObject);
+
+		std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
+
+		descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrites[0].dstSet = modelInstance->descriptorSet;
+		descriptorWrites[0].dstBinding = 0;
+		descriptorWrites[0].dstArrayElement = 0;
+		descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		descriptorWrites[0].descriptorCount = 1;
+		descriptorWrites[0].pBufferInfo = &uniformBufferInfo;
+
+		vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 
 		return modelInstance;
 	}
@@ -1333,6 +1319,31 @@ namespace Engine::Visual
 
 	void VulkanRenderer::createDescriptorSetLayout()
 	{
+		VkDescriptorSetLayoutBinding mboLayoutBinding{};
+		mboLayoutBinding.binding = 0;
+		mboLayoutBinding.descriptorCount = 1;
+		mboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		mboLayoutBinding.pImmutableSamplers = nullptr;
+		mboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+
+		VkDescriptorSetLayoutBinding samplerLayoutBinding{};
+		samplerLayoutBinding.binding = 1;
+		samplerLayoutBinding.descriptorCount = 1;
+		samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		samplerLayoutBinding.pImmutableSamplers = nullptr;
+		samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+
+		std::array<VkDescriptorSetLayoutBinding, 2> bindings = {mboLayoutBinding, samplerLayoutBinding };
+		VkDescriptorSetLayoutCreateInfo layoutInfo{};
+		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+		layoutInfo.pBindings = bindings.data();
+
+		if (vkCreateDescriptorSetLayout(m_device, &layoutInfo, nullptr, &m_meshSetLayout) != VK_SUCCESS) {
+			throw std::runtime_error("Failed to create descriptor set layout!");
+		}
+
 		VkDescriptorSetLayoutBinding uboLayoutBinding{};
 		uboLayoutBinding.binding = 0;
 		uboLayoutBinding.descriptorCount = 1;
@@ -1340,28 +1351,13 @@ namespace Engine::Visual
 		uboLayoutBinding.pImmutableSamplers = nullptr;
 		uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
-		VkDescriptorSetLayoutBinding mboLayoutBinding{};
-		mboLayoutBinding.binding = 1;
-		mboLayoutBinding.descriptorCount = 1;
-		mboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		mboLayoutBinding.pImmutableSamplers = nullptr;
-		mboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+		std::array<VkDescriptorSetLayoutBinding, 1> instanceBindings = { uboLayoutBinding };
+		VkDescriptorSetLayoutCreateInfo instanceLayoutInfo{};
+		instanceLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		instanceLayoutInfo.bindingCount = static_cast<uint32_t>(instanceBindings.size());
+		instanceLayoutInfo.pBindings = instanceBindings.data();
 
-		VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-		samplerLayoutBinding.binding = 2;
-		samplerLayoutBinding.descriptorCount = 1;
-		samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		samplerLayoutBinding.pImmutableSamplers = nullptr;
-		samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-
-		std::array<VkDescriptorSetLayoutBinding, 3> bindings = {uboLayoutBinding, mboLayoutBinding, samplerLayoutBinding };
-		VkDescriptorSetLayoutCreateInfo layoutInfo{};
-		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-		layoutInfo.pBindings = bindings.data();
-
-		if (vkCreateDescriptorSetLayout(m_device, &layoutInfo, nullptr, &m_descriptorSetLayout) != VK_SUCCESS) {
+		if (vkCreateDescriptorSetLayout(m_device, &instanceLayoutInfo, nullptr, &m_instanceSetLayout) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to create descriptor set layout!");
 		}
 
@@ -1486,10 +1482,11 @@ namespace Engine::Visual
 		dynamicState.pDynamicStates = dynamicStates;
 
 
+		std::array<VkDescriptorSetLayout, 2> setLayouts = { m_instanceSetLayout, m_meshSetLayout };
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipelineLayoutInfo.setLayoutCount = 1;
-		pipelineLayoutInfo.pSetLayouts = &m_descriptorSetLayout;
+		pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(setLayouts.size());
+		pipelineLayoutInfo.pSetLayouts = setLayouts.data();
 		pipelineLayoutInfo.pushConstantRangeCount = 0;
 		pipelineLayoutInfo.pPushConstantRanges = nullptr;
 
@@ -1589,10 +1586,9 @@ namespace Engine::Visual
 
 	bool VulkanRenderer::createDescriptorSets(ModelData& model)
 	{
-
 		for (SubMesh& mesh : model.meshes)
 		{
-			std::vector<VkDescriptorSetLayout> meshLayouts(1, m_descriptorSetLayout);
+			std::vector<VkDescriptorSetLayout> meshLayouts(1, m_meshSetLayout);
 			VkDescriptorSetAllocateInfo allocateInfoMesh{};
 			allocateInfoMesh.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 			allocateInfoMesh.descriptorPool = m_descriptorPool;
@@ -1603,13 +1599,46 @@ namespace Engine::Visual
 			{
 				return false;
 			}
+
+			Material material = mesh.materialId != -1 ? model.materials[mesh.materialId] : m_defaultMaterial;
+
+			VkDescriptorBufferInfo materialBufferInfo{};
+			materialBufferInfo.buffer = material.materialBuffer;
+			materialBufferInfo.offset = 0;
+			materialBufferInfo.range = sizeof(MaterialBufferObject);
+
+			VkDescriptorImageInfo imageInfo{};
+			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			imageInfo.imageView = getTexture(material.diffuseTextureId).textureImageView;
+			imageInfo.sampler = m_textureSampler;
+
+			std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+
+			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrites[0].dstSet = mesh.descriptorSet;
+			descriptorWrites[0].dstBinding = 0;
+			descriptorWrites[0].dstArrayElement = 0;
+			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			descriptorWrites[0].descriptorCount = 1;
+			descriptorWrites[0].pBufferInfo = &materialBufferInfo;
+
+			descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrites[1].dstSet = mesh.descriptorSet;
+			descriptorWrites[1].dstBinding = 1;
+			descriptorWrites[1].dstArrayElement = 0;
+			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			descriptorWrites[1].descriptorCount = 1;
+			descriptorWrites[1].pImageInfo = &imageInfo;
+
+			vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 		}
 		return true;
 	}
 
 	////////////////////////////////////////////////////////////////////////
 
-	VkShaderModule VulkanRenderer::createShaderModule(const std::vector<char>& code) {
+	VkShaderModule VulkanRenderer::createShaderModule(const std::vector<char>& code)
+	{
 		VkShaderModuleCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 		createInfo.codeSize = code.size();

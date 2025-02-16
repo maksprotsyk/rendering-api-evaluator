@@ -150,6 +150,7 @@ namespace Engine::Visual
 
             VkBuffer uniformBuffer;
             VkDeviceMemory uniformBufferMemory;
+            VkDescriptorSet descriptorSet;
         };
 
     private:
@@ -238,7 +239,9 @@ namespace Engine::Visual
         std::vector<VkFramebuffer> m_swapChainFramebuffers;
 
         VkRenderPass m_renderPass{};
-        VkDescriptorSetLayout m_descriptorSetLayout{};
+
+        VkDescriptorSetLayout m_instanceSetLayout{};
+        VkDescriptorSetLayout m_meshSetLayout{};
 
         VkPipelineLayout m_pipelineLayout{};
         VkPipeline m_graphicsPipeline{};

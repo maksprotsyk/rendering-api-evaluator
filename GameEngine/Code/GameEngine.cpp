@@ -97,7 +97,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         }
     }
 
-    auto start = std::chrono::high_resolution_clock::now();
+    float dt = 0;
     while (!nativeExitRequested)
     {
         // Measure the time taken for the frame
@@ -110,13 +110,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
 		systemsManager.processAddedSystems();
 		systemsManager.processRemovedSystems();
-
+        
+        // Update all systems
+        auto start = std::chrono::high_resolution_clock::now();
+        systemsManager.update(dt);
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<float> elapsed = end - start;
-        
-        start = end;
-        // Update all systems
-        systemsManager.update(elapsed.count());
+        dt = elapsed.count();
     
     }
 
