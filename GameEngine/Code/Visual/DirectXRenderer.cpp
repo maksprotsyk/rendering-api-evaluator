@@ -10,11 +10,14 @@
 
 namespace Engine::Visual
 {
+	////////////////////////////////////////////////////////////////////////
 
-	static float gammaCorrection(float value)
+	float DirectXRenderer::gammaCorrection(float value)
 	{
 		return std::pow(value, 1.0f / 2.2f);
 	}
+
+	////////////////////////////////////////////////////////////////////////
 
 	void DirectXRenderer::init(const Window& window)
 	{
@@ -23,12 +26,18 @@ namespace Engine::Visual
 		createShaders();
 		createViewport(window.getHandle());
 
-		loadTexture(defaultMaterial.diffuseTexture, TEXT("../../Resources/cube/default.png"));
-		defaultMaterial.diffuseColor = XMFLOAT3(0.1f, 0.1f, 0.1f);
-		defaultMaterial.ambientColor = XMFLOAT3(0.5f, 0.5f, 0.5f);
-		defaultMaterial.specularColor = XMFLOAT3(0.5f, 0.5f, 0.5f);
-		defaultMaterial.shininess = 32.0f;
+		if (!loadTexture(DEFAULT_TEXTURE))
+		{
+			// TODO: asserts, error handling
+		}
+		m_defaultMaterial.diffuseTextureId = DEFAULT_TEXTURE;
+		m_defaultMaterial.diffuseColor = XMFLOAT3(0.1f, 0.1f, 0.1f);
+		m_defaultMaterial.ambientColor = XMFLOAT3(0.5f, 0.5f, 0.5f);
+		m_defaultMaterial.specularColor = XMFLOAT3(0.5f, 0.5f, 0.5f);
+		m_defaultMaterial.shininess = 32.0f;
 	}
+
+	////////////////////////////////////////////////////////////////////////
 
 	void DirectXRenderer::clearBackground(float r, float g, float b, float a)
 	{
@@ -39,58 +48,70 @@ namespace Engine::Visual
 			gammaCorrection(b),
 			gammaCorrection(a)
 		}; // RGBA
-		deviceContext->ClearRenderTargetView(renderTargetView.Get(), clearColor);
-		deviceContext->ClearDepthStencilView(depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
+		m_deviceContext->ClearRenderTargetView(m_renderTargetView.Get(), clearColor);
+		m_deviceContext->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 	}
 
-	void DirectXRenderer::draw(const AbstractModel& abstractModel)
+	////////////////////////////////////////////////////////////////////////
+
+	void DirectXRenderer::draw(const IModelInstance& model, const Utils::Vector3& position, const Utils::Vector3& rotation, const Utils::Vector3& scale)
 	{
-		const auto& model = (const Model&)abstractModel;
+		const auto& modelItr = m_models.find(model.GetId());
+		if (modelItr == m_models.end())
+		{
+			// TODO: asserts, error handling
+			return;
+		}
+		const ModelData& modelData = modelItr->second;
+
+		XMMATRIX worldMatrix = getWorldMatrix(position, rotation, scale);
 
 		// Bind the vertex and index buffers
 		UINT stride = sizeof(Vertex);
 		UINT offset = 0;
-		deviceContext->IASetVertexBuffers(0, 1, model.vertexBuffer.GetAddressOf(), &stride, &offset);
+		m_deviceContext->IASetVertexBuffers(0, 1, modelData.vertexBuffer.GetAddressOf(), &stride, &offset);
 
 		// Set the primitive topology
-		deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		for (const auto& mesh : model.meshes)
+		m_deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		for (const auto& mesh : modelData.meshes)
 		{
 			// Update the constant buffer (world, view, projection matrices)
 			ConstantBuffer cb;
-			cb.worldMatrix = XMMatrixTranspose(model.worldMatrix);  // Transpose for HLSL
-			cb.viewMatrix = XMMatrixTranspose(viewMatrix);
-			cb.projectionMatrix = XMMatrixTranspose(projectionMatrix);
+			cb.worldMatrix = XMMatrixTranspose(worldMatrix);  // Transpose for HLSL
+			cb.viewMatrix = XMMatrixTranspose(m_viewMatrix);
+			cb.projectionMatrix = XMMatrixTranspose(m_projectionMatrix);
 
-			const Material& material = mesh.materialId != -1 ? model.materials[mesh.materialId] : defaultMaterial;
+			const Material& material = mesh.materialId != -1 ? modelData.materials[mesh.materialId] : m_defaultMaterial;
 			cb.ambientColor = material.ambientColor;
 			cb.diffuseColor = material.diffuseColor;
 			cb.specularColor = material.specularColor;
 			cb.shininess = material.shininess;
-			deviceContext->UpdateSubresource(constantBuffer.Get(), 0, nullptr, &cb, 0, 0);
+			m_deviceContext->UpdateSubresource(m_constantBuffer.Get(), 0, nullptr, &cb, 0, 0);
 
 			// Bind the constant buffer and texture
-			deviceContext->VSSetConstantBuffers(0, 1, constantBuffer.GetAddressOf());
-			deviceContext->PSSetConstantBuffers(0, 1, constantBuffer.GetAddressOf());
-			deviceContext->PSSetShaderResources(0, 1, material.diffuseTexture.GetAddressOf());
-			deviceContext->PSSetSamplers(0, 1, samplerState.GetAddressOf());
+			m_deviceContext->VSSetConstantBuffers(0, 1, m_constantBuffer.GetAddressOf());
+			m_deviceContext->PSSetConstantBuffers(0, 1, m_constantBuffer.GetAddressOf());
+			m_deviceContext->PSSetShaderResources(0, 1, getTexture(material.diffuseTextureId).GetAddressOf());
+			m_deviceContext->PSSetSamplers(0, 1, m_samplerState.GetAddressOf());
 
 			// Bind the index buffer for this sub-mesh
-			deviceContext->IASetIndexBuffer(mesh.indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+			m_deviceContext->IASetIndexBuffer(mesh.indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
 
 			// Draw the model
-			deviceContext->DrawIndexed(mesh.indices.size(), 0, 0);
+			m_deviceContext->DrawIndexed(mesh.indices.size(), 0, 0);
 		}
 
-
 	}
+
+	////////////////////////////////////////////////////////////////////////
 
 	void DirectXRenderer::render()
 	{
 		// Present the frame
-		swapChain->Present(0, 0);
+		m_swapChain->Present(0, 0);
 	}
 
+	////////////////////////////////////////////////////////////////////////
 
 	// Create the Direct3D device, swap chain, and device context
 	void DirectXRenderer::createDeviceAndSwapChain(HWND hwnd)
@@ -113,10 +134,10 @@ namespace Engine::Visual
 			ARRAYSIZE(featureLevels),
 			D3D11_SDK_VERSION,
 			&swapChainDesc,
-			swapChain.GetAddressOf(),
-			device.GetAddressOf(),
+			m_swapChain.GetAddressOf(),
+			m_device.GetAddressOf(),
 			nullptr,
-			deviceContext.GetAddressOf()
+			m_deviceContext.GetAddressOf()
 		);
 
 		if (FAILED(hr))
@@ -125,12 +146,14 @@ namespace Engine::Visual
 		}
 	}
 
+	////////////////////////////////////////////////////////////////////////
+
 	// Create the render target
 	void DirectXRenderer::createRenderTarget(HWND hwnd)
 	{
 		ComPtr<ID3D11Texture2D> backBuffer;
-		swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer));
-		device->CreateRenderTargetView(backBuffer.Get(), nullptr, renderTargetView.GetAddressOf());
+		m_swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer));
+		m_device->CreateRenderTargetView(backBuffer.Get(), nullptr, m_renderTargetView.GetAddressOf());
 
 		RECT rect;
 		GetClientRect(hwnd, &rect);
@@ -149,22 +172,24 @@ namespace Engine::Visual
 		depthStencilDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
 
 		ComPtr<ID3D11Texture2D> depthStencilBuffer;
-		HRESULT hr = device->CreateTexture2D(&depthStencilDesc, nullptr, depthStencilBuffer.GetAddressOf());
+		HRESULT hr = m_device->CreateTexture2D(&depthStencilDesc, nullptr, depthStencilBuffer.GetAddressOf());
 		if (FAILED(hr))
 		{
 			throw std::runtime_error("Failed to create depth stencil buffer.");
 		}
 
 		// Create the depth stencil view
-		hr = device->CreateDepthStencilView(depthStencilBuffer.Get(), nullptr, depthStencilView.GetAddressOf());
+		hr = m_device->CreateDepthStencilView(depthStencilBuffer.Get(), nullptr, m_depthStencilView.GetAddressOf());
 		if (FAILED(hr))
 		{
 			throw std::runtime_error("Failed to create depth stencil view.");
 		}
 
 		// Set the render target and depth stencil
-		deviceContext->OMSetRenderTargets(1, renderTargetView.GetAddressOf(), depthStencilView.Get());
+		m_deviceContext->OMSetRenderTargets(1, m_renderTargetView.GetAddressOf(), m_depthStencilView.Get());
 	}
+
+	////////////////////////////////////////////////////////////////////////
 
 	// Create the shaders and input layout
 	void DirectXRenderer::createShaders()
@@ -173,10 +198,10 @@ namespace Engine::Visual
 		auto psBytecode = Utils::loadBytesFromFile("PixelShader.cso");
 
 		// Create shaders
-		device->CreateVertexShader(vsBytecode.data(), vsBytecode.size(), nullptr, vertexShader.GetAddressOf());
-		device->CreatePixelShader(psBytecode.data(), psBytecode.size(), nullptr, pixelShader.GetAddressOf());
-		deviceContext->VSSetShader(vertexShader.Get(), nullptr, 0);
-		deviceContext->PSSetShader(pixelShader.Get(), nullptr, 0);
+		m_device->CreateVertexShader(vsBytecode.data(), vsBytecode.size(), nullptr, m_vertexShader.GetAddressOf());
+		m_device->CreatePixelShader(psBytecode.data(), psBytecode.size(), nullptr, m_pixelShader.GetAddressOf());
+		m_deviceContext->VSSetShader(m_vertexShader.Get(), nullptr, 0);
+		m_deviceContext->PSSetShader(m_pixelShader.Get(), nullptr, 0);
 
 		// Create input layout
 		D3D11_INPUT_ELEMENT_DESC layout[] = {
@@ -184,8 +209,8 @@ namespace Engine::Visual
 			{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(Vertex, normal), D3D11_INPUT_PER_VERTEX_DATA, 0 },
 			{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(Vertex, texCoord), D3D11_INPUT_PER_VERTEX_DATA, 0 }
 		};
-		device->CreateInputLayout(layout, ARRAYSIZE(layout), vsBytecode.data(), vsBytecode.size(), inputLayout.GetAddressOf());
-		deviceContext->IASetInputLayout(inputLayout.Get());
+		m_device->CreateInputLayout(layout, ARRAYSIZE(layout), vsBytecode.data(), vsBytecode.size(), m_inputLayout.GetAddressOf());
+		m_deviceContext->IASetInputLayout(m_inputLayout.Get());
 
 		// Create constant buffer
 		D3D11_BUFFER_DESC cbDesc = {};
@@ -193,7 +218,7 @@ namespace Engine::Visual
 		cbDesc.ByteWidth = sizeof(ConstantBuffer);
 		cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 		cbDesc.CPUAccessFlags = 0;
-		HRESULT hr = device->CreateBuffer(&cbDesc, nullptr, constantBuffer.GetAddressOf());
+		HRESULT hr = m_device->CreateBuffer(&cbDesc, nullptr, m_constantBuffer.GetAddressOf());
 		if (FAILED(hr)) {
 			throw std::runtime_error("Failed to create constant buffer.");
 		}
@@ -209,13 +234,13 @@ namespace Engine::Visual
 
 		// Create the rasterizer state
 		ID3D11RasterizerState* rasterizerState;
-		hr = device->CreateRasterizerState(&rasterizerDesc, &rasterizerState);
+		hr = m_device->CreateRasterizerState(&rasterizerDesc, &rasterizerState);
 		if (FAILED(hr)) {
 			throw std::runtime_error("Failed to create rasterizer state.");
 		}
 
 		// Bind the rasterizer state
-		deviceContext->RSSetState(rasterizerState);
+		m_deviceContext->RSSetState(rasterizerState);
 
 		D3D11_DEPTH_STENCIL_DESC depthStencilDesc;
 		ZeroMemory(&depthStencilDesc, sizeof(D3D11_DEPTH_STENCIL_DESC));
@@ -224,19 +249,20 @@ namespace Engine::Visual
 		depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS;
 
 		ComPtr<ID3D11DepthStencilState> depthStencilState;
-		hr = device->CreateDepthStencilState(&depthStencilDesc, depthStencilState.GetAddressOf());
+		hr = m_device->CreateDepthStencilState(&depthStencilDesc, depthStencilState.GetAddressOf());
 		if (FAILED(hr))
 		{
 			throw std::runtime_error("Failed to create depth stencil state.");
 		}
 
 		// Set the depth stencil state
-		deviceContext->OMSetDepthStencilState(depthStencilState.Get(), 1);
+		m_deviceContext->OMSetDepthStencilState(depthStencilState.Get(), 1);
 	}
 
-	void DirectXRenderer::createBuffersFromModel(AbstractModel& abstractModel)
+	////////////////////////////////////////////////////////////////////////
+
+	void DirectXRenderer::createBuffersForModel(ModelData& model)
 	{
-		auto& model = (Model&)abstractModel;
 		// Create vertex buffer
 		D3D11_BUFFER_DESC vertexBufferDesc = {};
 		vertexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
@@ -245,7 +271,7 @@ namespace Engine::Visual
 
 		D3D11_SUBRESOURCE_DATA vertexData = {};
 		vertexData.pSysMem = model.vertices.data();
-		device->CreateBuffer(&vertexBufferDesc, &vertexData, model.vertexBuffer.GetAddressOf());
+		m_device->CreateBuffer(&vertexBufferDesc, &vertexData, model.vertexBuffer.GetAddressOf());
 
 		for (auto& subMesh: model.meshes)
 		{
@@ -259,7 +285,7 @@ namespace Engine::Visual
 			D3D11_SUBRESOURCE_DATA indexData = {};
 			indexData.pSysMem = subMesh.indices.data();  // Pointer to the index data
 
-			HRESULT hr = device->CreateBuffer(&indexBufferDesc, &indexData, subMesh.indexBuffer.GetAddressOf());
+			HRESULT hr = m_device->CreateBuffer(&indexBufferDesc, &indexData, subMesh.indexBuffer.GetAddressOf());
 			if (FAILED(hr)) 
 			{
 				throw std::runtime_error("Failed to create index buffer.");
@@ -267,24 +293,69 @@ namespace Engine::Visual
 		}
 	}
 
-	std::unique_ptr<IRenderer::AbstractModel> DirectXRenderer::createModel()
+	////////////////////////////////////////////////////////////////////////
+
+	const ComPtr<ID3D11ShaderResourceView>& DirectXRenderer::getTexture(const std::string& textureId) const
 	{
-		return std::make_unique<Model>();
+		const auto& textureItr = m_textures.find(textureId);
+		if (textureItr != m_textures.end())
+		{
+			return textureItr->second;
+		}
+
+		const auto& defaultTextureItr = m_textures.find(DEFAULT_TEXTURE);
+		if (defaultTextureItr != m_textures.end())
+		{
+			return defaultTextureItr->second;
+		}
+
+		// TODO: asserts, error handling
+		return nullptr;
 	}
 
-	void DirectXRenderer::loadTexture(ComPtr<ID3D11ShaderResourceView>& texture, const std::wstring& filename) const
+	////////////////////////////////////////////////////////////////////////
+
+	bool DirectXRenderer::loadModel(const std::string& filename)
 	{
-		HRESULT hr = DirectX::CreateWICTextureFromFile(device.Get(), deviceContext.Get(), filename.c_str(), nullptr, texture.GetAddressOf());
+		if (m_models.contains(filename))
+		{
+			return true;
+		}
+
+		ModelData modelData;
+		if (!loadModelFromFile(modelData, filename))
+		{
+			return false;
+		}
+		createBuffersForModel(modelData);
+		m_models.emplace(filename, std::move(modelData));
+		return true;
+	}
+
+	////////////////////////////////////////////////////////////////////////
+
+	bool DirectXRenderer::loadTexture(const std::string& filename)
+	{
+		if (m_textures.contains(filename))
+		{
+			return true;
+		}
+
+		ComPtr<ID3D11ShaderResourceView> texture;
+		HRESULT hr = DirectX::CreateWICTextureFromFile(m_device.Get(), m_deviceContext.Get(), Utils::stringToWString(filename).c_str(), nullptr, texture.GetAddressOf());
 		if (FAILED(hr))
 		{
-			throw std::runtime_error("Failed to load texture.");
+			return false;
 		}
+
+		m_textures.emplace(filename, std::move(texture));
+		return true;
 	}
 
-	void DirectXRenderer::loadModel(AbstractModel& abstractModel, const std::string& filename)
-	{
-		auto& model = (Model&)abstractModel;
+	////////////////////////////////////////////////////////////////////////
 
+	bool DirectXRenderer::loadModelFromFile(ModelData& model, const std::string& filename)
+	{
 		tinyobj::attrib_t attrib;
 		std::vector<tinyobj::shape_t> shapes;
 		std::vector<tinyobj::material_t> materials;
@@ -295,7 +366,7 @@ namespace Engine::Visual
 		bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filename.c_str(), matDir.string().c_str());
 		if (!ret) 
 		{
-			return;
+			return false;
 		}
 
 		std::vector<DirectX::XMFLOAT3> positions;
@@ -362,15 +433,27 @@ namespace Engine::Visual
 			matX.specularColor = XMFLOAT3(mat.specular);
 			if (!mat.diffuse_texname.empty())
 			{
-				loadTexture(matX.diffuseTexture, Utils::stringToWString((matDir / mat.diffuse_texname).string()));
+				std::string path = (matDir / mat.diffuse_texname).string();
+				if (loadTexture(path))
+				{
+					matX.diffuseTextureId = path;
+				}
+				else
+				{
+					matX.diffuseTextureId = m_defaultMaterial.diffuseTextureId;
+				}
 			}
 			else
 			{
-				matX.diffuseTexture = defaultMaterial.diffuseTexture;
+				matX.diffuseTextureId = m_defaultMaterial.diffuseTextureId;
 			}
 			model.materials.emplace_back(matX);
 		}
+
+		return true;
 	}
+
+	////////////////////////////////////////////////////////////////////////
 
 	void DirectXRenderer::setCameraProperties(const Utils::Vector3& position, const Utils::Vector3& rotation)
 	{
@@ -389,14 +472,20 @@ namespace Engine::Visual
 		XMVECTOR target = XMVectorAdd(XMLoadFloat3(&positionX), forward);
     
 		// Create the view matrix using LookAt
-		viewMatrix = XMMatrixLookAtLH(XMLoadFloat3(&positionX), target, up);
+		m_viewMatrix = XMMatrixLookAtLH(XMLoadFloat3(&positionX), target, up);
 	}
 
-	void DirectXRenderer::transformModel(AbstractModel& abstractModel, const Utils::Vector3& position,
-		const Utils::Vector3& rotation, const Utils::Vector3& scale)
-	{
-		auto& model = (Model&)abstractModel;
+	////////////////////////////////////////////////////////////////////////
 
+	std::unique_ptr<IModelInstance> DirectXRenderer::createModelInstance(const std::string& filename)
+	{
+		return std::make_unique<ModelInstanceBase>(filename);
+	}
+
+	////////////////////////////////////////////////////////////////////////
+
+	XMMATRIX DirectXRenderer::getWorldMatrix(const Utils::Vector3& position, const Utils::Vector3& rotation, const Utils::Vector3& scale)
+	{
 		XMMATRIX scalingMatrix = XMMatrixScaling(scale.x, scale.y, scale.z);
 
 		XMMATRIX rotationMatrix = XMMatrixRotationRollPitchYaw(rotation.x, rotation.y, rotation.z);
@@ -405,9 +494,10 @@ namespace Engine::Visual
 		XMMATRIX translationMatrix = XMMatrixTranslation(position.x, position.y, position.z);
 
 		// Combine the rotation and translation matrices to form the world matrix
-		model.worldMatrix = XMMatrixMultiply(scalingMatrix, XMMatrixMultiply(rotationMatrix, translationMatrix));
-		
+		return XMMatrixMultiply(scalingMatrix, XMMatrixMultiply(rotationMatrix, translationMatrix));
 	}
+
+	////////////////////////////////////////////////////////////////////////
 
 	// Set up the viewport
 	void DirectXRenderer::createViewport(HWND hwnd)
@@ -424,12 +514,14 @@ namespace Engine::Visual
 		viewport.Height = height;
 		viewport.MinDepth = 0.0f;
 		viewport.MaxDepth = 1.0f;
-		deviceContext->RSSetViewports(1, &viewport);
+		m_deviceContext->RSSetViewports(1, &viewport);
 
 		// Set up camera view and projection matrices
-		viewMatrix = XMMatrixLookAtLH(XMVectorSet(0.0f, 2.0f, -5.0f, 0.0f), XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
-		projectionMatrix = XMMatrixPerspectiveFovLH(XM_PIDIV4, width / height, 0.1f, 1000.0f);
+		m_viewMatrix = XMMatrixLookAtLH(XMVectorSet(0.0f, 2.0f, -5.0f, 0.0f), XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
+		m_projectionMatrix = XMMatrixPerspectiveFovLH(XM_PIDIV4, width / height, 0.1f, 1000.0f);
 	}
+
+	////////////////////////////////////////////////////////////////////////
 
 	XMFLOAT3 DirectXRenderer::computeFaceNormal(const XMFLOAT3& v0, const XMFLOAT3& v1, const XMFLOAT3& v2) {
 		// Calculate two edges of the triangle
@@ -451,5 +543,7 @@ namespace Engine::Visual
 
 		return normal;
 	}
+
+	////////////////////////////////////////////////////////////////////////
 
 }

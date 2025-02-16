@@ -3,7 +3,7 @@
 #include <string>
 
 #include "Managers/ComponentsManager.h"
-#include "Visual/IRenderer.h"
+#include "Visual/ModelInstanceBase.h"
 
 namespace Engine::Components
 {
@@ -11,9 +11,8 @@ namespace Engine::Components
 	class Model
 	{
 	public:
-		std::unique_ptr<Visual::IRenderer::AbstractModel> model = nullptr;
-
 		std::string path;
+		std::unique_ptr<Visual::IModelInstance> instance = nullptr;
 
 		SERIALIZABLE(
 			PROPERTY(Model, path)

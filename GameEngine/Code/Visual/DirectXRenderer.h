@@ -21,6 +21,23 @@ namespace Engine::Visual
     class DirectXRenderer: public IRenderer
     {
     public:
+        void init(const Window& window) override;
+        void clearBackground(float r, float g, float b, float a) override;
+
+        void draw(
+            const IModelInstance& model,
+            const Utils::Vector3& position,
+            const Utils::Vector3& rotation,
+            const Utils::Vector3& scale) override;
+        void render() override;
+
+        bool loadModel(const std::string& filename) override;
+        bool loadTexture(const std::string& filename) override;
+
+        void setCameraProperties(const Utils::Vector3& position, const Utils::Vector3& rotation) override;
+        std::unique_ptr<IModelInstance> createModelInstance(const std::string& filename) override;
+
+    private:
         struct Vertex
         {
             XMFLOAT3 position;
@@ -41,21 +58,15 @@ namespace Engine::Visual
             XMFLOAT3 diffuseColor;
             XMFLOAT3 specularColor;
             float shininess;
-            ComPtr<ID3D11ShaderResourceView> diffuseTexture; 
+            std::string diffuseTextureId;
         };
 
-        struct Model: public AbstractModel
+        struct ModelData
         {
             std::vector<SubMesh> meshes;
             ComPtr<ID3D11Buffer> vertexBuffer;
             std::vector<Vertex> vertices;
             std::vector<Material> materials;
-            XMMATRIX worldMatrix;
-
-			size_t GetVertexCount() const override
-			{
-				return vertices.size();
-			}
         };
 
         struct ConstantBuffer
@@ -73,52 +84,43 @@ namespace Engine::Visual
             float padding2;
         };
 
-
-        void init(const Window& window) override;
-        void clearBackground(float r, float g, float b, float a) override;
-
-        void draw(const AbstractModel& model) override;
-        void render() override;
-
-        void createBuffersFromModel(AbstractModel& model) override;
-        std::unique_ptr<AbstractModel> createModel() override;
-        void loadModel(AbstractModel& model, const std::string& filename) override;
-
-        void setCameraProperties(const Utils::Vector3& position, const Utils::Vector3& rotation) override;
-
-        void transformModel(
-            AbstractModel& model,
-            const Utils::Vector3& position,
-            const Utils::Vector3& rotation,
-            const Utils::Vector3& scale) override;
-
     private:
-        // DirectX components
-        ComPtr<ID3D11Device> device;
-        ComPtr<ID3D11DeviceContext> deviceContext;
-        ComPtr<IDXGISwapChain> swapChain;
-        ComPtr<ID3D11RenderTargetView> renderTargetView;
-        ComPtr<ID3D11DepthStencilView> depthStencilView;
-        ComPtr<ID3D11VertexShader> vertexShader;
-        ComPtr<ID3D11PixelShader> pixelShader;
-        ComPtr<ID3D11InputLayout> inputLayout;
-        ComPtr<ID3D11Buffer> constantBuffer;
-        ComPtr<ID3D11SamplerState> samplerState;
-
-        // Camera matrices
-        XMMATRIX viewMatrix;
-        XMMATRIX projectionMatrix;
-
-        Material defaultMaterial;
 
         static XMFLOAT3 computeFaceNormal(const XMFLOAT3& v0, const XMFLOAT3& v1, const XMFLOAT3& v2);
+        static XMMATRIX getWorldMatrix(const Utils::Vector3& position, const Utils::Vector3& rotation, const Utils::Vector3& scale);
+        static float gammaCorrection(float value);
 
         void createDeviceAndSwapChain(HWND hwnd);
         void createRenderTarget(HWND hwnd);
         void createShaders();
         void createViewport(HWND hwnd);
 
-        void loadTexture(ComPtr<ID3D11ShaderResourceView>& texture, const std::wstring& filename) const;
+        const ComPtr<ID3D11ShaderResourceView>& getTexture(const std::string& textureId) const;
+        void createBuffersForModel(ModelData& model);
+        bool loadModelFromFile(ModelData& model, const std::string& filename);
+
+    private:
+
+        // DirectX components
+        ComPtr<ID3D11Device> m_device;
+        ComPtr<ID3D11DeviceContext> m_deviceContext;
+        ComPtr<IDXGISwapChain> m_swapChain;
+        ComPtr<ID3D11RenderTargetView> m_renderTargetView;
+        ComPtr<ID3D11DepthStencilView> m_depthStencilView;
+        ComPtr<ID3D11VertexShader> m_vertexShader;
+        ComPtr<ID3D11PixelShader> m_pixelShader;
+        ComPtr<ID3D11InputLayout> m_inputLayout;
+        ComPtr<ID3D11Buffer> m_constantBuffer;
+        ComPtr<ID3D11SamplerState> m_samplerState;
+
+        // Camera matrices
+        XMMATRIX m_viewMatrix;
+        XMMATRIX m_projectionMatrix;
+
+        Material m_defaultMaterial;
+
+        std::unordered_map<std::string, ModelData> m_models;
+        std::unordered_map<std::string, ComPtr<ID3D11ShaderResourceView>> m_textures;
         
     };
 

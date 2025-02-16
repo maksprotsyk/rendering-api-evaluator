@@ -106,6 +106,10 @@
     <ClCompile Include="Code\Components\JsonData.cpp">
       <Filter>Code\Components</Filter>
     </ClCompile>
+    <ClCompile Include="Code\Visual\IRenderer.cpp" />
+    <ClCompile Include="Code\Visual\ModelInstanceBase.cpp">
+      <Filter>Code\Visual</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Code\Components\Transform.h">
@@ -188,6 +192,9 @@
     </ClInclude>
     <ClInclude Include="Code\Components\JsonData.h">
       <Filter>Code\Components</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Visual\ModelInstanceBase.h">
+      <Filter>Code\Visual</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

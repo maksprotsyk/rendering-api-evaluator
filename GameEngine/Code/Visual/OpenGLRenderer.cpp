@@ -12,12 +12,14 @@
 
 namespace Engine::Visual
 {
+    ////////////////////////////////////////////////////////////////////////
 
     static float gammaCorrection(float value)
     {
         return std::pow(value, 1.0f / 2.2f);
     }
 
+    ////////////////////////////////////////////////////////////////////////
 
     static void checkError()
     {
@@ -27,10 +29,12 @@ namespace Engine::Visual
         }
     }
 
+    ////////////////////////////////////////////////////////////////////////
+
     void OpenGLRenderer::init(const Window& window)
     {
         HWND hwnd = window.getHandle();
-        hdc = GetDC(hwnd); // Get the device context from the HWND
+        m_hdc = GetDC(hwnd); // Get the device context from the HWND
 
         // Set up the pixel format for the HDC
         PIXELFORMATDESCRIPTOR pfd = {};
@@ -43,22 +47,22 @@ namespace Engine::Visual
         pfd.cStencilBits = 8;
         pfd.iLayerType = PFD_MAIN_PLANE;
 
-        int pixelFormat = ChoosePixelFormat(hdc, &pfd);
+        int pixelFormat = ChoosePixelFormat(m_hdc, &pfd);
         if (pixelFormat == 0) {
             throw std::runtime_error("Failed to choose a suitable pixel format");
         }
 
-        if (!SetPixelFormat(hdc, pixelFormat, &pfd)) {
+        if (!SetPixelFormat(m_hdc, pixelFormat, &pfd)) {
             throw std::runtime_error("Failed to set the pixel format");
         }
 
         // Create a legacy OpenGL rendering context
-        HGLRC tempContext = wglCreateContext(hdc);
+        HGLRC tempContext = wglCreateContext(m_hdc);
         if (!tempContext) {
             throw std::runtime_error("Failed to create an OpenGL rendering context");
         }
 
-        if (!wglMakeCurrent(hdc, tempContext)) {
+        if (!wglMakeCurrent(m_hdc, tempContext)) {
             throw std::runtime_error("Failed to activate the OpenGL rendering context");
         }
 
@@ -81,20 +85,20 @@ namespace Engine::Visual
                 0 // End of attributes list
             };
 
-            HGLRC hglrcNew = wglCreateContextAttribsARB(hdc, nullptr, attribs);
+            HGLRC hglrcNew = wglCreateContextAttribsARB(m_hdc, nullptr, attribs);
             if (hglrcNew) {
                 wglMakeCurrent(nullptr, nullptr); // Unset the old context
                 wglDeleteContext(tempContext);
                 tempContext = hglrcNew;
 
-                if (!wglMakeCurrent(hdc, tempContext)) {
+                if (!wglMakeCurrent(m_hdc, tempContext)) {
                     throw std::runtime_error("Failed to activate the modern OpenGL rendering context");
                 }
             }
         }
 
         // Store the HGLRC for later use
-        hglrc = tempContext;
+        m_hglrc = tempContext;
 
         // Set up the initial OpenGL state
         glClearColor(0.0f, 0.2f, 0.4f, 1.0f); // Set the clear color
@@ -103,26 +107,30 @@ namespace Engine::Visual
         glFrontFace(GL_CW);
 
         // Create and compile shaders (using GLSL files)
-        shaderProgram = createShaderProgram("VertexShader.glsl", "FragmentShader.glsl");
-        glUseProgram(shaderProgram);
+        m_shaderProgram = createShaderProgram("VertexShader.glsl", "FragmentShader.glsl");
+        glUseProgram(m_shaderProgram);
 
         // Get uniform locations for matrices
-        viewMatrixLoc = glGetUniformLocation(shaderProgram, "viewMatrix");
-        projectionMatrixLoc = glGetUniformLocation(shaderProgram, "projectionMatrix");
-        modelMatrixLoc = glGetUniformLocation(shaderProgram, "modelMatrix");
+        m_viewMatrixLoc = glGetUniformLocation(m_shaderProgram, "viewMatrix");
+        m_projectionMatrixLoc = glGetUniformLocation(m_shaderProgram, "projectionMatrix");
+        m_modelMatrixLoc = glGetUniformLocation(m_shaderProgram, "modelMatrix");
 
-        loadTexture(defaultMaterial.diffuseTexture, "../../Resources/cube/default.png");
-        defaultMaterial.diffuseColor = glm::vec3(0.1f, 0.1f, 0.1f);
-        defaultMaterial.ambientColor = glm::vec3(0.5f, 0.5f, 0.5f);
-        defaultMaterial.specularColor = glm::vec3(0.5f, 0.5f, 0.5f);
-        defaultMaterial.shininess = 32.0f;
+        if (!loadTexture(DEFAULT_TEXTURE))
+        {
+            // TODO: asserts
+        }
+        m_defaultMaterial.diffuseTextureId = DEFAULT_TEXTURE;
+        m_defaultMaterial.diffuseColor = glm::vec3(0.1f, 0.1f, 0.1f);
+        m_defaultMaterial.ambientColor = glm::vec3(0.5f, 0.5f, 0.5f);
+        m_defaultMaterial.specularColor = glm::vec3(0.5f, 0.5f, 0.5f);
+        m_defaultMaterial.shininess = 32.0f;
 
         RECT rect;
         GetClientRect(window.getHandle(), &rect);
         glViewport(0, 0, rect.right - rect.left, rect.bottom - rect.top);
         float aspectRatio = (float)(rect.right - rect.left) / (float)(rect.bottom - rect.top);
 
-        projectionMatrix = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 1000.0f);
+        m_projectionMatrix = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 1000.0f);
 
         auto wglSwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC)wglGetProcAddress("wglSwapIntervalEXT");
         if (wglSwapIntervalEXT) {
@@ -133,6 +141,8 @@ namespace Engine::Visual
             std::cerr << "Failed to load wglSwapIntervalEXT. VSync control is not available." << std::endl;
         }
     }
+
+    ////////////////////////////////////////////////////////////////////////
 
     void OpenGLRenderer::clearBackground(float r, float g, float b, float a)
     {
@@ -145,46 +155,51 @@ namespace Engine::Visual
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
-    void OpenGLRenderer::draw(const AbstractModel& abstractModel)
-    {
-        const auto& model = (const Model&)abstractModel;
+    ////////////////////////////////////////////////////////////////////////
 
+    void OpenGLRenderer::draw(const IModelInstance& model, const Utils::Vector3& position, const Utils::Vector3& rotation, const Utils::Vector3& scale)
+    {
+        const auto& modelItr = m_models.find(model.GetId());
+        if (modelItr == m_models.end())
+        {
+            //TODO: asserts
+            return;
+        }
+        const ModelData& modelData = modelItr->second;
+        glm::mat4 worldMatrix = getWorldMatrix(position, rotation, scale);
         // Use the shader program
-        glUseProgram(shaderProgram);
+        glUseProgram(m_shaderProgram);
         checkError();
 
         // Bind the VAO
-        glBindVertexArray(model.vao);
+        glBindVertexArray(modelData.vao);
         checkError();
 
         // Set view and projection matrices
-        glUniformMatrix4fv(viewMatrixLoc, 1, GL_FALSE, glm::value_ptr(viewMatrix));
-        glUniformMatrix4fv(projectionMatrixLoc, 1, GL_FALSE, glm::value_ptr(projectionMatrix));
-        glUniformMatrix4fv(modelMatrixLoc, 1, GL_FALSE, glm::value_ptr(model.worldMatrix));
+        glUniformMatrix4fv(m_viewMatrixLoc, 1, GL_FALSE, glm::value_ptr(m_viewMatrix));
+        glUniformMatrix4fv(m_projectionMatrixLoc, 1, GL_FALSE, glm::value_ptr(m_projectionMatrix));
+        glUniformMatrix4fv(m_modelMatrixLoc, 1, GL_FALSE, glm::value_ptr(worldMatrix));
         checkError();
 
         // Iterate through the meshes in the model and render each
-        for (const auto& mesh : model.meshes)
+        for (const auto& mesh : modelData.meshes)
         {
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.indexBuffer);
             checkError();
 
             // Set the material properties in the shader
-            const Material& material = mesh.materialId != -1 ? model.materials[mesh.materialId] : defaultMaterial;
-            glUniform3fv(glGetUniformLocation(shaderProgram, "ambientColor"), 1, glm::value_ptr(material.ambientColor));
-            glUniform3fv(glGetUniformLocation(shaderProgram, "diffuseColor"), 1, glm::value_ptr(material.diffuseColor));
-            glUniform3fv(glGetUniformLocation(shaderProgram, "specularColor"), 1, glm::value_ptr(material.specularColor));
-            glUniform1f(glGetUniformLocation(shaderProgram, "shininess"), material.shininess);
+            const Material& material = mesh.materialId != -1 ? modelData.materials[mesh.materialId] : m_defaultMaterial;
+            glUniform3fv(glGetUniformLocation(m_shaderProgram, "ambientColor"), 1, glm::value_ptr(material.ambientColor));
+            glUniform3fv(glGetUniformLocation(m_shaderProgram, "diffuseColor"), 1, glm::value_ptr(material.diffuseColor));
+            glUniform3fv(glGetUniformLocation(m_shaderProgram, "specularColor"), 1, glm::value_ptr(material.specularColor));
+            glUniform1f(glGetUniformLocation(m_shaderProgram, "shininess"), material.shininess);
             checkError();
 
             // Bind texture
-            if (material.diffuseTexture)
-            {
-                glActiveTexture(GL_TEXTURE0);
-                glBindTexture(GL_TEXTURE_2D, material.diffuseTexture);
-                glUniform1i(glGetUniformLocation(shaderProgram, "diffuseTexture"), 0);
-                checkError();
-            }
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, getTexture(material.diffuseTextureId));
+            glUniform1i(glGetUniformLocation(m_shaderProgram, "diffuseTexture"), 0);
+            checkError();
 
             // Draw the mesh
             glDrawElements(GL_TRIANGLES, mesh.indices.size(), GL_UNSIGNED_INT, 0);
@@ -195,24 +210,39 @@ namespace Engine::Visual
         glBindVertexArray(0);
     }
 
+    ////////////////////////////////////////////////////////////////////////
 
     void OpenGLRenderer::render()
     {
         // Swap buffers to display the rendered frame
-        SwapBuffers(hdc);
+        SwapBuffers(m_hdc);
 
         checkError();
     }
 
-    std::unique_ptr<IRenderer::AbstractModel> OpenGLRenderer::createModel()
+    ////////////////////////////////////////////////////////////////////////
+
+    const GLuint& OpenGLRenderer::getTexture(const std::string& textureId) const
     {
-        return std::make_unique<Model>();
+        const auto& textureItr = m_textures.find(textureId);
+        if (textureItr != m_textures.end())
+        {
+            return textureItr->second;
+        }
+
+        const auto& defaultTextureItr = m_textures.find(DEFAULT_TEXTURE);
+        if (defaultTextureItr != m_textures.end())
+        {
+            return defaultTextureItr->second;
+        }
+
+        // TODO: asserts
     }
 
-    void OpenGLRenderer::createBuffersFromModel(AbstractModel& abstractModel)
-    {
-        auto& model = (Model&)abstractModel;
+    ////////////////////////////////////////////////////////////////////////
 
+    void OpenGLRenderer::createBuffersForModel(ModelData& model)
+    {
         // Create and bind the VAO
         glGenVertexArrays(1, &model.vao);
         glBindVertexArray(model.vao);
@@ -244,10 +274,10 @@ namespace Engine::Visual
         glBindVertexArray(0);
     }
 
-    void OpenGLRenderer::loadModel(AbstractModel& abstractModel, const std::string& filename)
-    {
-        auto& model = (Model&)abstractModel;
+    ////////////////////////////////////////////////////////////////////////
 
+    bool OpenGLRenderer::loadModelFromFile(ModelData& model, const std::string& filename)
+    {
         std::filesystem::path fullPath(filename);
         std::filesystem::path matDir = fullPath.parent_path();
 
@@ -257,13 +287,10 @@ namespace Engine::Visual
         std::string warn, err;
 
         bool success = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filename.c_str(), matDir.string().c_str());
-        if (!success) {
-            throw std::runtime_error("Failed to load model: " + warn + err);
+        if (!success) 
+        {
+            return false;
         }
-
-        model.vertices.clear();
-        model.meshes.clear();
-        model.materials.clear();
 
         // Load materials
         for (const auto& mat : materials)
@@ -278,11 +305,18 @@ namespace Engine::Visual
             {
 
                 std::string texturePath = (matDir / mat.diffuse_texname).string();
-                loadTexture(material.diffuseTexture, texturePath);
+                if (loadTexture(texturePath))
+                {
+                    material.diffuseTextureId = texturePath;
+                }
+                else
+                {
+                    material.diffuseTextureId = m_defaultMaterial.diffuseTextureId;
+                }
             }
             else
             {
-                material.diffuseTexture = 0;
+                material.diffuseTextureId = m_defaultMaterial.diffuseTextureId;
             }
 
             model.materials.push_back(material);
@@ -324,7 +358,11 @@ namespace Engine::Visual
             subMesh.materialId = shape.mesh.material_ids.empty() ? 0 : shape.mesh.material_ids[0];
             model.meshes.push_back(subMesh);
         }
+
+        return true;
     }
+
+    ////////////////////////////////////////////////////////////////////////
 
     void OpenGLRenderer::setCameraProperties(const Utils::Vector3& position, const Utils::Vector3& rotation)
     {
@@ -348,34 +386,70 @@ namespace Engine::Visual
         right = glm::vec3(rollMatrix * glm::vec4(right, 0.0f));
         up = glm::normalize(glm::cross(forward, right));
 
-        viewMatrix = glm::lookAt(
+        m_viewMatrix = glm::lookAt(
             pos,
             pos + forward,
             up
         );
     }
 
-    void OpenGLRenderer::transformModel(AbstractModel& abstractModel, const Utils::Vector3& position, const Utils::Vector3& rotation, const Utils::Vector3& scale)
-    {
-        auto& model = (Model&)abstractModel;
+    ////////////////////////////////////////////////////////////////////////
 
+    std::unique_ptr<IModelInstance> OpenGLRenderer::createModelInstance(const std::string& filename)
+    {
+        return std::make_unique<ModelInstanceBase>(filename);
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+
+    glm::mat4 OpenGLRenderer::getWorldMatrix(const Utils::Vector3& position, const Utils::Vector3& rotation, const Utils::Vector3& scale)
+    {
         glm::mat4 translation = glm::translate(glm::mat4(1.0f), glm::vec3(position.x, position.y, position.z));
         glm::mat4 rotationX = glm::rotate(glm::mat4(1.0f), rotation.x, glm::vec3(1.0f, 0.0f, 0.0f));
         glm::mat4 rotationY = glm::rotate(glm::mat4(1.0f), rotation.y, glm::vec3(0.0f, 1.0f, 0.0f));
         glm::mat4 rotationZ = glm::rotate(glm::mat4(1.0f), rotation.z, glm::vec3(0.0f, 0.0f, 1.0f));
         glm::mat4 scaling = glm::scale(glm::mat4(1.0f), glm::vec3(scale.x, scale.y, scale.z));
 
-        model.worldMatrix = translation * rotationX * rotationY * rotationZ * scaling;
+        return translation * rotationX * rotationY * rotationZ * scaling;
     }
 
-    void OpenGLRenderer::loadTexture(GLuint& texture, const std::string& filename)
+    ////////////////////////////////////////////////////////////////////////
+
+    bool OpenGLRenderer::loadModel(const std::string& filename)
     {
+        if (m_models.contains(filename))
+        {
+            return true;
+        }
+
+        ModelData modelData;
+        if (!loadModelFromFile(modelData, filename))
+        {
+            return false;
+        }
+        createBuffersForModel(modelData);
+
+        m_models.emplace(filename, std::move(modelData));
+        return true;
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+
+    bool OpenGLRenderer::loadTexture(const std::string& filename)
+    {
+        if (m_textures.contains(filename))
+        {
+            return true;
+        }
+
         int width, height, channels;
         unsigned char* data = stbi_load(filename.c_str(), &width, &height, &channels, 0);
         if (!data) {
-            throw std::runtime_error("Failed to load texture: " + filename);
+            return false;
         }
 
+
+        GLuint texture;
         glGenTextures(1, &texture);
         glBindTexture(GL_TEXTURE_2D, texture);
 
@@ -383,7 +457,12 @@ namespace Engine::Visual
         glGenerateMipmap(GL_TEXTURE_2D);
 
         stbi_image_free(data);
+
+        m_textures.emplace(filename, texture);
+        return true;
     }
+
+    ////////////////////////////////////////////////////////////////////////
 
     GLuint OpenGLRenderer::createShader(const std::string& source, GLenum shaderType)
     {
@@ -404,6 +483,8 @@ namespace Engine::Visual
         }
         return shader;
     }
+
+    ////////////////////////////////////////////////////////////////////////
 
     GLuint OpenGLRenderer::createShaderProgram(const std::string& vsSource, const std::string& fsSource)
     {
@@ -430,4 +511,6 @@ namespace Engine::Visual
 
         return program;
     }
+
+    ////////////////////////////////////////////////////////////////////////
 }

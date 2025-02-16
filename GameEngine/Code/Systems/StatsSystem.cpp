@@ -55,7 +55,7 @@ namespace Engine::Systems
 		frameTimes.push_back(dt);
 		if (frameTimes.size() >= 1000)
 		{
-			EventsManager::get().emit<Events::NativeExitRequested>({});
+			//EventsManager::get().emit<Events::NativeExitRequested>({});
 		}
 
 	}
@@ -98,10 +98,6 @@ namespace Engine::Systems
 		auto const& models = compManager.getComponentSet<Components::Model>();
 		size_t objectsCount = models.size();
 		size_t totalNumberOfVertices = 0;
-		for (const auto& model : models.getElements())
-		{
-			totalNumberOfVertices += model.model->GetVertexCount();
-		}
 
 		std::sort(frameTimes.begin(), frameTimes.end());
 		float medianFrameTime = frameTimes[frameTimes.size() / 2];

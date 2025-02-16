@@ -60,13 +60,13 @@ namespace Engine::Systems
 		{
 			Components::Model& model = modelSet.getElement(id);
 
-			model.model = _renderer->createModel();
-			_renderer->loadModel(*model.model, model.path);
+			if (!_renderer->loadModel(model.path))
+			{
+				// TODO: asserts, error handling
+				continue;
+			}
 
-			const Components::Transform& transform = transformSet.getElement(id);
-			_renderer->transformModel(*model.model, transform.position, transform.rotation, transform.scale);
-
-			_renderer->createBuffersFromModel(*model.model);
+			model.instance = _renderer->createModelInstance(model.path);
 		}
 
 
@@ -94,8 +94,7 @@ namespace Engine::Systems
 		{
 			Components::Model& model = modelSet.getElement(id);
 			const Components::Transform& transform = transformSet.getElement(id);
-			_renderer->transformModel(*model.model, transform.position, transform.rotation, transform.scale);
-			_renderer->draw(*model.model);
+			_renderer->draw(*model.instance, transform.position, transform.rotation, transform.scale);
 		}
 		_renderer->render();
 	}

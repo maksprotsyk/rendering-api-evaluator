@@ -15,6 +15,24 @@ namespace Engine::Visual
     class OpenGLRenderer : public IRenderer
     {
     public:
+
+        void init(const Window& window) override;
+        void clearBackground(float r, float g, float b, float a) override;
+
+        void draw(
+            const IModelInstance& model,
+            const Utils::Vector3& position,
+            const Utils::Vector3& rotation,
+            const Utils::Vector3& scale) override;
+        void render() override;
+
+        bool loadModel(const std::string& filename) override;
+        bool loadTexture(const std::string& filename) override;
+
+        void setCameraProperties(const Utils::Vector3& position, const Utils::Vector3& rotation) override;
+        std::unique_ptr<IModelInstance> createModelInstance(const std::string& filename) override;
+
+    private:
         struct Vertex
         {
             glm::vec3 position;
@@ -35,10 +53,10 @@ namespace Engine::Visual
             glm::vec3 diffuseColor;
             glm::vec3 specularColor;
             float shininess;
-            GLuint diffuseTexture;
+            std::string diffuseTextureId;
         };
 
-        struct Model : public AbstractModel
+        struct ModelData
         {
             std::vector<SubMesh> meshes;
             GLuint vertexBuffer;
@@ -46,36 +64,31 @@ namespace Engine::Visual
             std::vector<Vertex> vertices;
             std::vector<Material> materials;
             glm::mat4 worldMatrix;
-
-			size_t GetVertexCount() const override
-			{
-				return vertices.size();
-			}
         };
 
-        void init(const Window& window) override;
-        void clearBackground(float r, float g, float b, float a) override;
-        void draw(const AbstractModel& model) override;
-        void render() override;
-        std::unique_ptr<AbstractModel> createModel() override;
-        void createBuffersFromModel(AbstractModel& model) override;
-        void loadModel(AbstractModel& model, const std::string& filename) override;
-        void setCameraProperties(const Utils::Vector3& position, const Utils::Vector3& rotation) override;
-        void transformModel(AbstractModel& model, const Utils::Vector3& position, const Utils::Vector3& rotation, const Utils::Vector3& scale) override;
-
     private:
-        HDC hdc;
-        HGLRC hglrc;
-        GLuint shaderProgram;
-        GLuint viewMatrixLoc;
-        GLuint projectionMatrixLoc;
-        GLuint modelMatrixLoc;
-        Material defaultMaterial;
-        glm::mat4 viewMatrix;
-        glm::mat4 projectionMatrix;
+        static glm::mat4 getWorldMatrix(const Utils::Vector3& position, const Utils::Vector3& rotation, const Utils::Vector3& scale);
 
         GLuint createShader(const std::string& source, GLenum shaderType);
         GLuint createShaderProgram(const std::string& vsSource, const std::string& fsSource);
-        void loadTexture(GLuint& texture, const std::string& filename);
+
+        const GLuint& getTexture(const std::string& textureId) const;
+        void createBuffersForModel(ModelData& model);
+        bool loadModelFromFile(ModelData& model, const std::string& filename);
+
+    private:
+        HDC m_hdc;
+        HGLRC m_hglrc;
+        GLuint m_shaderProgram;
+        GLuint m_viewMatrixLoc;
+        GLuint m_projectionMatrixLoc;
+        GLuint m_modelMatrixLoc;
+        Material m_defaultMaterial;
+        glm::mat4 m_viewMatrix;
+        glm::mat4 m_projectionMatrix;
+
+        std::unordered_map<std::string, GLuint> m_textures;
+        std::unordered_map<std::string, ModelData> m_models;
+
     };
 }

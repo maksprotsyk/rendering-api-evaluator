@@ -7,6 +7,7 @@
 #include <chrono>
 #include <thread>
 #include <iostream>
+#include <filesystem>
 
 #include "Visual/Window.h"
 #include "Events/NativeInputEvents.h"
@@ -40,14 +41,15 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     LPWSTR cmdLine = GetCommandLineW();
     int argc;
     LPWSTR* argv = CommandLineToArgvW(cmdLine, &argc);
-    std::string jsonPath = "../../Resources/test.json";
+    std::string jsonPath = "../../Configs/config.json";
+
     if (argc > 1)
     {
         jsonPath = Engine::Utils::wstringToString(argv[1]);
     }
 
-    int width = 800;
-    int height = 600;
+    int width = 1000;
+    int height = 750;
     if (argc > 3)
     {
         width = std::stoi(Engine::Utils::wstringToString(argv[2]));
@@ -84,7 +86,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     Engine::ComponentsManager& componentsManager = Engine::ComponentsManager::get();
     Engine::EntitiesManager& entitiesManager = Engine::EntitiesManager::get();
-
 
     const nlohmann::json& json = Engine::Utils::Parser::readJson(jsonPath);
     for (const nlohmann::json& entityJson: json["Entities"])

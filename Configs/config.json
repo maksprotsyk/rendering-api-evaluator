@@ -1,0 +1,161 @@
+{
+    "Entities": [
+        {
+            "Components": [
+                {
+                    "typename": "Engine::Components::Transform",
+                    "position": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "scale": {
+                        "x": 1,
+                        "y": 1,
+                        "z": 1
+                    }
+                },
+                {
+                    "typename": "Engine::Components::Model",
+                    "path": "../../Models/cube.obj"
+                }
+            ]
+        },
+		{
+            "Components": [
+                {
+                    "typename": "Engine::Components::Transform",
+                    "position": {
+                        "x": -2,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "scale": {
+                        "x": 1,
+                        "y": 1,
+                        "z": 1
+                    }
+                },
+                {
+                    "typename": "Engine::Components::Model",
+                    "path": "../../Models/cube.obj"
+                }
+            ]
+        },
+		{
+            "Components": [
+                {
+                    "typename": "Engine::Components::Transform",
+                    "position": {
+                        "x": 2,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "scale": {
+                        "x": 1,
+                        "y": 1,
+                        "z": 1
+                    }
+                },
+                {
+                    "typename": "Engine::Components::Model",
+                    "path": "../../Models/bunny.obj"
+                }
+            ]
+        },
+		{
+            "Components": [
+                {
+                    "typename": "Engine::Components::Transform",
+                    "position": {
+                        "x": 0,
+                        "y": -2,
+                        "z": 0
+                    },
+                    "scale": {
+                        "x": 1,
+                        "y": 1,
+                        "z": 1
+                    }
+                },
+                {
+                    "typename": "Engine::Components::Model",
+                    "path": "../../Models/bunny.obj"
+                }
+            ]
+        },
+		{
+            "Components": [
+                {
+                    "typename": "Engine::Components::Transform",
+                    "position": {
+                        "x": 0,
+                        "y": 2,
+                        "z": 0
+                    },
+                    "scale": {
+                        "x": 1,
+                        "y": 1,
+                        "z": 1
+                    }
+                },
+                {
+                    "typename": "Engine::Components::Model",
+                    "path": "../../Models/bunny.obj"
+                }
+            ]
+        },
+		{
+            "Components": [
+                {
+                    "typename": "Engine::Components::Transform",
+                    "position": {
+                        "x": 0,
+                        "y": 0,
+                        "z": -10
+                    },
+                    "scale": {
+                        "x": 1,
+                        "y": 1,
+                        "z": 1
+                    }
+                },
+                {
+                    "typename": "Engine::Components::Model",
+                    "path": "../../Models/cube.obj"
+                }
+            ]
+        },
+        {
+            "Components": [
+                {
+                    "typename": "Engine::Components::Transform",
+                    "position": {
+                        "x": 0,
+                        "y": 0,
+                        "z": -5
+                    }
+                },
+                {
+                    "typename": "Engine::Components::Tag",
+                    "tag": "MainCamera"
+                }
+            ]
+        },
+        {
+            "Components": [
+                {
+                    "typename": "Engine::Components::JsonData",
+                    "data": {
+                        "OutputStatsFile": "TTT.txt",
+                        "Renderer": "Vulkan"
+                    }
+                },
+                {
+                    "typename": "Engine::Components::Tag",
+                    "tag": "Config"
+                }
+            ]
+        }
+    ]
+}

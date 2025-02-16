@@ -37,6 +37,7 @@
     <ClCompile Include="Code\Utils\Quaternion.cpp" />
     <ClCompile Include="Code\Utils\Vector.cpp" />
     <ClCompile Include="Code\Visual\DirectXRenderer.cpp" />
+    <ClCompile Include="Code\Visual\ModelInstanceBase.cpp" />
     <ClCompile Include="Code\Visual\OpenGLRenderer.cpp" />
     <ClCompile Include="Code\Visual\VulkanRenderer.cpp" />
     <ClCompile Include="Code\Visual\Window.cpp" />
@@ -65,6 +66,7 @@
     <ClInclude Include="Code\Utils\Vector.h" />
     <ClInclude Include="Code\Visual\DirectXRenderer.h" />
     <ClInclude Include="Code\Visual\IRenderer.h" />
+    <ClInclude Include="Code\Visual\ModelInstanceBase.h" />
     <ClInclude Include="Code\Visual\OpenGLRenderer.h" />
     <ClInclude Include="Code\Visual\VulkanRenderer.h" />
     <ClInclude Include="Code\Visual\Window.h" />

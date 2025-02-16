@@ -8,14 +8,28 @@
 
 namespace Engine::Visual
 {
-    const std::vector<const char*> deviceExtensions = {
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME
-    };
 
     class VulkanRenderer : public IRenderer
     {
     public:
 
+        void init(const Window& window) override;
+        void clearBackground(float r, float g, float b, float a) override;
+
+        void draw(
+            const IModelInstance& model,
+            const Utils::Vector3& position,
+            const Utils::Vector3& rotation,
+            const Utils::Vector3& scale) override;
+        void render() override;
+
+        bool loadModel(const std::string& filename) override;
+        bool loadTexture(const std::string& filename) override;
+
+        void setCameraProperties(const Utils::Vector3& position, const Utils::Vector3& rotation) override;
+        std::unique_ptr<IModelInstance> createModelInstance(const std::string& filename) override;
+
+    private:
         struct QueueFamilyIndices {
             std::optional<uint32_t> graphicsFamily;
             std::optional<uint32_t> presentFamily;
@@ -86,31 +100,28 @@ namespace Engine::Visual
             glm::vec3 specularColor;
             float shininess;
 
+            VkBuffer materialBuffer;
+            VkDeviceMemory materialBufferMemory;
+
+            std::string diffuseTextureId;
+        };
+
+        struct TextureData
+        {
             VkImage textureImage;
             VkDeviceMemory textureImageMemory;
             VkImageView textureImageView;
 
-            VkBuffer materialBuffer;
-            VkDeviceMemory materialBufferMemory;
         };
 
-        struct Model : public AbstractModel
+        struct ModelData
         {
             std::vector<SubMesh> meshes;
             std::vector<Vertex> vertices;
             std::vector<Material> materials;
-            glm::mat4 worldMatrix;
 
             VkBuffer vertexBuffer;
             VkDeviceMemory vertexBufferMemory;
-
-            VkBuffer uniformBuffer;
-            VkDeviceMemory uniformBufferMemory;
-
-			size_t GetVertexCount() const override 
-            {
-				return vertices.size();
-			}
         };
 
         struct UniformBufferObject
@@ -132,72 +143,17 @@ namespace Engine::Visual
             float padding2;
         };
 
-        void init(const Window& window) override;
-        void clearBackground(float r, float g, float b, float a) override;
-        void draw(const AbstractModel& model) override;
-        void render() override;
+        class VulkanModelInstance : public ModelInstanceBase
+        {
+        public:
+            VulkanModelInstance(const std::string& id);
 
-        std::unique_ptr<AbstractModel> createModel() override;
-        void createBuffersFromModel(AbstractModel& model) override;
-        void loadModel(AbstractModel& model, const std::string& filename) override;
-
-        void setCameraProperties(const Utils::Vector3& position, const Utils::Vector3& rotation) override;
-        void transformModel(
-            AbstractModel& model,
-            const Utils::Vector3& position,
-            const Utils::Vector3& rotation,
-            const Utils::Vector3& scale) override;
+            VkBuffer uniformBuffer;
+            VkDeviceMemory uniformBufferMemory;
+        };
 
     private:
-
-        static const int MAX_MESHES_NUM = 50;
-        static const int MAX_FRAMES_IN_FLIGHT = 3;
-
-        VkInstance instance{};
-        VkDebugUtilsMessengerEXT debugMessenger{};
-        VkSurfaceKHR surface{};
-
-        VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
-        VkDevice device{};
-
-        VkQueue graphicsQueue{};
-        VkQueue presentQueue{};
-
-        VkSwapchainKHR swapChain{};
-        std::vector<VkImage> swapChainImages;
-        VkFormat swapChainImageFormat{};
-        VkExtent2D swapChainExtent{};
-        std::vector<VkImageView> swapChainImageViews;
-        std::vector<VkFramebuffer> swapChainFramebuffers;
-
-        VkRenderPass renderPass{};
-        VkDescriptorSetLayout descriptorSetLayout{};
-
-        VkPipelineLayout pipelineLayout{};
-        VkPipeline graphicsPipeline{};
-
-        VkCommandPool commandPool{};
-
-        VkImage depthImage{};
-        VkDeviceMemory depthImageMemory{};
-        VkImageView depthImageView{};
-
-        VkSampler textureSampler{};
-
-        VkDescriptorPool descriptorPool{};
-
-        std::vector<VkCommandBuffer> commandBuffers;
-
-        std::vector<VkSemaphore> imageAvailableSemaphores;
-        std::vector<VkSemaphore> renderFinishedSemaphores;
-        std::vector<VkFence> inFlightFences;
-        std::vector<VkFence> imagesInFlight;
-        uint32_t imageIndex = 0;
-        uint32_t currentImageInFlight = 0;
-
-        Material defaultMaterial;
-
-        UniformBufferObject ubo{};
+        static glm::mat4 getWorldMatrix(const Utils::Vector3& position, const Utils::Vector3& rotation, const Utils::Vector3& scale);
 
         void createInstance();
         void createSurface(const Window& window);
@@ -208,7 +164,7 @@ namespace Engine::Visual
         void createRenderPass();
         void createDescriptorSetLayout();
         void createDescriptorPool();
-        void createDescriptorSets(Model& model);
+        bool createDescriptorSets(ModelData& model);
         void createGraphicsPipeline();
         void createFramebuffers();
         void createCommandPool();
@@ -217,28 +173,24 @@ namespace Engine::Visual
         void createTextureSampler();
         void createDefaultMaterial();
 
-        void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer&
-            buffer, VkDeviceMemory& bufferMemory);
+        void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
 
-        void createUniformBuffers(Model& model);
+        void createUniformBuffers(ModelData& model);
         void createCommandBuffers();
 
         void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling,
-            VkImageUsageFlags usage,
-            VkMemoryPropertyFlags properties, VkImage& img,
-            VkDeviceMemory& imageMemory);
+                         VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& img, VkDeviceMemory& imageMemory);
 
-        void createVertexBuffer(Model& model);
-        void createIndexBuffer(Model& model);
+        void createVertexBuffer(ModelData& model);
+        void createIndexBuffer(ModelData& model);
         void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
-        void createTextureImage(const std::string& filename, VkImage& textureImage, VkDeviceMemory& textureImageMemory);
+        bool createTextureImage(const std::string& filename, VkImage& textureImage, VkDeviceMemory& textureImageMemory);
         void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
         void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
         void createTextureImageView(VkImageView& imageView, const VkImage& image);
 
-        VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates,
-            VkImageTiling tiling, VkFormatFeatureFlags features);
+        VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
 
         VkShaderModule createShaderModule(const std::vector<char>& code);
         VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
@@ -258,6 +210,64 @@ namespace Engine::Visual
 
         static bool checkDeviceExtensionSupport(VkPhysicalDevice dev);
         VkFormat findDepthFormat();
+
+        const TextureData& getTexture(const std::string& textureId) const;
+        bool loadModelFromFile(ModelData& model, const std::string& filename);
+        bool createBuffersForModel(ModelData& model);
+
+    private:
+
+        static const int MAX_MESHES_NUM = 50;
+        static const int MAX_FRAMES_IN_FLIGHT = 3;
+        static inline const std::vector<const char*> DEVICE_EXTENSIONS = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+
+        VkInstance m_instance{};
+        VkSurfaceKHR m_surface{};
+
+        VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
+        VkDevice m_device{};
+
+        VkQueue m_graphicsQueue{};
+        VkQueue m_presentQueue{};
+
+        VkSwapchainKHR m_swapChain{};
+        std::vector<VkImage> m_swapChainImages;
+        VkFormat m_swapChainImageFormat{};
+        VkExtent2D m_swapChainExtent{};
+        std::vector<VkImageView> m_swapChainImageViews;
+        std::vector<VkFramebuffer> m_swapChainFramebuffers;
+
+        VkRenderPass m_renderPass{};
+        VkDescriptorSetLayout m_descriptorSetLayout{};
+
+        VkPipelineLayout m_pipelineLayout{};
+        VkPipeline m_graphicsPipeline{};
+
+        VkCommandPool m_commandPool{};
+
+        VkImage m_depthImage{};
+        VkDeviceMemory m_depthImageMemory{};
+        VkImageView m_depthImageView{};
+
+        VkSampler m_textureSampler{};
+
+        VkDescriptorPool m_descriptorPool{};
+
+        std::vector<VkCommandBuffer> m_commandBuffers;
+
+        std::vector<VkSemaphore> m_imageAvailableSemaphores;
+        std::vector<VkSemaphore> m_renderFinishedSemaphores;
+        std::vector<VkFence> m_inFlightFences;
+        std::vector<VkFence> m_imagesInFlight;
+        uint32_t m_imageIndex = 0;
+        uint32_t m_currentImageInFlight = 0;
+
+        Material m_defaultMaterial;
+
+        UniformBufferObject m_ubo{};
+
+        std::unordered_map<std::string, ModelData> m_models;
+        std::unordered_map <std::string, TextureData> m_textures;
 
     };
 }
