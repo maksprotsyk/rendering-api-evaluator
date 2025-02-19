@@ -121,7 +121,9 @@ namespace Engine::Visual
 
 		for (const auto& mesh : modelData.meshes)
 		{
-			std::array<VkDescriptorSet, 2> descriptorSets{modelInstance.descriptorSet, mesh.descriptorSet};
+			Material material = mesh.materialId != -1 ? modelData.materials[mesh.materialId] : m_defaultMaterial;
+			std::array<VkDescriptorSet, 2> descriptorSets{modelInstance.descriptorSet, material.descriptorSet};
+
 			vkCmdBindIndexBuffer(commandBuffer, mesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
 			vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(mesh.indices.size()), 1, 0, 0, 0);
@@ -303,7 +305,7 @@ namespace Engine::Visual
 			}
 
 			subMesh.materialId = shape.mesh.material_ids.empty() ? 0 : shape.mesh.material_ids[0];
-			model.meshes.push_back(subMesh);
+			model.meshes.push_back(std::move(subMesh));
 		}
 
 		return true;
@@ -424,6 +426,8 @@ namespace Engine::Visual
 		vkMapMemory(m_device, m_defaultMaterial.materialBufferMemory, 0, sizeof(mbo), 0, &matData);
 		memcpy(matData, &mbo, sizeof(mbo));
 		vkUnmapMemory(m_device, m_defaultMaterial.materialBufferMemory);
+
+		createDescriptorSet(m_defaultMaterial);
 	}
 
 	////////////////////////////////////////////////////////////////////////
@@ -647,14 +651,14 @@ namespace Engine::Visual
 
 		stbi_image_free(pixels);
 
-		createImage(texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
+		createImage(texWidth, texHeight, VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_TILING_OPTIMAL,
 			VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 			textureImage, textureImageMemory);
 
-		transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED,
+		transitionImageLayout(textureImage, VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED,
 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 		copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-		transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+		transitionImageLayout(textureImage, VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 		vkDestroyBuffer(m_device, stagingBuffer, nullptr);
@@ -755,7 +759,7 @@ namespace Engine::Visual
 
 	void VulkanRenderer::createTextureImageView(VkImageView& imageView, const VkImage& image)
 	{
-		imageView = createImageView(image, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
+		imageView = createImageView(image, VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT);
 	}
 
 	////////////////////////////////////////////////////////////////////////
@@ -1596,52 +1600,60 @@ namespace Engine::Visual
 
 	bool VulkanRenderer::createDescriptorSets(ModelData& model)
 	{
-		for (SubMesh& mesh : model.meshes)
+		for (Material& material : model.materials)
 		{
-			std::vector<VkDescriptorSetLayout> meshLayouts(1, m_meshSetLayout);
-			VkDescriptorSetAllocateInfo allocateInfoMesh{};
-			allocateInfoMesh.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-			allocateInfoMesh.descriptorPool = m_descriptorPool;
-			allocateInfoMesh.descriptorSetCount = 1;
-			allocateInfoMesh.pSetLayouts = meshLayouts.data();
-
-			if (vkAllocateDescriptorSets(m_device, &allocateInfoMesh, &mesh.descriptorSet) != VK_SUCCESS)
+			if (!createDescriptorSet(material))
 			{
 				return false;
 			}
-
-			Material material = mesh.materialId != -1 ? model.materials[mesh.materialId] : m_defaultMaterial;
-
-			VkDescriptorBufferInfo materialBufferInfo{};
-			materialBufferInfo.buffer = material.materialBuffer;
-			materialBufferInfo.offset = 0;
-			materialBufferInfo.range = sizeof(MaterialBufferObject);
-
-			VkDescriptorImageInfo imageInfo{};
-			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			imageInfo.imageView = getTexture(material.diffuseTextureId).textureImageView;
-			imageInfo.sampler = m_textureSampler;
-
-			std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
-
-			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[0].dstSet = mesh.descriptorSet;
-			descriptorWrites[0].dstBinding = 0;
-			descriptorWrites[0].dstArrayElement = 0;
-			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].pBufferInfo = &materialBufferInfo;
-
-			descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[1].dstSet = mesh.descriptorSet;
-			descriptorWrites[1].dstBinding = 1;
-			descriptorWrites[1].dstArrayElement = 0;
-			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			descriptorWrites[1].descriptorCount = 1;
-			descriptorWrites[1].pImageInfo = &imageInfo;
-
-			vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 		}
+		return true;
+	}
+
+	bool VulkanRenderer::createDescriptorSet(Material& material)
+	{
+		std::vector<VkDescriptorSetLayout> meshLayouts(1, m_meshSetLayout);
+		VkDescriptorSetAllocateInfo allocateInfoMesh{};
+		allocateInfoMesh.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		allocateInfoMesh.descriptorPool = m_descriptorPool;
+		allocateInfoMesh.descriptorSetCount = 1;
+		allocateInfoMesh.pSetLayouts = meshLayouts.data();
+
+		if (vkAllocateDescriptorSets(m_device, &allocateInfoMesh, &material.descriptorSet) != VK_SUCCESS)
+		{
+			return false;
+		}
+
+		VkDescriptorBufferInfo materialBufferInfo{};
+		materialBufferInfo.buffer = material.materialBuffer;
+		materialBufferInfo.offset = 0;
+		materialBufferInfo.range = sizeof(MaterialBufferObject);
+
+		VkDescriptorImageInfo imageInfo{};
+		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		imageInfo.imageView = getTexture(material.diffuseTextureId).textureImageView;
+		imageInfo.sampler = m_textureSampler;
+
+		std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+
+		descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrites[0].dstSet = material.descriptorSet;
+		descriptorWrites[0].dstBinding = 0;
+		descriptorWrites[0].dstArrayElement = 0;
+		descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		descriptorWrites[0].descriptorCount = 1;
+		descriptorWrites[0].pBufferInfo = &materialBufferInfo;
+
+		descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrites[1].dstSet = material.descriptorSet;
+		descriptorWrites[1].dstBinding = 1;
+		descriptorWrites[1].dstArrayElement = 0;
+		descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		descriptorWrites[1].descriptorCount = 1;
+		descriptorWrites[1].pImageInfo = &imageInfo;
+
+		vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
+
 		return true;
 	}
 

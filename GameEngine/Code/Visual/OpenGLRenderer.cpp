@@ -14,13 +14,6 @@ namespace Engine::Visual
 {
     ////////////////////////////////////////////////////////////////////////
 
-    static float gammaCorrection(float value)
-    {
-        return std::pow(value, 1.0f / 2.2f);
-    }
-
-    ////////////////////////////////////////////////////////////////////////
-
     static void checkError()
     {
         GLenum error = glGetError();
@@ -35,6 +28,9 @@ namespace Engine::Visual
     {
         HWND hwnd = window.getHandle();
         m_hdc = GetDC(hwnd); // Get the device context from the HWND
+
+        RECT rect;
+        GetClientRect(window.getHandle(), &rect);
 
         // Set up the pixel format for the HDC
         PIXELFORMATDESCRIPTOR pfd = {};
@@ -108,6 +104,9 @@ namespace Engine::Visual
 
         // Create and compile shaders (using GLSL files)
         m_shaderProgram = createShaderProgram("VertexShader.glsl", "FragmentShader.glsl");
+
+        createFrameBuffer(rect.right - rect.left, rect.bottom - rect.top);
+
         glUseProgram(m_shaderProgram);
 
         // Get uniform locations for matrices
@@ -125,8 +124,6 @@ namespace Engine::Visual
         m_defaultMaterial.specularColor = glm::vec3(0.5f, 0.5f, 0.5f);
         m_defaultMaterial.shininess = 32.0f;
 
-        RECT rect;
-        GetClientRect(window.getHandle(), &rect);
         glViewport(0, 0, rect.right - rect.left, rect.bottom - rect.top);
         float aspectRatio = (float)(rect.right - rect.left) / (float)(rect.bottom - rect.top);
 
@@ -146,12 +143,7 @@ namespace Engine::Visual
 
     void OpenGLRenderer::clearBackground(float r, float g, float b, float a)
     {
-        glClearColor(
-            gammaCorrection(r),
-            gammaCorrection(g),
-            gammaCorrection(b),
-            gammaCorrection(a)
-        );
+        glClearColor(r, g, b, a);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
@@ -356,7 +348,7 @@ namespace Engine::Visual
             }
 
             subMesh.materialId = shape.mesh.material_ids.empty() ? 0 : shape.mesh.material_ids[0];
-            model.meshes.push_back(subMesh);
+            model.meshes.push_back(std::move(subMesh));
         }
 
         return true;
@@ -455,11 +447,34 @@ namespace Engine::Visual
 
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
-
         stbi_image_free(data);
 
         m_textures.emplace(filename, texture);
         return true;
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+
+    void OpenGLRenderer::createFrameBuffer(int width, int height)
+    {
+        GLuint framebuffer, texture;
+
+        glGenFramebuffers(1, &framebuffer);
+        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+
+        glGenTextures(1, &texture);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
+
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+            std::cerr << "Error: Framebuffer is not complete!" << std::endl;
+        }
+
+        glEnable(GL_FRAMEBUFFER_SRGB);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
     ////////////////////////////////////////////////////////////////////////

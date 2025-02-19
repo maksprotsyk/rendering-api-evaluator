@@ -89,8 +89,6 @@ namespace Engine::Visual
 
             VkBuffer indexBuffer;
             VkDeviceMemory indexBufferMemory;
-
-            VkDescriptorSet descriptorSet;
         };
 
         struct Material
@@ -102,6 +100,8 @@ namespace Engine::Visual
 
             VkBuffer materialBuffer;
             VkDeviceMemory materialBufferMemory;
+
+            VkDescriptorSet descriptorSet;
 
             std::string diffuseTextureId;
         };
@@ -166,6 +166,7 @@ namespace Engine::Visual
         void createDescriptorSetLayout();
         void createDescriptorPool();
         bool createDescriptorSets(ModelData& model);
+        bool createDescriptorSet(Material& material);
         void createGraphicsPipeline();
         void createFramebuffers();
         void createCommandPool();
@@ -260,8 +261,10 @@ namespace Engine::Visual
 
         std::vector<VkSemaphore> m_imageAvailableSemaphores;
         std::vector<VkSemaphore> m_renderFinishedSemaphores;
+
         std::vector<VkFence> m_inFlightFences;
         std::vector<VkFence> m_imagesInFlight;
+
         uint32_t m_imageIndex = 0;
         uint32_t m_currentImageInFlight = 0;
 

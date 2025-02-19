@@ -37,6 +37,8 @@ namespace Engine::Visual
         void setCameraProperties(const Utils::Vector3& position, const Utils::Vector3& rotation) override;
         std::unique_ptr<IModelInstance> createModelInstance(const std::string& filename) override;
 
+
+
     private:
         struct Vertex
         {
@@ -88,7 +90,6 @@ namespace Engine::Visual
 
         static XMFLOAT3 computeFaceNormal(const XMFLOAT3& v0, const XMFLOAT3& v1, const XMFLOAT3& v2);
         static XMMATRIX getWorldMatrix(const Utils::Vector3& position, const Utils::Vector3& rotation, const Utils::Vector3& scale);
-        static float gammaCorrection(float value);
 
         void createDeviceAndSwapChain(HWND hwnd);
         void createRenderTarget(HWND hwnd);

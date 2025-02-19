@@ -12,13 +12,6 @@ namespace Engine::Visual
 {
 	////////////////////////////////////////////////////////////////////////
 
-	float DirectXRenderer::gammaCorrection(float value)
-	{
-		return std::pow(value, 1.0f / 2.2f);
-	}
-
-	////////////////////////////////////////////////////////////////////////
-
 	void DirectXRenderer::init(const Window& window)
 	{
 		createDeviceAndSwapChain(window.getHandle());
@@ -43,10 +36,7 @@ namespace Engine::Visual
 	{
 		// Clear the render target with a solid color
 		float clearColor[] = {
-			gammaCorrection(r),
-			gammaCorrection(g),
-			gammaCorrection(b),
-			gammaCorrection(a)
+			r, g, b, a
 		}; // RGBA
 		m_deviceContext->ClearRenderTargetView(m_renderTargetView.Get(), clearColor);
 		m_deviceContext->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
@@ -118,7 +108,7 @@ namespace Engine::Visual
 	{
 		DXGI_SWAP_CHAIN_DESC swapChainDesc = {};
 		swapChainDesc.BufferCount = 1;
-		swapChainDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		swapChainDesc.BufferDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
 		swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 		swapChainDesc.OutputWindow = hwnd;
 		swapChainDesc.SampleDesc.Count = 1;
@@ -166,7 +156,7 @@ namespace Engine::Visual
 		depthStencilDesc.Height = static_cast<UINT>(height);
 		depthStencilDesc.MipLevels = 1;
 		depthStencilDesc.ArraySize = 1;
-		depthStencilDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+		depthStencilDesc.Format = DXGI_FORMAT_D32_FLOAT;
 		depthStencilDesc.SampleDesc.Count = 1;
 		depthStencilDesc.Usage = D3D11_USAGE_DEFAULT;
 		depthStencilDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
@@ -226,7 +216,7 @@ namespace Engine::Visual
 		D3D11_RASTERIZER_DESC rasterizerDesc;
 		ZeroMemory(&rasterizerDesc, sizeof(D3D11_RASTERIZER_DESC));
 
-		// Enable culling of backfaces
+		// Enable culling of backfacesss
 		rasterizerDesc.CullMode = D3D11_CULL_BACK;  // Cull back-facing polygons
 		rasterizerDesc.FillMode = D3D11_FILL_SOLID; // Render polygons as solid (not wireframe)
 		rasterizerDesc.FrontCounterClockwise = FALSE; // Assume clockwise vertices are front-facing
@@ -369,61 +359,6 @@ namespace Engine::Visual
 			return false;
 		}
 
-		std::vector<DirectX::XMFLOAT3> positions;
-		std::vector<DirectX::XMFLOAT3> normals;
-		std::vector<DirectX::XMFLOAT2> texcoords;
-		std::vector<unsigned int> indices;
-		
-		for (const auto& shape : shapes)
-		{
-			model.meshes.emplace_back();
-			SubMesh& mesh = model.meshes.back();
-			mesh.materialId = shape.mesh.material_ids.empty() ? -1 : shape.mesh.material_ids[0];
-			for (const auto& index : shape.mesh.indices) 
-			{
-				positions.emplace_back(
-					attrib.vertices[3 * index.vertex_index + 0],
-					attrib.vertices[3 * index.vertex_index + 1],
-					attrib.vertices[3 * index.vertex_index + 2]
-				);
-
-				if (!attrib.normals.empty()) {
-					normals.emplace_back(
-						attrib.normals[3 * index.normal_index + 0],
-						attrib.normals[3 * index.normal_index + 1],
-						attrib.normals[3 * index.normal_index + 2]
-					);
-				}
-
-				if (!attrib.texcoords.empty())
-				{
-					texcoords.emplace_back(
-						attrib.texcoords[2 * index.texcoord_index + 0],
-						attrib.texcoords[2 * index.texcoord_index + 1]
-					);
-				}
-
-				mesh.indices.push_back(positions.size() - 1);
-			}
-		}
-
-		if (normals.empty())
-		{
-			for (size_t i = 0; i + 2 < positions.size(); i += 3)
-			{
-				XMFLOAT3 normal = computeFaceNormal(positions[i], positions[i + 1], positions[i + 2]);
-				for (int j = 0; j < 3; j++)
-				{
-					normals.push_back(normal);
-				}
-			}
-		}
-
-		for (int i = 0; i < positions.size(); i++)
-		{
-			model.vertices.emplace_back(Vertex{ positions[i], normals[i], texcoords[i] });
-		}
-
 		for (const tinyobj::material_t& mat : materials)
 		{
 			Material matX;
@@ -448,6 +383,43 @@ namespace Engine::Visual
 				matX.diffuseTextureId = m_defaultMaterial.diffuseTextureId;
 			}
 			model.materials.emplace_back(matX);
+		}
+
+		for (const auto& shape : shapes)
+		{
+			SubMesh mesh;
+			for (const auto& index : shape.mesh.indices)
+			{
+				Vertex vertex;
+
+				vertex.position = {
+					attrib.vertices[3 * index.vertex_index + 0],
+					attrib.vertices[3 * index.vertex_index + 1],
+					attrib.vertices[3 * index.vertex_index + 2]
+				};
+
+				if (index.normal_index >= 0) {
+					vertex.normal = {
+						attrib.normals[3 * index.normal_index + 0],
+						attrib.normals[3 * index.normal_index + 1],
+						attrib.normals[3 * index.normal_index + 2]
+					};
+				}
+
+				if (index.texcoord_index >= 0)
+				{
+					vertex.texCoord = {
+						attrib.texcoords[2 * index.texcoord_index + 0],
+						attrib.texcoords[2 * index.texcoord_index + 1]
+					};
+				}
+
+				model.vertices.emplace_back(vertex);
+				mesh.indices.push_back(model.vertices.size() - 1);
+			}
+
+			mesh.materialId = shape.mesh.material_ids.empty() ? -1 : shape.mesh.material_ids[0];
+			model.meshes.emplace_back(std::move(mesh));
 		}
 
 		return true;
@@ -518,7 +490,7 @@ namespace Engine::Visual
 
 		// Set up camera view and projection matrices
 		m_viewMatrix = XMMatrixLookAtLH(XMVectorSet(0.0f, 2.0f, -5.0f, 0.0f), XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
-		m_projectionMatrix = XMMatrixPerspectiveFovLH(XM_PIDIV4, width / height, 0.1f, 1000.0f);
+		m_projectionMatrix = XMMatrixPerspectiveFovLH(XM_PIDIV4, width / height, 0.1f, 500.0f);
 	}
 
 	////////////////////////////////////////////////////////////////////////

@@ -69,6 +69,7 @@ namespace Engine::Visual
     private:
         static glm::mat4 getWorldMatrix(const Utils::Vector3& position, const Utils::Vector3& rotation, const Utils::Vector3& scale);
 
+        void createFrameBuffer(int width, int height);
         GLuint createShader(const std::string& source, GLenum shaderType);
         GLuint createShaderProgram(const std::string& vsSource, const std::string& fsSource);
 
