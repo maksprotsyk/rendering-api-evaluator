@@ -37,9 +37,9 @@ namespace Engine::Visual
         void setCameraProperties(const Utils::Vector3& position, const Utils::Vector3& rotation) override;
         std::unique_ptr<IModelInstance> createModelInstance(const std::string& filename) override;
 
-        void destroyModelInstance(IModelInstance& modelInstance) override;
-        void unloadTexture(const std::string& filename) override;
-        void unloadModel(const std::string& filename) override;
+        bool destroyModelInstance(IModelInstance& modelInstance) override;
+        bool unloadTexture(const std::string& filename) override;
+        bool unloadModel(const std::string& filename) override;
         void cleanUp() override;
 
 
@@ -93,7 +93,6 @@ namespace Engine::Visual
 
     private:
 
-        static XMFLOAT3 computeFaceNormal(const XMFLOAT3& v0, const XMFLOAT3& v1, const XMFLOAT3& v2);
         static XMMATRIX getWorldMatrix(const Utils::Vector3& position, const Utils::Vector3& rotation, const Utils::Vector3& scale);
 
         template<class T>
@@ -103,10 +102,11 @@ namespace Engine::Visual
         void createRenderTarget(HWND hwnd);
         void createShaders();
         void createViewport(HWND hwnd);
+        void createDefaultMaterial();
+        bool createBuffersForModel(ModelData& model);
+        bool loadModelFromFile(ModelData& model, const std::string& filename);
 
         const ComPtr<ID3D11ShaderResourceView>& getTexture(const std::string& textureId) const;
-        void createBuffersForModel(ModelData& model);
-        bool loadModelFromFile(ModelData& model, const std::string& filename);
 
     private:
 

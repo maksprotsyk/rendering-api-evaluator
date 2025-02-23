@@ -1127,7 +1127,7 @@ namespace Engine::Visual
 
 	////////////////////////////////////////////////////////////////////////
 
-	void VulkanRenderer::destroyModelInstance(IModelInstance& modelInstance)
+	bool VulkanRenderer::destroyModelInstance(IModelInstance& modelInstance)
 	{
 		VulkanModelInstance& vkModelInstance = (VulkanModelInstance&)modelInstance;
 
@@ -1152,16 +1152,18 @@ namespace Engine::Visual
 			vkDestroyBuffer(m_device, vkModelInstance.uniformBuffer, nullptr);
 			vkModelInstance.uniformBuffer = VK_NULL_HANDLE;
 		}
+
+		return true;
 	}
 
 	////////////////////////////////////////////////////////////////////////
 
-	void VulkanRenderer::unloadTexture(const std::string& filename)
+	bool VulkanRenderer::unloadTexture(const std::string& filename)
 	{
 		const auto& itr = m_textures.find(filename);
 		if (itr == m_textures.end())
 		{
-			return;
+			return true;
 		}
 		
 		TextureData& texture = itr->second;
@@ -1190,16 +1192,18 @@ namespace Engine::Visual
 		}
 
 		m_textures.erase(itr);
+
+		return true;
 	}
 
 	////////////////////////////////////////////////////////////////////////
 
-	void VulkanRenderer::unloadModel(const std::string& filename)
+	bool VulkanRenderer::unloadModel(const std::string& filename)
 	{
 		const auto& itr = m_models.find(filename);
 		if (itr == m_models.end())
 		{
-			return;
+			return true;
 		}
 
 		ModelData& modelData = itr->second;
@@ -1235,6 +1239,8 @@ namespace Engine::Visual
 		}
 
 		m_models.erase(itr);
+
+		return true;
 	}
 
 	////////////////////////////////////////////////////////////////////////

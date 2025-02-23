@@ -7,6 +7,7 @@
 #include <filesystem>
 
 #include "tiny_obj_loader.h"
+#include "Utils/DebugMacros.h"
 
 namespace Engine::Visual
 {
@@ -18,16 +19,7 @@ namespace Engine::Visual
 		createRenderTarget(window.getHandle());
 		createShaders();
 		createViewport(window.getHandle());
-
-		if (!loadTexture(DEFAULT_TEXTURE))
-		{
-			// TODO: asserts, error handling
-		}
-		m_defaultMaterial.diffuseTextureId = DEFAULT_TEXTURE;
-		m_defaultMaterial.diffuseColor = XMFLOAT3(0.1f, 0.1f, 0.1f);
-		m_defaultMaterial.ambientColor = XMFLOAT3(0.5f, 0.5f, 0.5f);
-		m_defaultMaterial.specularColor = XMFLOAT3(0.5f, 0.5f, 0.5f);
-		m_defaultMaterial.shininess = 32.0f;
+		createDefaultMaterial();
 	}
 
 	////////////////////////////////////////////////////////////////////////
@@ -35,9 +27,7 @@ namespace Engine::Visual
 	void DirectXRenderer::clearBackground(float r, float g, float b, float a)
 	{
 		// Clear the render target with a solid color
-		float clearColor[] = {
-			r, g, b, a
-		}; // RGBA
+		float clearColor[] = {r, g, b, a }; // RGBA
 		m_deviceContext->ClearRenderTargetView(m_renderTargetView.Get(), clearColor);
 		m_deviceContext->ClearDepthStencilView(m_depthStencilView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 	}
@@ -47,9 +37,9 @@ namespace Engine::Visual
 	void DirectXRenderer::draw(const IModelInstance& model, const Utils::Vector3& position, const Utils::Vector3& rotation, const Utils::Vector3& scale)
 	{
 		const auto& modelItr = m_models.find(model.GetId());
+		ASSERT(modelItr != m_models.end(), "Can't find model with id: {}", model.GetId());
 		if (modelItr == m_models.end())
 		{
-			// TODO: asserts, error handling
 			return;
 		}
 		const ModelData& modelData = modelItr->second;
@@ -130,15 +120,11 @@ namespace Engine::Visual
 			m_deviceContext.GetAddressOf()
 		);
 
-		if (FAILED(hr))
-		{
-			throw std::runtime_error("Failed to create DirectX device and swap chain.");
-		}
+		ASSERT(!FAILED(hr), "Can't create device and swapchain, error code: {}", hr);
 	}
 
 	////////////////////////////////////////////////////////////////////////
 
-	// Create the render target
 	void DirectXRenderer::createRenderTarget(HWND hwnd)
 	{
 		ComPtr<ID3D11Texture2D> backBuffer;
@@ -163,17 +149,11 @@ namespace Engine::Visual
 
 		ComPtr<ID3D11Texture2D> depthStencilBuffer;
 		HRESULT hr = m_device->CreateTexture2D(&depthStencilDesc, nullptr, depthStencilBuffer.GetAddressOf());
-		if (FAILED(hr))
-		{
-			throw std::runtime_error("Failed to create depth stencil buffer.");
-		}
+		ASSERT(!FAILED(hr), "Can't create depth stencil buffer, error code: {}", hr);
 
 		// Create the depth stencil view
 		hr = m_device->CreateDepthStencilView(depthStencilBuffer.Get(), nullptr, m_depthStencilView.GetAddressOf());
-		if (FAILED(hr))
-		{
-			throw std::runtime_error("Failed to create depth stencil view.");
-		}
+		ASSERT(!FAILED(hr), "Can't create depth stencil view, error code: {}", hr);
 
 		// Set the render target and depth stencil
 		m_deviceContext->OMSetRenderTargets(1, m_renderTargetView.GetAddressOf(), m_depthStencilView.Get());
@@ -209,25 +189,21 @@ namespace Engine::Visual
 		cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 		cbDesc.CPUAccessFlags = 0;
 		HRESULT hr = m_device->CreateBuffer(&cbDesc, nullptr, m_constantBuffer.GetAddressOf());
-		if (FAILED(hr)) {
-			throw std::runtime_error("Failed to create constant buffer.");
-		}
+		ASSERT(!FAILED(hr), "Can't create constant buffer, error code: {}", hr);
 
 		D3D11_RASTERIZER_DESC rasterizerDesc;
 		ZeroMemory(&rasterizerDesc, sizeof(D3D11_RASTERIZER_DESC));
 
 		// Enable culling of backfacesss
-		rasterizerDesc.CullMode = D3D11_CULL_BACK;  // Cull back-facing polygons
-		rasterizerDesc.FillMode = D3D11_FILL_SOLID; // Render polygons as solid (not wireframe)
-		rasterizerDesc.FrontCounterClockwise = FALSE; // Assume clockwise vertices are front-facing
-		rasterizerDesc.DepthClipEnable = TRUE;  // Enable depth clipping
+		rasterizerDesc.CullMode = D3D11_CULL_BACK; 
+		rasterizerDesc.FillMode = D3D11_FILL_SOLID;
+		rasterizerDesc.FrontCounterClockwise = FALSE;
+		rasterizerDesc.DepthClipEnable = TRUE;
 
 		// Create the rasterizer state
 		ID3D11RasterizerState* rasterizerState;
 		hr = m_device->CreateRasterizerState(&rasterizerDesc, &rasterizerState);
-		if (FAILED(hr)) {
-			throw std::runtime_error("Failed to create rasterizer state.");
-		}
+		ASSERT(!FAILED(hr), "Can't create rasterizer state, error code: {}", hr);
 
 		// Bind the rasterizer state
 		m_deviceContext->RSSetState(rasterizerState);
@@ -240,10 +216,7 @@ namespace Engine::Visual
 
 		ComPtr<ID3D11DepthStencilState> depthStencilState;
 		hr = m_device->CreateDepthStencilState(&depthStencilDesc, depthStencilState.GetAddressOf());
-		if (FAILED(hr))
-		{
-			throw std::runtime_error("Failed to create depth stencil state.");
-		}
+		ASSERT(!FAILED(hr), "Can't create depth stencil state, error code: {}", hr);
 
 		// Set the depth stencil state
 		m_deviceContext->OMSetDepthStencilState(depthStencilState.Get(), 1);
@@ -251,7 +224,7 @@ namespace Engine::Visual
 
 	////////////////////////////////////////////////////////////////////////
 
-	void DirectXRenderer::createBuffersForModel(ModelData& model)
+	bool DirectXRenderer::createBuffersForModel(ModelData& model)
 	{
 		// Create vertex buffer
 		D3D11_BUFFER_DESC vertexBufferDesc = {};
@@ -261,7 +234,12 @@ namespace Engine::Visual
 
 		D3D11_SUBRESOURCE_DATA vertexData = {};
 		vertexData.pSysMem = model.vertices.data();
-		m_device->CreateBuffer(&vertexBufferDesc, &vertexData, model.vertexBuffer.GetAddressOf());
+		HRESULT hr = m_device->CreateBuffer(&vertexBufferDesc, &vertexData, model.vertexBuffer.GetAddressOf());
+		ASSERT(!FAILED(hr), "Can't create vertex buffer, error code: {}", hr);
+		if (FAILED(hr))
+		{
+			return false;
+		}
 
 		for (auto& subMesh: model.meshes)
 		{
@@ -273,14 +251,17 @@ namespace Engine::Visual
 			indexBufferDesc.CPUAccessFlags = 0;
 
 			D3D11_SUBRESOURCE_DATA indexData = {};
-			indexData.pSysMem = subMesh.indices.data();  // Pointer to the index data
+			indexData.pSysMem = subMesh.indices.data();
 
-			HRESULT hr = m_device->CreateBuffer(&indexBufferDesc, &indexData, subMesh.indexBuffer.GetAddressOf());
+			hr = m_device->CreateBuffer(&indexBufferDesc, &indexData, subMesh.indexBuffer.GetAddressOf());
+			ASSERT(!FAILED(hr), "Can't create index buffer, error code: {}", hr);
 			if (FAILED(hr)) 
 			{
-				throw std::runtime_error("Failed to create index buffer.");
+				return false;
 			}
 		}
+
+		return true;
 	}
 
 	////////////////////////////////////////////////////////////////////////
@@ -288,18 +269,20 @@ namespace Engine::Visual
 	const ComPtr<ID3D11ShaderResourceView>& DirectXRenderer::getTexture(const std::string& textureId) const
 	{
 		const auto& textureItr = m_textures.find(textureId);
+
+		ASSERT(textureItr != m_textures.end(), "Can't find texture: {}", textureId);
 		if (textureItr != m_textures.end())
 		{
 			return textureItr->second;
 		}
 
 		const auto& defaultTextureItr = m_textures.find(DEFAULT_TEXTURE);
+		ASSERT(defaultTextureItr != m_textures.end(), "Can't find default texture: {}", textureId);
 		if (defaultTextureItr != m_textures.end())
 		{
 			return defaultTextureItr->second;
 		}
 
-		// TODO: asserts, error handling
 		return nullptr;
 	}
 
@@ -317,7 +300,12 @@ namespace Engine::Visual
 		{
 			return false;
 		}
-		createBuffersForModel(modelData);
+
+		if (!createBuffersForModel(modelData))
+		{
+			return false;
+		}
+
 		m_models.emplace(filename, std::move(modelData));
 		return true;
 	}
@@ -333,6 +321,7 @@ namespace Engine::Visual
 
 		ComPtr<ID3D11ShaderResourceView> texture;
 		HRESULT hr = DirectX::CreateWICTextureFromFile(m_device.Get(), m_deviceContext.Get(), Utils::stringToWString(filename).c_str(), nullptr, texture.GetAddressOf());
+		ASSERT(!FAILED(hr), "Can't load texture: {}", filename);
 		if (FAILED(hr))
 		{
 			return false;
@@ -353,8 +342,9 @@ namespace Engine::Visual
 
 		std::filesystem::path fullPath(filename);
 		std::filesystem::path matDir = fullPath.parent_path();
-		bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filename.c_str(), matDir.string().c_str());
-		if (!ret) 
+		bool res = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filename.c_str(), matDir.string().c_str());
+		ASSERT(res, "Can't load model: {}", filename);
+		if (!res) 
 		{
 			return false;
 		}
@@ -456,34 +446,36 @@ namespace Engine::Visual
 
 	////////////////////////////////////////////////////////////////////////
 
-	void DirectXRenderer::destroyModelInstance(IModelInstance& modelInstance)
+	bool DirectXRenderer::destroyModelInstance(IModelInstance& modelInstance)
 	{
+		return true;
 	}
 
 	////////////////////////////////////////////////////////////////////////
 
-	void DirectXRenderer::unloadTexture(const std::string& filename)
+	bool DirectXRenderer::unloadTexture(const std::string& filename)
 	{
 		const auto& itr = m_textures.find(filename);
 		if (itr == m_textures.end())
 		{
-			return;
+			return true;
 		}
 
 		ComPtr<ID3D11ShaderResourceView>& texture = itr->second;
 		texture.Reset();
 
 		m_textures.erase(itr);
+		return true;
 	}
 
 	////////////////////////////////////////////////////////////////////////
 
-	void DirectXRenderer::unloadModel(const std::string& filename)
+	bool DirectXRenderer::unloadModel(const std::string& filename)
 	{
 		const auto& itr = m_models.find(filename);
 		if (itr == m_models.end())
 		{
-			return;
+			return true;
 		}
 
 		ModelData& modelData = itr->second;
@@ -495,6 +487,8 @@ namespace Engine::Visual
 		modelData.vertexBuffer.Reset();
 
 		m_models.erase(itr);
+
+		return true;
 		
 	}
 
@@ -565,25 +559,16 @@ namespace Engine::Visual
 
 	////////////////////////////////////////////////////////////////////////
 
-	XMFLOAT3 DirectXRenderer::computeFaceNormal(const XMFLOAT3& v0, const XMFLOAT3& v1, const XMFLOAT3& v2) {
-		// Calculate two edges of the triangle
-		XMFLOAT3 edge1 = { v1.x - v0.x, v1.y - v0.y, v1.z - v0.z };
-		XMFLOAT3 edge2 = { v2.x - v0.x, v2.y - v0.y, v2.z - v0.z };
+	void DirectXRenderer::createDefaultMaterial()
+	{
+		bool loadDefaultTexRes = loadTexture(DEFAULT_TEXTURE);
+		ASSERT(loadDefaultTexRes, "Can't load default texture");
 
-		// Compute the cross product of edge1 and edge2 to get the face normal
-		XMFLOAT3 normal = {
-			edge1.y * edge2.z - edge1.z * edge2.y,
-			edge1.z * edge2.x - edge1.x * edge2.z,
-			edge1.x * edge2.y - edge1.y * edge2.x
-		};
-
-		// Normalize the normal vector
-		float length = sqrtf(normal.x * normal.x + normal.y * normal.y + normal.z * normal.z);
-		normal.x /= length;
-		normal.y /= length;
-		normal.z /= length;
-
-		return normal;
+		m_defaultMaterial.diffuseTextureId = DEFAULT_TEXTURE;
+		m_defaultMaterial.diffuseColor = XMFLOAT3(0.1f, 0.1f, 0.1f);
+		m_defaultMaterial.ambientColor = XMFLOAT3(0.5f, 0.5f, 0.5f);
+		m_defaultMaterial.specularColor = XMFLOAT3(0.5f, 0.5f, 0.5f);
+		m_defaultMaterial.shininess = 32.0f;
 	}
 
 	////////////////////////////////////////////////////////////////////////

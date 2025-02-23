@@ -394,18 +394,19 @@ namespace Engine::Visual
 
     ////////////////////////////////////////////////////////////////////////
 
-    void OpenGLRenderer::destroyModelInstance(IModelInstance& modelInstance)
+    bool OpenGLRenderer::destroyModelInstance(IModelInstance& modelInstance)
     {
+        return true;
     }
 
     ////////////////////////////////////////////////////////////////////////
 
-    void OpenGLRenderer::unloadTexture(const std::string& filename)
+    bool OpenGLRenderer::unloadTexture(const std::string& filename)
     {
         const auto& itr = m_textures.find(filename);
         if (itr == m_textures.end())
         {
-            return;
+            return true;
         }
 
         GLuint& texture = itr->second;
@@ -415,16 +416,17 @@ namespace Engine::Visual
         }
 
         m_textures.erase(itr);
+        return true;
     }
 
     ////////////////////////////////////////////////////////////////////////
 
-    void OpenGLRenderer::unloadModel(const std::string& filename)
+    bool OpenGLRenderer::unloadModel(const std::string& filename)
     {
         const auto& itr = m_models.find(filename);
         if (itr == m_models.end())
         {
-            return;
+            return true;
         }
 
         ModelData& model = itr->second;
@@ -446,6 +448,7 @@ namespace Engine::Visual
         }
 
         m_models.erase(itr);
+        return true;
     }
 
     ////////////////////////////////////////////////////////////////////////

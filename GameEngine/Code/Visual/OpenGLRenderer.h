@@ -32,9 +32,9 @@ namespace Engine::Visual
         void setCameraProperties(const Utils::Vector3& position, const Utils::Vector3& rotation) override;
         std::unique_ptr<IModelInstance> createModelInstance(const std::string& filename) override;
 
-        void destroyModelInstance(IModelInstance& modelInstance) override;
-        void unloadTexture(const std::string& filename) override;
-        void unloadModel(const std::string& filename) override;
+        bool destroyModelInstance(IModelInstance& modelInstance) override;
+        bool unloadTexture(const std::string& filename) override;
+        bool unloadModel(const std::string& filename) override;
         void cleanUp() override;
 
     private:
