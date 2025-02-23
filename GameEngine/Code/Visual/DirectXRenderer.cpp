@@ -456,6 +456,76 @@ namespace Engine::Visual
 
 	////////////////////////////////////////////////////////////////////////
 
+	void DirectXRenderer::destroyModelInstance(IModelInstance& modelInstance)
+	{
+	}
+
+	////////////////////////////////////////////////////////////////////////
+
+	void DirectXRenderer::unloadTexture(const std::string& filename)
+	{
+		const auto& itr = m_textures.find(filename);
+		if (itr == m_textures.end())
+		{
+			return;
+		}
+
+		ComPtr<ID3D11ShaderResourceView>& texture = itr->second;
+		texture.Reset();
+
+		m_textures.erase(itr);
+	}
+
+	////////////////////////////////////////////////////////////////////////
+
+	void DirectXRenderer::unloadModel(const std::string& filename)
+	{
+		const auto& itr = m_models.find(filename);
+		if (itr == m_models.end())
+		{
+			return;
+		}
+
+		ModelData& modelData = itr->second;
+		for (SubMesh& mesh : modelData.meshes)
+		{
+			mesh.indexBuffer.Reset();
+		}
+
+		modelData.vertexBuffer.Reset();
+
+		m_models.erase(itr);
+		
+	}
+
+	////////////////////////////////////////////////////////////////////////
+
+	void DirectXRenderer::cleanUp()
+	{
+		for (const std::string& modelId : Utils::getKeys(m_models))
+		{
+			unloadModel(modelId);
+		}
+
+		for (const std::string& textureId : Utils::getKeys(m_textures))
+		{
+			unloadTexture(textureId);
+		}
+
+		destroyComPtrSafe(m_samplerState);
+		destroyComPtrSafe(m_constantBuffer);
+		destroyComPtrSafe(m_vertexShader);
+		destroyComPtrSafe(m_pixelShader);
+		destroyComPtrSafe(m_inputLayout);
+		destroyComPtrSafe(m_depthStencilView);
+		destroyComPtrSafe(m_renderTargetView);
+		destroyComPtrSafe(m_swapChain);
+		destroyComPtrSafe(m_deviceContext);
+		destroyComPtrSafe(m_device);
+	}
+
+	////////////////////////////////////////////////////////////////////////
+
 	XMMATRIX DirectXRenderer::getWorldMatrix(const Utils::Vector3& position, const Utils::Vector3& rotation, const Utils::Vector3& scale)
 	{
 		XMMATRIX scalingMatrix = XMMatrixScaling(scale.x, scale.y, scale.z);

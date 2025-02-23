@@ -1072,6 +1072,30 @@ namespace Engine::Visual
 
 	////////////////////////////////////////////////////////////////////////
 
+	void VulkanRenderer::destroyModelInstance(IModelInstance& modelInstance)
+	{
+	}
+
+	////////////////////////////////////////////////////////////////////////
+
+	void VulkanRenderer::unloadTexture(const std::string& filename)
+	{
+	}
+
+	////////////////////////////////////////////////////////////////////////
+
+	void VulkanRenderer::unloadModel(const std::string& filename)
+	{
+	}
+
+	////////////////////////////////////////////////////////////////////////
+
+	void VulkanRenderer::cleanUp()
+	{
+	}
+
+	////////////////////////////////////////////////////////////////////////
+
 	glm::mat4 VulkanRenderer::getWorldMatrix(const Utils::Vector3& position, const Utils::Vector3& rotation, const Utils::Vector3& scale)
 	{
 		glm::mat4 translation = glm::translate(glm::mat4(1.0f), glm::vec3(position.x, position.y, position.z));
@@ -1699,7 +1723,11 @@ namespace Engine::Visual
 
 	////////////////////////////////////////////////////////////////////////
 
-	VulkanRenderer::VulkanModelInstance::VulkanModelInstance(const std::string& id): ModelInstanceBase(id)
+	VulkanRenderer::VulkanModelInstance::VulkanModelInstance(const std::string& id): 
+		ModelInstanceBase(id),
+		descriptorSet(VK_NULL_HANDLE),
+		uniformBuffer(VK_NULL_HANDLE),
+		uniformBufferMemory(VK_NULL_HANDLE)
 	{
 	}
 

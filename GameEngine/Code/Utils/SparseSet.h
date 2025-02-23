@@ -13,6 +13,7 @@ namespace Engine::Utils
         const std::vector<IDType>& getIds() const;
         bool isPresent(IDType entity) const;
         size_t size() const;
+        virtual bool removeElement(IDType id);
 
     protected:
         std::vector<int> _sparse; // Maps entity ID to index in dense array
@@ -29,7 +30,7 @@ namespace Engine::Utils
         ElemType& getElement(IDType entity);
         const ElemType& getElement(IDType entity) const;
 
-        bool removeElement(IDType entity);
+        bool removeElement(IDType entity) override;
 
         const std::vector<ElemType>& getElements() const;
         std::vector<ElemType>& getElements();
@@ -104,7 +105,7 @@ namespace Engine::Utils
     template <typename ElemType, typename IDType>
     bool SparseSet<ElemType, IDType>::removeElement(IDType entity)
     {
-        if (!_isPresent(entity))
+        if (!isPresent(entity))
         {
             return false;
         }
@@ -113,7 +114,7 @@ namespace Engine::Utils
         int lastDenseIndex = _dense.size() - 1;
 
         // Swap the component to delete with the last one in the dense array
-        _dense[denseIndex] = _dense[lastDenseIndex];
+        _dense[denseIndex] = std::move(_dense[lastDenseIndex]);
         _denseEntities[denseIndex] = _denseEntities[lastDenseIndex];
 
         // Update the sparse array to reflect the new index of the swapped entity
@@ -156,6 +157,30 @@ namespace Engine::Utils
     size_t SparseSetBase<IDType>::size() const
     {
         return _denseEntities.size();
+    }
+
+    template<typename IDType>
+    bool SparseSetBase<IDType>::removeElement(IDType entity)
+    {
+        if (!isPresent(entity))
+        {
+            return false;
+        }
+
+        int denseIndex = _sparse[entity];
+        int lastDenseIndex = _denseEntities.size() - 1;
+
+        _denseEntities[denseIndex] = _denseEntities[lastDenseIndex];
+        _sparse[_denseEntities[denseIndex]] = denseIndex;
+        _denseEntities.pop_back();
+        _sparse[entity] = -1;
+
+        while (!_sparse.empty() && _sparse[_sparse.size() - 1] == -1)
+        {
+            _sparse.pop_back();
+        }
+
+        return true;
     }
 
     template <typename IDType>

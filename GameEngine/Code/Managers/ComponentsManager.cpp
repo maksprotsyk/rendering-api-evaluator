@@ -30,4 +30,12 @@ namespace Engine
 		creator->second(id, value);
 	}
 
+	void ComponentsManager::destroyEntity(EntityID id)
+	{
+		for (auto& [name, componentsSet] : _sparseSets)
+		{
+			componentsSet->removeElement(id);
+		}
+	}
+
 }

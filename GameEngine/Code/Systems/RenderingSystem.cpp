@@ -92,7 +92,20 @@ namespace Engine::Systems
 		_renderer->clearBackground(0.0f, 0.2f, 0.4f, 1.0f);
 		for (EntityID id : compManager.entitiesWithComponents<Components::Model, Components::Transform>())
 		{
+
 			Components::Model& model = modelSet.getElement(id);
+			if (model.markedForDestroy)
+			{
+				_renderer->destroyModelInstance(*model.instance);
+				modelSet.removeElement(id);
+				continue;
+			}
+			
+			if (!model.instance)
+			{
+				model.instance = _renderer->createModelInstance(model.path);
+			}
+
 			const Components::Transform& transform = transformSet.getElement(id);
 			_renderer->draw(*model.instance, transform.position, transform.rotation, transform.scale);
 		}

@@ -26,8 +26,8 @@ namespace Engine::Visual
 
     void OpenGLRenderer::init(const Window& window)
     {
-        HWND hwnd = window.getHandle();
-        m_hdc = GetDC(hwnd); // Get the device context from the HWND
+        m_hwnd = window.getHandle();
+        m_hdc = GetDC(m_hwnd); // Get the device context from the HWND
 
         RECT rect;
         GetClientRect(window.getHandle(), &rect);
@@ -394,6 +394,110 @@ namespace Engine::Visual
 
     ////////////////////////////////////////////////////////////////////////
 
+    void OpenGLRenderer::destroyModelInstance(IModelInstance& modelInstance)
+    {
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+
+    void OpenGLRenderer::unloadTexture(const std::string& filename)
+    {
+        const auto& itr = m_textures.find(filename);
+        if (itr == m_textures.end())
+        {
+            return;
+        }
+
+        GLuint& texture = itr->second;
+        if (texture)
+        {
+            glDeleteTextures(1, &texture);
+        }
+
+        m_textures.erase(itr);
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+
+    void OpenGLRenderer::unloadModel(const std::string& filename)
+    {
+        const auto& itr = m_models.find(filename);
+        if (itr == m_models.end())
+        {
+            return;
+        }
+
+        ModelData& model = itr->second;
+        for (SubMesh& subMesh : model.meshes)
+        {
+            if (subMesh.indexBuffer)
+            {
+                glDeleteBuffers(1, &subMesh.indexBuffer);
+            }
+        }
+        if (model.vertexBuffer)
+        {
+            glDeleteBuffers(1, &model.vertexBuffer);
+        }
+
+        if (model.vao)
+        {
+            glDeleteVertexArrays(1, &model.vao);
+        }
+
+        m_models.erase(itr);
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+
+    void OpenGLRenderer::cleanUp()
+    {
+        for (const std::string& modelId : Utils::getKeys(m_models))
+        {
+            unloadModel(modelId);
+        }
+
+        for (const std::string& textureId : Utils::getKeys(m_textures))
+        {
+            unloadTexture(textureId);
+        }
+
+        if (m_shaderProgram)
+        {
+            glDeleteProgram(m_shaderProgram);
+            m_shaderProgram = 0;
+        }
+
+        if (m_frameBufferTexture) 
+        {
+            glDeleteTextures(1, &m_frameBufferTexture);
+            m_frameBufferTexture = 0;
+        }
+
+        if (m_frameBuffer) 
+        {
+            glDeleteFramebuffers(1, &m_frameBuffer);
+            m_frameBuffer = 0;
+        }
+
+        if (m_hglrc)
+        {
+            wglMakeCurrent(nullptr, nullptr);
+            wglDeleteContext(m_hglrc);
+            m_hglrc = 0;
+        }
+
+        if (m_hdc)
+        {
+            ReleaseDC(m_hwnd, m_hdc);
+            m_hdc = 0;
+        }
+
+
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+
     glm::mat4 OpenGLRenderer::getWorldMatrix(const Utils::Vector3& position, const Utils::Vector3& rotation, const Utils::Vector3& scale)
     {
         glm::mat4 translation = glm::translate(glm::mat4(1.0f), glm::vec3(position.x, position.y, position.z));
@@ -457,17 +561,15 @@ namespace Engine::Visual
 
     void OpenGLRenderer::createFrameBuffer(int width, int height)
     {
-        GLuint framebuffer, texture;
+        glGenFramebuffers(1, &m_frameBuffer);
+        glBindFramebuffer(GL_FRAMEBUFFER, m_frameBuffer);
 
-        glGenFramebuffers(1, &framebuffer);
-        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-
-        glGenTextures(1, &texture);
-        glBindTexture(GL_TEXTURE_2D, texture);
+        glGenTextures(1, &m_frameBufferTexture);
+        glBindTexture(GL_TEXTURE_2D, m_frameBufferTexture);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_frameBufferTexture, 0);
 
         if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
             std::cerr << "Error: Framebuffer is not complete!" << std::endl;

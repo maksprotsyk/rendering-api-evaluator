@@ -37,6 +37,11 @@ namespace Engine::Visual
         void setCameraProperties(const Utils::Vector3& position, const Utils::Vector3& rotation) override;
         std::unique_ptr<IModelInstance> createModelInstance(const std::string& filename) override;
 
+        void destroyModelInstance(IModelInstance& modelInstance) override;
+        void unloadTexture(const std::string& filename) override;
+        void unloadModel(const std::string& filename) override;
+        void cleanUp() override;
+
 
 
     private:
@@ -91,6 +96,9 @@ namespace Engine::Visual
         static XMFLOAT3 computeFaceNormal(const XMFLOAT3& v0, const XMFLOAT3& v1, const XMFLOAT3& v2);
         static XMMATRIX getWorldMatrix(const Utils::Vector3& position, const Utils::Vector3& rotation, const Utils::Vector3& scale);
 
+        template<class T>
+        static inline void destroyComPtrSafe(ComPtr<T>& ptr);
+
         void createDeviceAndSwapChain(HWND hwnd);
         void createRenderTarget(HWND hwnd);
         void createShaders();
@@ -124,5 +132,14 @@ namespace Engine::Visual
         std::unordered_map<std::string, ComPtr<ID3D11ShaderResourceView>> m_textures;
         
     };
+
+    template <class T>
+    void inline DirectXRenderer::destroyComPtrSafe(ComPtr<T>& ptr)
+    {
+        if (ptr)
+        {
+            ptr.Reset();
+        }
+    }
 
 }

@@ -22,6 +22,8 @@ namespace Engine
 
 		void createComponentFromJson(EntityID id, const nlohmann::json& value);
 
+		void destroyEntity(EntityID id);
+
 		template<typename Component>
 		void registerComponent();
 

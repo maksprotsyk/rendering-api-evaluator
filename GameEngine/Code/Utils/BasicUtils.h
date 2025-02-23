@@ -44,6 +44,14 @@ namespace Engine::Utils
 		(static_cast<void>(f(std::integral_constant<T, S>{})), ...);
 	}
 
+	template <typename Key, typename Value>
+	std::vector<Key> getKeys(std::unordered_map<Key, Value> items)
+	{
+		std::vector<Key> keys(items.size());
+		std::transform(items.begin(), items.end(), keys.begin(), [](const auto& p) { return p.first; });
+		return keys;
+	}
+
 
 	
 }
