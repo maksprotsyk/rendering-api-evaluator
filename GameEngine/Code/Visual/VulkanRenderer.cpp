@@ -121,8 +121,9 @@ namespace Engine::Visual
 
 		for (const auto& mesh : modelData.meshes)
 		{
-			Material material = mesh.materialId != -1 ? modelData.materials[mesh.materialId] : m_defaultMaterial;
-			std::array<VkDescriptorSet, 2> descriptorSets{modelInstance.descriptorSet, material.descriptorSet};
+			const Material& material = mesh.materialId != -1 ? modelData.materials[mesh.materialId] : m_defaultMaterial;
+			const TextureData& texture = getTexture(material.diffuseTextureId);
+			std::array<VkDescriptorSet, 3> descriptorSets{modelInstance.descriptorSet, material.descriptorSet, texture.descriptorSet};
 
 			vkCmdBindIndexBuffer(commandBuffer, mesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
@@ -205,6 +206,30 @@ namespace Engine::Visual
 		}
 		return createDescriptorsResult;
 	}
+
+	////////////////////////////////////////////////////////////////////////
+
+	void VulkanRenderer::unloadMaterial(Material& material)
+	{
+		if (material.descriptorSet != VK_NULL_HANDLE)
+		{
+			vkFreeDescriptorSets(m_device, m_materialsDescriptorPool, 1, &material.descriptorSet);
+			material.descriptorSet = VK_NULL_HANDLE;
+		}
+
+		if (material.materialBuffer != VK_NULL_HANDLE)
+		{
+			vkDestroyBuffer(m_device, material.materialBuffer, nullptr);
+			material.materialBuffer = VK_NULL_HANDLE;
+		}
+		if (material.materialBufferMemory != VK_NULL_HANDLE)
+		{
+			vkFreeMemory(m_device, material.materialBufferMemory, nullptr);
+			material.materialBufferMemory = VK_NULL_HANDLE;
+		}
+	}
+
+	////////////////////////////////////////////////////////////////////////
 
 	const VulkanRenderer::TextureData& VulkanRenderer::getTexture(const std::string& textureId) const
 	{
@@ -355,6 +380,35 @@ namespace Engine::Visual
 		}
 
 		createTextureImageView(textureData.textureImageView, textureData.textureImage);
+
+		std::vector<VkDescriptorSetLayout> textureLayouts(1, m_textureSetLayout);
+		VkDescriptorSetAllocateInfo textureAllocateInfo{};
+		textureAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		textureAllocateInfo.descriptorPool = m_texturesDescriptorPool;
+		textureAllocateInfo.descriptorSetCount = 1;
+		textureAllocateInfo.pSetLayouts = textureLayouts.data();
+
+		if (vkAllocateDescriptorSets(m_device, &textureAllocateInfo, &textureData.descriptorSet) != VK_SUCCESS)
+		{
+			return false;
+		}
+
+		VkDescriptorImageInfo imageInfo{};
+		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		imageInfo.imageView = textureData.textureImageView;
+		imageInfo.sampler = m_textureSampler;
+
+		std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
+
+		descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrites[0].dstSet = textureData.descriptorSet;
+		descriptorWrites[0].dstBinding = 1;
+		descriptorWrites[0].dstArrayElement = 0;
+		descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		descriptorWrites[0].descriptorCount = 1;
+		descriptorWrites[0].pImageInfo = &imageInfo;
+
+		vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 
 		m_textures.emplace(filename, std::move(textureData));
 		return true;
@@ -1040,11 +1094,12 @@ namespace Engine::Visual
 		std::vector<VkDescriptorSetLayout> instanceLayouts(1, m_instanceSetLayout);
 		VkDescriptorSetAllocateInfo allocateInfoMesh{};
 		allocateInfoMesh.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		allocateInfoMesh.descriptorPool = m_descriptorPool;
+		allocateInfoMesh.descriptorPool = m_instancesDescriptorPool;
 		allocateInfoMesh.descriptorSetCount = 1;
 		allocateInfoMesh.pSetLayouts = instanceLayouts.data();
 
-		if (vkAllocateDescriptorSets(m_device, &allocateInfoMesh, &modelInstance->descriptorSet) != VK_SUCCESS)
+		VkResult allocateDescriptorSetResult = vkAllocateDescriptorSets(m_device, &allocateInfoMesh, &modelInstance->descriptorSet);
+		if (allocateDescriptorSetResult != VK_SUCCESS)
 		{
 			// TODO: asserts
 			return nullptr;
@@ -1074,24 +1129,184 @@ namespace Engine::Visual
 
 	void VulkanRenderer::destroyModelInstance(IModelInstance& modelInstance)
 	{
+		VulkanModelInstance& vkModelInstance = (VulkanModelInstance&)modelInstance;
+
+		if (vkModelInstance.descriptorSet != VK_NULL_HANDLE)
+		{
+			VkResult freeDescriptorSetResult = vkFreeDescriptorSets(m_device, m_instancesDescriptorPool, 1, &vkModelInstance.descriptorSet);
+			if (freeDescriptorSetResult != VK_SUCCESS)
+			{
+				//TODO
+			}
+			vkModelInstance.descriptorSet = VK_NULL_HANDLE;
+		}
+
+		if (vkModelInstance.uniformBufferMemory != VK_NULL_HANDLE)
+		{
+			vkFreeMemory(m_device, vkModelInstance.uniformBufferMemory, nullptr);
+			vkModelInstance.uniformBufferMemory = VK_NULL_HANDLE;
+		}
+
+		if (vkModelInstance.uniformBuffer != VK_NULL_HANDLE)
+		{
+			vkDestroyBuffer(m_device, vkModelInstance.uniformBuffer, nullptr);
+			vkModelInstance.uniformBuffer = VK_NULL_HANDLE;
+		}
 	}
 
 	////////////////////////////////////////////////////////////////////////
 
 	void VulkanRenderer::unloadTexture(const std::string& filename)
 	{
+		const auto& itr = m_textures.find(filename);
+		if (itr == m_textures.end())
+		{
+			return;
+		}
+		
+		TextureData& texture = itr->second;
+		if (texture.descriptorSet != VK_NULL_HANDLE)
+		{
+			vkFreeDescriptorSets(m_device, m_texturesDescriptorPool, 1, &texture.descriptorSet);
+			texture.descriptorSet = VK_NULL_HANDLE;
+		}
+
+		if (texture.textureImageView != VK_NULL_HANDLE)
+		{
+			vkDestroyImageView(m_device, texture.textureImageView, nullptr);
+			texture.textureImageView = VK_NULL_HANDLE;
+		}
+
+		if (texture.textureImage != VK_NULL_HANDLE)
+		{
+			vkDestroyImage(m_device, texture.textureImage, nullptr);
+			texture.textureImage = VK_NULL_HANDLE;
+		}
+
+		if (texture.textureImageMemory != VK_NULL_HANDLE)
+		{
+			vkFreeMemory(m_device, texture.textureImageMemory, nullptr);
+			texture.textureImageMemory = VK_NULL_HANDLE;
+		}
+
+		m_textures.erase(itr);
 	}
 
 	////////////////////////////////////////////////////////////////////////
 
 	void VulkanRenderer::unloadModel(const std::string& filename)
 	{
+		const auto& itr = m_models.find(filename);
+		if (itr == m_models.end())
+		{
+			return;
+		}
+
+		ModelData& modelData = itr->second;
+
+		if (modelData.vertexBuffer != VK_NULL_HANDLE) 
+		{
+			vkDestroyBuffer(m_device, modelData.vertexBuffer, nullptr);
+			modelData.vertexBuffer = VK_NULL_HANDLE;
+		}
+		if (modelData.vertexBufferMemory != VK_NULL_HANDLE)
+		{
+			vkFreeMemory(m_device, modelData.vertexBufferMemory, nullptr);
+			modelData.vertexBufferMemory = VK_NULL_HANDLE;
+		}
+
+		for (SubMesh& subMesh : modelData.meshes)
+		{
+			if (subMesh.indexBuffer != VK_NULL_HANDLE) 
+			{
+				vkDestroyBuffer(m_device, subMesh.indexBuffer, nullptr);
+				subMesh.indexBuffer = VK_NULL_HANDLE;
+			}
+			if (subMesh.indexBufferMemory != VK_NULL_HANDLE)
+			{
+				vkFreeMemory(m_device, subMesh.indexBufferMemory, nullptr);
+				subMesh.indexBufferMemory = VK_NULL_HANDLE;
+			}
+		}
+
+		for (Material& material : modelData.materials)
+		{
+			unloadMaterial(material);
+		}
+
+		m_models.erase(itr);
 	}
 
 	////////////////////////////////////////////////////////////////////////
 
 	void VulkanRenderer::cleanUp()
 	{
+		for (const std::string& modelId : Utils::getKeys(m_models))
+		{
+			unloadModel(modelId);
+		}
+
+		for (const std::string& textureId : Utils::getKeys(m_textures))
+		{
+			unloadTexture(textureId);
+		}
+
+		unloadMaterial(m_defaultMaterial);
+
+		vkDeviceWaitIdle(m_device);
+		for (auto& semaphore : m_imageAvailableSemaphores)
+		{
+			vkDestroySemaphore(m_device, semaphore, nullptr);
+		}
+
+		for (auto& semaphore : m_renderFinishedSemaphores)
+		{
+			vkDestroySemaphore(m_device, semaphore, nullptr);
+		}
+
+		for (auto& fence : m_inFlightFences)
+		{
+			vkDestroyFence(m_device, fence, nullptr);
+		}
+
+		vkFreeCommandBuffers(m_device, m_commandPool, static_cast<uint32_t>(m_commandBuffers.size()), m_commandBuffers.data());
+		vkDestroyCommandPool(m_device, m_commandPool, nullptr);
+
+		vkDestroyDescriptorPool(m_device, m_materialsDescriptorPool, nullptr);
+		vkDestroyDescriptorPool(m_device, m_instancesDescriptorPool, nullptr);
+		vkDestroyDescriptorPool(m_device, m_texturesDescriptorPool, nullptr);
+
+		vkDestroySampler(m_device, m_textureSampler, nullptr);
+
+		if (m_depthImageView) vkDestroyImageView(m_device, m_depthImageView, nullptr);
+		if (m_depthImage) vkDestroyImage(m_device, m_depthImage, nullptr);
+		if (m_depthImageMemory) vkFreeMemory(m_device, m_depthImageMemory, nullptr);
+
+		for (auto& framebuffer : m_swapChainFramebuffers) 
+		{
+			vkDestroyFramebuffer(m_device, framebuffer, nullptr);
+		}
+
+		for (auto& imageView : m_swapChainImageViews)
+		{
+			vkDestroyImageView(m_device, imageView, nullptr);
+		}
+
+		vkDestroySwapchainKHR(m_device, m_swapChain, nullptr);
+
+		vkDestroyPipeline(m_device, m_graphicsPipeline, nullptr);
+		vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
+		vkDestroyRenderPass(m_device, m_renderPass, nullptr);
+
+		vkDestroyDescriptorSetLayout(m_device, m_instanceSetLayout, nullptr);
+		vkDestroyDescriptorSetLayout(m_device, m_materialSetLayout, nullptr);
+		vkDestroyDescriptorSetLayout(m_device, m_textureSetLayout, nullptr);
+
+		vkDestroyDevice(m_device, nullptr);
+
+		vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
+
+		vkDestroyInstance(m_instance, nullptr);
 	}
 
 	////////////////////////////////////////////////////////////////////////
@@ -1364,21 +1579,30 @@ namespace Engine::Visual
 		mboLayoutBinding.pImmutableSamplers = nullptr;
 		mboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
+		std::array<VkDescriptorSetLayoutBinding, 1> materialLayoutBinding = { mboLayoutBinding };
+		VkDescriptorSetLayoutCreateInfo materialLayouInfo{};
+		materialLayouInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		materialLayouInfo.bindingCount = static_cast<uint32_t>(materialLayoutBinding.size());
+		materialLayouInfo.pBindings = materialLayoutBinding.data();
+
+		if (vkCreateDescriptorSetLayout(m_device, &materialLayouInfo, nullptr, &m_materialSetLayout) != VK_SUCCESS) {
+			throw std::runtime_error("Failed to create descriptor set layout!");
+		}
+
 		VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-		samplerLayoutBinding.binding = 1;
+		samplerLayoutBinding.binding = 0;
 		samplerLayoutBinding.descriptorCount = 1;
 		samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		samplerLayoutBinding.pImmutableSamplers = nullptr;
 		samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
+		std::array<VkDescriptorSetLayoutBinding, 1> texureLayoutBinding = { samplerLayoutBinding };
+		VkDescriptorSetLayoutCreateInfo texureLayoutInfo{};
+		texureLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		texureLayoutInfo.bindingCount = static_cast<uint32_t>(texureLayoutBinding.size());
+		texureLayoutInfo.pBindings = texureLayoutBinding.data();
 
-		std::array<VkDescriptorSetLayoutBinding, 2> bindings = {mboLayoutBinding, samplerLayoutBinding };
-		VkDescriptorSetLayoutCreateInfo layoutInfo{};
-		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
-		layoutInfo.pBindings = bindings.data();
-
-		if (vkCreateDescriptorSetLayout(m_device, &layoutInfo, nullptr, &m_meshSetLayout) != VK_SUCCESS) {
+		if (vkCreateDescriptorSetLayout(m_device, &texureLayoutInfo, nullptr, &m_textureSetLayout) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to create descriptor set layout!");
 		}
 
@@ -1520,7 +1744,7 @@ namespace Engine::Visual
 		dynamicState.pDynamicStates = dynamicStates;
 
 
-		std::array<VkDescriptorSetLayout, 2> setLayouts = { m_instanceSetLayout, m_meshSetLayout };
+		std::array<VkDescriptorSetLayout, 3> setLayouts = { m_instanceSetLayout, m_materialSetLayout, m_textureSetLayout };
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(setLayouts.size());
@@ -1603,21 +1827,51 @@ namespace Engine::Visual
 
 	void VulkanRenderer::createDescriptorPool()
 	{
-		std::array<VkDescriptorPoolSize, 2> poolSizes{};
-		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_MESHES_NUM);
-		poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_MESHES_NUM);
+		std::array<VkDescriptorPoolSize, 1> materialPoolSizes{};
+		materialPoolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		materialPoolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_MATERIALS);
 
-		VkDescriptorPoolCreateInfo poolCreateInfo{};
-		poolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		poolCreateInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-		poolCreateInfo.pPoolSizes = poolSizes.data();
-		poolCreateInfo.maxSets = MAX_MESHES_NUM;
+		VkDescriptorPoolCreateInfo materialPoolCreateInfo{};
+		materialPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		materialPoolCreateInfo.poolSizeCount = static_cast<uint32_t>(materialPoolSizes.size());
+		materialPoolCreateInfo.pPoolSizes = materialPoolSizes.data();
+		materialPoolCreateInfo.maxSets = MAX_MATERIALS;
+		materialPoolCreateInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
-		if (vkCreateDescriptorPool(m_device, &poolCreateInfo, nullptr, &m_descriptorPool) != VK_SUCCESS) {
+		if (vkCreateDescriptorPool(m_device, &materialPoolCreateInfo, nullptr, &m_materialsDescriptorPool) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to create descriptor pool!");
 		}
+
+		std::array<VkDescriptorPoolSize, 1> texturesPoolSizes{};
+		texturesPoolSizes[0].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		texturesPoolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_TEXTURES);
+
+		VkDescriptorPoolCreateInfo texturesPoolCreateInfo{};
+		texturesPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		texturesPoolCreateInfo.poolSizeCount = static_cast<uint32_t>(texturesPoolSizes.size());
+		texturesPoolCreateInfo.pPoolSizes = texturesPoolSizes.data();
+		texturesPoolCreateInfo.maxSets = MAX_TEXTURES;
+		texturesPoolCreateInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+
+		if (vkCreateDescriptorPool(m_device, &texturesPoolCreateInfo, nullptr, &m_texturesDescriptorPool) != VK_SUCCESS) {
+			throw std::runtime_error("Failed to create descriptor pool!");
+		}
+
+		std::array<VkDescriptorPoolSize, 1> instancesPoolSizes{};
+		instancesPoolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		instancesPoolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_MODEL_INSTANCES);
+
+		VkDescriptorPoolCreateInfo instancesPoolCreateInfo{};
+		instancesPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		instancesPoolCreateInfo.poolSizeCount = static_cast<uint32_t>(instancesPoolSizes.size());
+		instancesPoolCreateInfo.pPoolSizes = instancesPoolSizes.data();
+		instancesPoolCreateInfo.maxSets = MAX_MODEL_INSTANCES;
+		instancesPoolCreateInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+
+		if (vkCreateDescriptorPool(m_device, &instancesPoolCreateInfo, nullptr, &m_instancesDescriptorPool) != VK_SUCCESS) {
+			throw std::runtime_error("Failed to create descriptor pool!");
+		}
+
 	}
 
 	////////////////////////////////////////////////////////////////////////
@@ -1636,14 +1890,14 @@ namespace Engine::Visual
 
 	bool VulkanRenderer::createDescriptorSet(Material& material)
 	{
-		std::vector<VkDescriptorSetLayout> meshLayouts(1, m_meshSetLayout);
-		VkDescriptorSetAllocateInfo allocateInfoMesh{};
-		allocateInfoMesh.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		allocateInfoMesh.descriptorPool = m_descriptorPool;
-		allocateInfoMesh.descriptorSetCount = 1;
-		allocateInfoMesh.pSetLayouts = meshLayouts.data();
+		std::vector<VkDescriptorSetLayout> materialLayouts(1, m_materialSetLayout);
+		VkDescriptorSetAllocateInfo materialAllocateInfo{};
+		materialAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		materialAllocateInfo.descriptorPool = m_materialsDescriptorPool;
+		materialAllocateInfo.descriptorSetCount = 1;
+		materialAllocateInfo.pSetLayouts = materialLayouts.data();
 
-		if (vkAllocateDescriptorSets(m_device, &allocateInfoMesh, &material.descriptorSet) != VK_SUCCESS)
+		if (vkAllocateDescriptorSets(m_device, &materialAllocateInfo, &material.descriptorSet) != VK_SUCCESS)
 		{
 			return false;
 		}
@@ -1653,12 +1907,7 @@ namespace Engine::Visual
 		materialBufferInfo.offset = 0;
 		materialBufferInfo.range = sizeof(MaterialBufferObject);
 
-		VkDescriptorImageInfo imageInfo{};
-		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		imageInfo.imageView = getTexture(material.diffuseTextureId).textureImageView;
-		imageInfo.sampler = m_textureSampler;
-
-		std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+		std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
 
 		descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		descriptorWrites[0].dstSet = material.descriptorSet;
@@ -1667,14 +1916,6 @@ namespace Engine::Visual
 		descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		descriptorWrites[0].descriptorCount = 1;
 		descriptorWrites[0].pBufferInfo = &materialBufferInfo;
-
-		descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptorWrites[1].dstSet = material.descriptorSet;
-		descriptorWrites[1].dstBinding = 1;
-		descriptorWrites[1].dstArrayElement = 0;
-		descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		descriptorWrites[1].descriptorCount = 1;
-		descriptorWrites[1].pImageInfo = &imageInfo;
 
 		vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 

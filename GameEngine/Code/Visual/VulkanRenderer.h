@@ -116,7 +116,7 @@ namespace Engine::Visual
             VkImage textureImage;
             VkDeviceMemory textureImageMemory;
             VkImageView textureImageView;
-
+            VkDescriptorSet descriptorSet;
         };
 
         struct ModelData
@@ -221,10 +221,14 @@ namespace Engine::Visual
         const TextureData& getTexture(const std::string& textureId) const;
         bool loadModelFromFile(ModelData& model, const std::string& filename);
         bool createBuffersForModel(ModelData& model);
+        void unloadMaterial(Material& material);
 
     private:
 
-        static const int MAX_MESHES_NUM = 50;
+        static const int MAX_MODEL_INSTANCES = 50;
+        static const int MAX_MATERIALS = 20;
+        static const int MAX_TEXTURES = 20;
+
         static const int MAX_FRAMES_IN_FLIGHT = 3;
         static inline const std::vector<const char*> DEVICE_EXTENSIONS = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
@@ -247,7 +251,8 @@ namespace Engine::Visual
         VkRenderPass m_renderPass{};
 
         VkDescriptorSetLayout m_instanceSetLayout{};
-        VkDescriptorSetLayout m_meshSetLayout{};
+        VkDescriptorSetLayout m_materialSetLayout{};
+        VkDescriptorSetLayout m_textureSetLayout{};
 
         VkPipelineLayout m_pipelineLayout{};
         VkPipeline m_graphicsPipeline{};
@@ -260,7 +265,9 @@ namespace Engine::Visual
 
         VkSampler m_textureSampler{};
 
-        VkDescriptorPool m_descriptorPool{};
+        VkDescriptorPool m_materialsDescriptorPool{};
+        VkDescriptorPool m_instancesDescriptorPool{};
+        VkDescriptorPool m_texturesDescriptorPool{};
 
         std::vector<VkCommandBuffer> m_commandBuffers;
 

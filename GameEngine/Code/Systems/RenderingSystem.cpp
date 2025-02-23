@@ -114,7 +114,7 @@ namespace Engine::Systems
 
 	void RenderingSystem::onStop()
 	{
-
+		_renderer->cleanUp();
 	}
 
 	int RenderingSystem::getPriority() const

@@ -19,7 +19,7 @@ layout (set = 1, binding = 0) uniform MaterialBufferObject {
 } mbo;
 
 
-layout(set = 1, binding = 1) uniform sampler2D texture0;
+layout(set = 2, binding = 0) uniform sampler2D texture0;
 
 // Inputs from vertex shader
 layout(location = 0) in vec3 FragPos;
