@@ -36,20 +36,6 @@ namespace Engine::Visual
         void cleanUp() override;
 
     private:
-        struct QueueFamilyIndices {
-            std::optional<uint32_t> graphicsFamily;
-            std::optional<uint32_t> presentFamily;
-
-            [[nodiscard]] bool isComplete() const {
-                return graphicsFamily.has_value() && presentFamily.has_value();
-            }
-        };
-
-        struct SwapChainSupportDetails {
-            VkSurfaceCapabilitiesKHR capabilities;
-            std::vector<VkSurfaceFormatKHR> formats;
-            std::vector<VkPresentModeKHR> presentModes;
-        };
 
         struct Vertex
         {
@@ -57,35 +43,8 @@ namespace Engine::Visual
             glm::vec3 normal;
             glm::vec2 texCoord;
 
-            static VkVertexInputBindingDescription getBindingDescription() {
-                VkVertexInputBindingDescription bindingDescription{};
-                bindingDescription.binding = 0;
-                bindingDescription.stride = sizeof(Vertex);
-                bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-                return bindingDescription;
-            }
-
-            static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions() {
-                std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{};
-
-                attributeDescriptions[0].binding = 0;
-                attributeDescriptions[0].location = 0;
-                attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-                attributeDescriptions[0].offset = offsetof(Vertex, position);
-
-                attributeDescriptions[1].binding = 0;
-                attributeDescriptions[1].location = 1;
-                attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-                attributeDescriptions[1].offset = offsetof(Vertex, normal);
-
-                attributeDescriptions[2].binding = 0;
-                attributeDescriptions[2].location = 2;
-                attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-                attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
-
-                return attributeDescriptions;
-            }
+            static VkVertexInputBindingDescription getBindingDescription();
+            static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();
         };
 
         struct SubMesh
@@ -159,9 +118,24 @@ namespace Engine::Visual
             VkDescriptorSet descriptorSet;
         };
 
+        struct QueueFamilyIndices
+        {
+            std::optional<uint32_t> graphicsFamily;
+            std::optional<uint32_t> presentFamily;
+            [[nodiscard]] bool isComplete() const;
+        };
+
+        struct SwapChainSupportDetails
+        {
+            VkSurfaceCapabilitiesKHR capabilities;
+            std::vector<VkSurfaceFormatKHR> formats;
+            std::vector<VkPresentModeKHR> presentModes;
+        };
+
     private:
         static glm::mat4 getWorldMatrix(const Utils::Vector3& position, const Utils::Vector3& rotation, const Utils::Vector3& scale);
 
+        // init methods
         void createInstance();
         void createSurface(const Window& window);
         void pickPhysicalDevice();
@@ -180,6 +154,7 @@ namespace Engine::Visual
         void createSyncObjects();
         void createTextureSampler();
         void createDefaultMaterial();
+        void createProjectionMatrix();
 
         void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
 

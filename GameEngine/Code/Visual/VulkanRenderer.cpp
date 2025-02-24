@@ -1,14 +1,18 @@
 #include "VulkanRenderer.h"
-#include "Window.h"
+
 #include <stdexcept>
 #include <vector>
 #include <iostream>
 #include <set>
 #include <vulkan/vulkan_win32.h>
-#include <tiny_obj_loader.h>
-#include <stb_image.h>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
+
+#include "stb_image.h"
+#include "tiny_obj_loader.h"
+
+#include "Window.h"
+#include "Utils/DebugMacros.h"
 
 namespace Engine::Visual
 {
@@ -32,30 +36,32 @@ namespace Engine::Visual
 		createSyncObjects();
 		createCommandBuffers();
 		createTextureSampler();
+		createProjectionMatrix();
 		createDefaultMaterial();
-
-		float aspectRatio = (float)m_swapChainExtent.width / (float)m_swapChainExtent.height;
-		m_ubo.projectionMatrix = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 1000.0f);
-		m_ubo.projectionMatrix[1][1] *= -1;
 	}
 
 	////////////////////////////////////////////////////////////////////////
 
 	void VulkanRenderer::clearBackground(float r, float g, float b, float a)
 	{
-		VkResult result = vkAcquireNextImageKHR(m_device, m_swapChain, UINT64_MAX, m_imageAvailableSemaphores[m_currentImageInFlight],
-			VK_NULL_HANDLE, &m_imageIndex);
+		VkResult result = vkAcquireNextImageKHR(
+			m_device,
+			m_swapChain,
+			UINT64_MAX,
+			m_imageAvailableSemaphores[m_currentImageInFlight],
+			VK_NULL_HANDLE,
+			&m_imageIndex
+		);
 
-		if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-			throw std::runtime_error("Failed to acquire swap chain image!");
-		}
+		ASSERT(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR, "Failed to acquire swap chain image, result: {}", (int)result);
 
 		auto commandBuffer = m_commandBuffers[m_imageIndex];
 
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
+		if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS)
+		{
 			throw std::runtime_error("Failed to begin recording command buffer!");
 		}
 
@@ -482,6 +488,15 @@ namespace Engine::Visual
 		vkUnmapMemory(m_device, m_defaultMaterial.materialBufferMemory);
 
 		createDescriptorSet(m_defaultMaterial);
+	}
+
+	////////////////////////////////////////////////////////////////////////
+
+	void VulkanRenderer::createProjectionMatrix()
+	{
+		float aspectRatio = (float)m_swapChainExtent.width / (float)m_swapChainExtent.height;
+		m_ubo.projectionMatrix = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 1000.0f);
+		m_ubo.projectionMatrix[1][1] *= -1;
 	}
 
 	////////////////////////////////////////////////////////////////////////
@@ -1328,6 +1343,8 @@ namespace Engine::Visual
 		return translation * rotationX * rotationY * rotationZ * scaling;
 	}
 
+	////////////////////////////////////////////////////////////////////////
+
 	void VulkanRenderer::createInstance()
 	{
 		const std::vector<const char*> instanceExtensions = {
@@ -1969,6 +1986,8 @@ namespace Engine::Visual
 	}
 
 	////////////////////////////////////////////////////////////////////////
+	// VulkanModelInstance
+	////////////////////////////////////////////////////////////////////////
 
 	VulkanRenderer::VulkanModelInstance::VulkanModelInstance(const std::string& id): 
 		ModelInstanceBase(id),
@@ -1976,6 +1995,54 @@ namespace Engine::Visual
 		uniformBuffer(VK_NULL_HANDLE),
 		uniformBufferMemory(VK_NULL_HANDLE)
 	{
+	}
+
+	////////////////////////////////////////////////////////////////////////
+	// Vertex
+	////////////////////////////////////////////////////////////////////////
+
+	VkVertexInputBindingDescription VulkanRenderer::Vertex::getBindingDescription()
+	{
+		VkVertexInputBindingDescription bindingDescription{};
+		bindingDescription.binding = 0;
+		bindingDescription.stride = sizeof(Vertex);
+		bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+		return bindingDescription;
+	}
+
+	////////////////////////////////////////////////////////////////////////
+
+	std::vector<VkVertexInputAttributeDescription> VulkanRenderer::Vertex::getAttributeDescriptions()
+	{
+		std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
+		attributeDescriptions.resize(3);
+
+		attributeDescriptions[0].binding = 0;
+		attributeDescriptions[0].location = 0;
+		attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+		attributeDescriptions[0].offset = offsetof(Vertex, position);
+
+		attributeDescriptions[1].binding = 0;
+		attributeDescriptions[1].location = 1;
+		attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+		attributeDescriptions[1].offset = offsetof(Vertex, normal);
+
+		attributeDescriptions[2].binding = 0;
+		attributeDescriptions[2].location = 2;
+		attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
+		attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
+
+		return attributeDescriptions;
+	}
+
+	////////////////////////////////////////////////////////////////////////
+	// QueueFamilyIndices
+	////////////////////////////////////////////////////////////////////////
+
+	bool VulkanRenderer::QueueFamilyIndices::isComplete() const
+	{
+		return graphicsFamily.has_value() && presentFamily.has_value();
 	}
 
 	////////////////////////////////////////////////////////////////////////
