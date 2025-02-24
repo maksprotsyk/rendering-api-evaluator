@@ -4,139 +4,33 @@
 #include "OpenGLRenderer.h"
 #include <stdexcept>
 #include <iostream>
-#include "stb_image.h"
-#include "tiny_obj_loader.h"
 #include <GL/wglext.h>
 #include <GL/glew.h>
-#include <fstream>
+
+#include "stb_image.h"
+#include "tiny_obj_loader.h"
+
+#include "Utils/DebugMacros.h"
+
 
 namespace Engine::Visual
 {
-    ////////////////////////////////////////////////////////////////////////
-
-    static void checkError()
-    {
-        GLenum error = glGetError();
-        if (error != GL_NO_ERROR) {
-            std::cerr << "OpenGL Error: " << error << std::endl;
-        }
-    }
 
     ////////////////////////////////////////////////////////////////////////
 
     void OpenGLRenderer::init(const Window& window)
     {
         m_hwnd = window.getHandle();
-        m_hdc = GetDC(m_hwnd); // Get the device context from the HWND
-
-        RECT rect;
-        GetClientRect(window.getHandle(), &rect);
-
-        // Set up the pixel format for the HDC
-        PIXELFORMATDESCRIPTOR pfd = {};
-        pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
-        pfd.nVersion = 1;
-        pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
-        pfd.iPixelType = PFD_TYPE_RGBA;
-        pfd.cColorBits = 32;
-        pfd.cDepthBits = 24;
-        pfd.cStencilBits = 8;
-        pfd.iLayerType = PFD_MAIN_PLANE;
-
-        int pixelFormat = ChoosePixelFormat(m_hdc, &pfd);
-        if (pixelFormat == 0) {
-            throw std::runtime_error("Failed to choose a suitable pixel format");
-        }
-
-        if (!SetPixelFormat(m_hdc, pixelFormat, &pfd)) {
-            throw std::runtime_error("Failed to set the pixel format");
-        }
-
-        // Create a legacy OpenGL rendering context
-        HGLRC tempContext = wglCreateContext(m_hdc);
-        if (!tempContext) {
-            throw std::runtime_error("Failed to create an OpenGL rendering context");
-        }
-
-        if (!wglMakeCurrent(m_hdc, tempContext)) {
-            throw std::runtime_error("Failed to activate the OpenGL rendering context");
-        }
-
-        // Load modern OpenGL functions using GLEW
-        glewExperimental = GL_TRUE;
-        if (glewInit() != GLEW_OK) {
-            throw std::runtime_error("Failed to initialize GLEW");
-        }
-
-        // Create a modern OpenGL context
-        typedef HGLRC(WINAPI* PFNWGLCREATECONTEXTATTRIBSARBPROC)(HDC, HGLRC, const int*);
-        PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB = nullptr;
-        wglCreateContextAttribsARB = (PFNWGLCREATECONTEXTATTRIBSARBPROC)wglGetProcAddress("wglCreateContextAttribsARB");
-
-        if (wglCreateContextAttribsARB) {
-            int attribs[] = {
-                WGL_CONTEXT_MAJOR_VERSION_ARB, 4,
-                WGL_CONTEXT_MINOR_VERSION_ARB, 5,
-                WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
-                0 // End of attributes list
-            };
-
-            HGLRC hglrcNew = wglCreateContextAttribsARB(m_hdc, nullptr, attribs);
-            if (hglrcNew) {
-                wglMakeCurrent(nullptr, nullptr); // Unset the old context
-                wglDeleteContext(tempContext);
-                tempContext = hglrcNew;
-
-                if (!wglMakeCurrent(m_hdc, tempContext)) {
-                    throw std::runtime_error("Failed to activate the modern OpenGL rendering context");
-                }
-            }
-        }
-
-        // Store the HGLRC for later use
-        m_hglrc = tempContext;
-
-        // Set up the initial OpenGL state
-        glClearColor(0.0f, 0.2f, 0.4f, 1.0f); // Set the clear color
-        glEnable(GL_DEPTH_TEST);
-        glEnable(GL_CULL_FACE);
-        glFrontFace(GL_CW);
-
-        // Create and compile shaders (using GLSL files)
-        m_shaderProgram = createShaderProgram("VertexShader.glsl", "FragmentShader.glsl");
-
-        createFrameBuffer(rect.right - rect.left, rect.bottom - rect.top);
-
-        glUseProgram(m_shaderProgram);
-
-        // Get uniform locations for matrices
-        m_viewMatrixLoc = glGetUniformLocation(m_shaderProgram, "viewMatrix");
-        m_projectionMatrixLoc = glGetUniformLocation(m_shaderProgram, "projectionMatrix");
-        m_modelMatrixLoc = glGetUniformLocation(m_shaderProgram, "modelMatrix");
-
-        if (!loadTexture(DEFAULT_TEXTURE))
-        {
-            // TODO: asserts
-        }
-        m_defaultMaterial.diffuseTextureId = DEFAULT_TEXTURE;
-        m_defaultMaterial.diffuseColor = glm::vec3(0.1f, 0.1f, 0.1f);
-        m_defaultMaterial.ambientColor = glm::vec3(0.5f, 0.5f, 0.5f);
-        m_defaultMaterial.specularColor = glm::vec3(0.5f, 0.5f, 0.5f);
-        m_defaultMaterial.shininess = 32.0f;
-
-        glViewport(0, 0, rect.right - rect.left, rect.bottom - rect.top);
-        float aspectRatio = (float)(rect.right - rect.left) / (float)(rect.bottom - rect.top);
-
-        m_projectionMatrix = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 1000.0f);
-
-        auto wglSwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC)wglGetProcAddress("wglSwapIntervalEXT");
-        if (wglSwapIntervalEXT) {
-            wglSwapIntervalEXT(0); // Enable VSync
-            std::cout << "VSync enabled successfully." << std::endl;
-        }
-        else {
-            std::cerr << "Failed to load wglSwapIntervalEXT. VSync control is not available." << std::endl;
-        }
+        m_hdc = GetDC(m_hwnd);
+    
+        setPixelFormat();
+        createWglContext();
+        setInitialOpenGLState();
+        createShaderProgram("VertexShader.glsl", "FragmentShader.glsl");
+        createShaderFields();
+        createFrameBuffer();
+        createViewport();
+        createDefaultMaterial();   
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -145,6 +39,10 @@ namespace Engine::Visual
     {
         glClearColor(r, g, b, a);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        // Use the shader program
+        glUseProgram(m_shaderProgram);
+        ASSERT_OPENGL("Unable to use shader program");
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -159,46 +57,35 @@ namespace Engine::Visual
         }
         const ModelData& modelData = modelItr->second;
         glm::mat4 worldMatrix = getWorldMatrix(position, rotation, scale);
-        // Use the shader program
-        glUseProgram(m_shaderProgram);
-        checkError();
 
-        // Bind the VAO
         glBindVertexArray(modelData.vao);
-        checkError();
+        ASSERT_OPENGL("Unable to bind vertex buffer for model: {}", model.GetId());
 
-        // Set view and projection matrices
         glUniformMatrix4fv(m_viewMatrixLoc, 1, GL_FALSE, glm::value_ptr(m_viewMatrix));
         glUniformMatrix4fv(m_projectionMatrixLoc, 1, GL_FALSE, glm::value_ptr(m_projectionMatrix));
         glUniformMatrix4fv(m_modelMatrixLoc, 1, GL_FALSE, glm::value_ptr(worldMatrix));
-        checkError();
 
-        // Iterate through the meshes in the model and render each
         for (const auto& mesh : modelData.meshes)
         {
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.indexBuffer);
-            checkError();
+            ASSERT_OPENGL("Unable to bind index buffer for mesh of model: {}", model.GetId());
 
-            // Set the material properties in the shader
             const Material& material = mesh.materialId != -1 ? modelData.materials[mesh.materialId] : m_defaultMaterial;
             glUniform3fv(glGetUniformLocation(m_shaderProgram, "ambientColor"), 1, glm::value_ptr(material.ambientColor));
             glUniform3fv(glGetUniformLocation(m_shaderProgram, "diffuseColor"), 1, glm::value_ptr(material.diffuseColor));
             glUniform3fv(glGetUniformLocation(m_shaderProgram, "specularColor"), 1, glm::value_ptr(material.specularColor));
             glUniform1f(glGetUniformLocation(m_shaderProgram, "shininess"), material.shininess);
-            checkError();
+            ASSERT_OPENGL("Unable to set material properties for mesh of model: {}", model.GetId());
 
-            // Bind texture
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, getTexture(material.diffuseTextureId));
             glUniform1i(glGetUniformLocation(m_shaderProgram, "diffuseTexture"), 0);
-            checkError();
+            ASSERT_OPENGL("Unable to set texture for mesh of model: {}", model.GetId());
 
-            // Draw the mesh
             glDrawElements(GL_TRIANGLES, mesh.indices.size(), GL_UNSIGNED_INT, 0);
-            checkError();
+            ASSERT_OPENGL("Unable to draw mesh of model: {}", model.GetId());
         }
 
-        // Unbind the VAO
         glBindVertexArray(0);
     }
 
@@ -206,10 +93,8 @@ namespace Engine::Visual
 
     void OpenGLRenderer::render()
     {
-        // Swap buffers to display the rendered frame
         SwapBuffers(m_hdc);
-
-        checkError();
+        ASSERT_OPENGL("Unable to swap buffers and render");
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -217,34 +102,31 @@ namespace Engine::Visual
     const GLuint& OpenGLRenderer::getTexture(const std::string& textureId) const
     {
         const auto& textureItr = m_textures.find(textureId);
+        ASSERT(textureItr != m_textures.end(), "Can't find texture: {}", textureId);
         if (textureItr != m_textures.end())
         {
             return textureItr->second;
         }
 
         const auto& defaultTextureItr = m_textures.find(DEFAULT_TEXTURE);
+        ASSERT(defaultTextureItr != m_textures.end(), "Can't find default texture: {}", DEFAULT_TEXTURE);
         if (defaultTextureItr != m_textures.end())
         {
             return defaultTextureItr->second;
         }
-
-        // TODO: asserts
     }
 
     ////////////////////////////////////////////////////////////////////////
 
     void OpenGLRenderer::createBuffersForModel(ModelData& model)
     {
-        // Create and bind the VAO
         glGenVertexArrays(1, &model.vao);
         glBindVertexArray(model.vao);
 
-        // Create and bind the vertex buffer
         glGenBuffers(1, &model.vertexBuffer);
         glBindBuffer(GL_ARRAY_BUFFER, model.vertexBuffer);
         glBufferData(GL_ARRAY_BUFFER, model.vertices.size() * sizeof(Vertex), model.vertices.data(), GL_STATIC_DRAW);
 
-        // Define the vertex attributes (position, normal, texCoord)
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
         glEnableVertexAttribArray(0);
 
@@ -254,7 +136,6 @@ namespace Engine::Visual
         glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texCoord));
         glEnableVertexAttribArray(2);
 
-        // Create and bind the element buffer (EBO) for each sub-mesh
         for (auto& subMesh : model.meshes)
         {
             glGenBuffers(1, &subMesh.indexBuffer);
@@ -262,7 +143,6 @@ namespace Engine::Visual
             glBufferData(GL_ELEMENT_ARRAY_BUFFER, subMesh.indices.size() * sizeof(unsigned int), subMesh.indices.data(), GL_STATIC_DRAW);
         }
 
-        // Unbind the VAO
         glBindVertexArray(0);
     }
 
@@ -547,7 +427,6 @@ namespace Engine::Visual
             return false;
         }
 
-
         GLuint texture;
         glGenTextures(1, &texture);
         glBindTexture(GL_TEXTURE_2D, texture);
@@ -562,8 +441,119 @@ namespace Engine::Visual
 
     ////////////////////////////////////////////////////////////////////////
 
-    void OpenGLRenderer::createFrameBuffer(int width, int height)
+    void OpenGLRenderer::setPixelFormat()
     {
+        // Set up the pixel format for the HDC
+        PIXELFORMATDESCRIPTOR pfd = {};
+        pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+        pfd.nVersion = 1;
+        pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+        pfd.iPixelType = PFD_TYPE_RGBA;
+        pfd.cColorBits = 32;
+        pfd.cDepthBits = 24;
+        pfd.cStencilBits = 8;
+        pfd.iLayerType = PFD_MAIN_PLANE;
+
+        int pixelFormat = ChoosePixelFormat(m_hdc, &pfd);
+        ASSERT(pixelFormat != 0, "Can't choose pixel format");
+        if (pixelFormat == 0)
+        {
+            return;
+        }
+
+        bool setPixelFormatResult = SetPixelFormat(m_hdc, pixelFormat, &pfd);
+        ASSERT(setPixelFormatResult, "Can't set pixel format: {}", pixelFormat);
+        if (!setPixelFormatResult)
+        {
+            return;
+        }
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+
+    void OpenGLRenderer::createWglContext()
+    {
+
+        HGLRC tempContext = wglCreateContext(m_hdc);
+        ASSERT(tempContext, "Failed to create an OpenGL rendering context");
+        if (!tempContext)
+        {
+            return;
+        }
+
+        bool wglMakeCurrentResult = wglMakeCurrent(m_hdc, tempContext);
+        ASSERT(wglMakeCurrentResult, "Failed to activate the OpenGL rendering context");
+        if (!wglMakeCurrentResult)
+        {
+            return;
+        }
+
+        glewExperimental = GL_TRUE;
+        GLenum glewInitResult = glewInit();
+        ASSERT(glewInitResult == GLEW_OK, "Failed to initialize GLEW, error code: {}", glewInitResult);
+        if (glewInitResult != GLEW_OK)
+        {
+            return;
+        }
+
+        // Create a modern OpenGL context
+        typedef HGLRC(WINAPI* PFNWGLCREATECONTEXTATTRIBSARBPROC)(HDC, HGLRC, const int*);
+        PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB = nullptr;
+        wglCreateContextAttribsARB = (PFNWGLCREATECONTEXTATTRIBSARBPROC)wglGetProcAddress("wglCreateContextAttribsARB");
+
+        if (wglCreateContextAttribsARB) 
+        {
+            int attribs[] = {
+                WGL_CONTEXT_MAJOR_VERSION_ARB, 4,
+                WGL_CONTEXT_MINOR_VERSION_ARB, 5,
+                WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+                0
+            };
+
+            HGLRC hglrcNew = wglCreateContextAttribsARB(m_hdc, nullptr, attribs);
+            ASSERT(hglrcNew, "Failed to create wgl context atrributes");
+            if (hglrcNew) 
+            {
+                wglMakeCurrent(nullptr, nullptr);
+                wglDeleteContext(tempContext);
+                tempContext = hglrcNew;
+
+                bool wglMakeCurrentResult = wglMakeCurrent(m_hdc, tempContext);
+                ASSERT(wglMakeCurrentResult, "Failed to activate the modern OpenGL rendering context");
+            }
+        }
+
+        // Store the HGLRC for later use
+        m_hglrc = tempContext;
+        
+        auto wglSwapIntervalEXT = (PFNWGLSWAPINTERVALEXTPROC)wglGetProcAddress("wglSwapIntervalEXT");
+        ASSERT(wglSwapIntervalEXT, "Failed to get wglSwapIntervalEXT for disabling VSync");
+        if (wglSwapIntervalEXT)
+        {
+            wglSwapIntervalEXT(0);
+        }
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+
+    void OpenGLRenderer::setInitialOpenGLState()
+    {
+        glClearColor(0.0f,0.0f, 0.0f, 0.0f);
+        glEnable(GL_DEPTH_TEST);
+        glEnable(GL_CULL_FACE);
+        glFrontFace(GL_CW);
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+
+    void OpenGLRenderer::createFrameBuffer()
+    {
+        RECT rect;
+        GetClientRect(m_hwnd, &rect);
+
+        int width = rect.right - rect.left;
+        int height = rect.bottom - rect.top;
+
         glGenFramebuffers(1, &m_frameBuffer);
         glBindFramebuffer(GL_FRAMEBUFFER, m_frameBuffer);
 
@@ -574,12 +564,26 @@ namespace Engine::Visual
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_frameBufferTexture, 0);
 
-        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-            std::cerr << "Error: Framebuffer is not complete!" << std::endl;
-        }
+        ASSERT(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE, "Frame buffer is not complete");
 
         glEnable(GL_FRAMEBUFFER_SRGB);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+
+    void OpenGLRenderer::createViewport()
+    {
+        RECT rect;
+        GetClientRect(m_hwnd, &rect);
+
+        int width = rect.right - rect.left;
+        int height = rect.bottom - rect.top;
+
+        glViewport(0, 0, width, height);
+        float aspectRatio = (float)(width) / (float)(height);
+
+        m_projectionMatrix = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 1000.0f);
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -598,15 +602,15 @@ namespace Engine::Visual
         {
             char infoLog[512];
             glGetShaderInfoLog(shader, 512, nullptr, infoLog);
-            std::cerr << "Shader compilation error: " << infoLog << std::endl;
-            throw std::runtime_error("Shader compilation failed.");
+            ASSERT(success, "Shader compilation error: {}", infoLog);
+            throw std::runtime_error("Shader compilation error");
         }
         return shader;
     }
 
     ////////////////////////////////////////////////////////////////////////
 
-    GLuint OpenGLRenderer::createShaderProgram(const std::string& vsSource, const std::string& fsSource)
+    void OpenGLRenderer::createShaderProgram(const std::string& vsSource, const std::string& fsSource)
     {
         GLuint vertexShader = createShader(vsSource, GL_VERTEX_SHADER);
         GLuint fragmentShader = createShader(fsSource, GL_FRAGMENT_SHADER);
@@ -622,14 +626,39 @@ namespace Engine::Visual
         {
             char infoLog[512];
             glGetProgramInfoLog(program, 512, nullptr, infoLog);
-            std::cerr << "Program linking error: " << infoLog << std::endl;
+            ASSERT(success, "Shader program linking error: {}", infoLog);
             throw std::runtime_error("Shader program linking failed.");
         }
 
         glDeleteShader(vertexShader);
         glDeleteShader(fragmentShader);
 
-        return program;
+        m_shaderProgram = program;
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+
+    void OpenGLRenderer::createShaderFields()
+    {
+        glUseProgram(m_shaderProgram);
+        m_viewMatrixLoc = glGetUniformLocation(m_shaderProgram, "viewMatrix");
+        m_projectionMatrixLoc = glGetUniformLocation(m_shaderProgram, "projectionMatrix");
+        m_modelMatrixLoc = glGetUniformLocation(m_shaderProgram, "modelMatrix");
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////
+
+    void OpenGLRenderer::createDefaultMaterial()
+    {
+        bool loadTextureRes = loadTexture(DEFAULT_TEXTURE);
+        ASSERT(loadTextureRes, "Can't load default texture: {}", DEFAULT_TEXTURE);
+
+        m_defaultMaterial.diffuseTextureId = DEFAULT_TEXTURE;
+        m_defaultMaterial.diffuseColor = glm::vec3(0.1f, 0.1f, 0.1f);
+        m_defaultMaterial.ambientColor = glm::vec3(0.5f, 0.5f, 0.5f);
+        m_defaultMaterial.specularColor = glm::vec3(0.5f, 0.5f, 0.5f);
+        m_defaultMaterial.shininess = 32.0f;
     }
 
     ////////////////////////////////////////////////////////////////////////

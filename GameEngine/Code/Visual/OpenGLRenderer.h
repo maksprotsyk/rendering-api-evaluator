@@ -74,10 +74,17 @@ namespace Engine::Visual
     private:
         static glm::mat4 getWorldMatrix(const Utils::Vector3& position, const Utils::Vector3& rotation, const Utils::Vector3& scale);
 
-        void createFrameBuffer(int width, int height);
-        GLuint createShader(const std::string& source, GLenum shaderType);
-        GLuint createShaderProgram(const std::string& vsSource, const std::string& fsSource);
+        // init parts
+        void setPixelFormat();
+        void createWglContext();
+        void setInitialOpenGLState();
+        void createShaderProgram(const std::string& vsSource, const std::string& fsSource);
+        void createShaderFields();
+        void createFrameBuffer();
+        void createViewport();
+        void createDefaultMaterial();
 
+        GLuint createShader(const std::string& source, GLenum shaderType);
         const GLuint& getTexture(const std::string& textureId) const;
         void createBuffersForModel(ModelData& model);
         bool loadModelFromFile(ModelData& model, const std::string& filename);
