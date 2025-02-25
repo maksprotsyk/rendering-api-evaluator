@@ -42,6 +42,7 @@ namespace Engine::Visual
 		{
 			return;
 		}
+
 		const ModelData& modelData = modelItr->second;
 
 		XMMATRIX worldMatrix = getWorldMatrix(position, rotation, scale);

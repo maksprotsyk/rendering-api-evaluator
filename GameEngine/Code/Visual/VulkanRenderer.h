@@ -134,8 +134,9 @@ namespace Engine::Visual
 
     private:
         static glm::mat4 getWorldMatrix(const Utils::Vector3& position, const Utils::Vector3& rotation, const Utils::Vector3& scale);
+        static bool validateResult(VkResult result, const std::string& message);
 
-        // init methods
+        // Init methods
         void createInstance();
         void createSurface(const Window& window);
         void pickPhysicalDevice();
@@ -144,39 +145,46 @@ namespace Engine::Visual
         void createImageViews();
         void createRenderPass();
         void createDescriptorSetLayout();
-        void createDescriptorPool();
-        bool createDescriptorSets(ModelData& model);
-        bool createDescriptorSet(Material& material);
         void createGraphicsPipeline();
-        void createFramebuffers();
         void createCommandPool();
         void createDepthResources();
+        void createFramebuffers();
+        void createDescriptorPool();
         void createSyncObjects();
-        void createTextureSampler();
-        void createDefaultMaterial();
-        void createProjectionMatrix();
-
-        void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
-
-        void createUniformBuffers(ModelData& model);
         void createCommandBuffers();
+        void createTextureSampler();
+        void createProjectionMatrix();
+        void createDefaultMaterial();
 
-        void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling,
-                         VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& img, VkDeviceMemory& imageMemory);
+		// Model loading methods
+        const TextureData& getTexture(const std::string& textureId) const;
+        bool loadModelFromFile(ModelData& model, const std::string& filename);
+        bool createBuffersForModel(ModelData& model);
+        void unloadMaterial(Material& material);
 
-        void createVertexBuffer(ModelData& model);
-        void createIndexBuffer(ModelData& model);
+        bool createUniformBuffers(ModelData& model);
+        bool createDescriptorSets(ModelData& model);
+        bool createVertexBuffer(ModelData& model);
+        bool createIndexBuffer(ModelData& model);
+        bool createDescriptorSet(Material& material);
+
+
+        // Memory utils
+        bool createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+        bool setBufferMemoryData(VkDeviceMemory memory, const void* data, VkDeviceSize size);
         void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
-        bool createTextureImage(const std::string& filename, VkImage& textureImage, VkDeviceMemory& textureImageMemory);
+        bool createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling,
+                        VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& img,
+                        VkDeviceMemory& imageMemory);
+        bool createTextureImage(const std::string& filename, TextureData& texture);
         void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
         void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
-        void createTextureImageView(VkImageView& imageView, const VkImage& image);
-
-        VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
-
-        VkShaderModule createShaderModule(const std::vector<char>& code);
         VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
+
+		// Vulkan utils
+        VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
+        VkShaderModule createShaderModule(const std::vector<char>& code);
 
         VkCommandBuffer beginSingleTimeCommands();
         void endSingleTimeCommands(VkCommandBuffer commandBuffer);
@@ -188,16 +196,10 @@ namespace Engine::Visual
         SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice dev);
         VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
         VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
-
         VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 
         static bool checkDeviceExtensionSupport(VkPhysicalDevice dev);
         VkFormat findDepthFormat();
-
-        const TextureData& getTexture(const std::string& textureId) const;
-        bool loadModelFromFile(ModelData& model, const std::string& filename);
-        bool createBuffersForModel(ModelData& model);
-        void unloadMaterial(Material& material);
 
     private:
 

@@ -50,9 +50,10 @@ namespace Engine::Visual
     void OpenGLRenderer::draw(const IModelInstance& model, const Utils::Vector3& position, const Utils::Vector3& rotation, const Utils::Vector3& scale)
     {
         const auto& modelItr = m_models.find(model.GetId());
+
+        ASSERT(modelItr != m_models.end(), "Failed to find model width id: {}", model.GetId());
         if (modelItr == m_models.end())
         {
-            //TODO: asserts
             return;
         }
         const ModelData& modelData = modelItr->second;
