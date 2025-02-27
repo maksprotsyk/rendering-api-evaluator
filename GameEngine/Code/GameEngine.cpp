@@ -6,18 +6,10 @@
 #include <iostream>
 #include <chrono>
 #include <thread>
-#include <iostream>
 #include <filesystem>
 
-#include "Visual/Window.h"
+#include "Managers/GameController.h"
 #include "Events/NativeInputEvents.h"
-#include "Managers/EventsManager.h"
-#include "Managers/SystemsManager.h"
-#include "Managers/ComponentsManager.h"
-#include "Systems/RenderingSystem.h"
-#include "Systems/PhysicsSystem.h"
-#include "Systems/InputSystem.h"
-#include "Systems/StatsSystem.h"
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
@@ -67,62 +59,16 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     window.showWindow(nCmdShow);
     window.SetOnKetStateChanged([](WPARAM param, bool state)
         {
-            Engine::EventsManager::get().emit(Engine::Events::NativeKeyStateChanged{ param, state });
-        });
-
-    bool nativeExitRequested = false;
-    Engine::EventsManager::get().subscribe<Engine::Events::NativeExitRequested>(
-		[&nativeExitRequested](const Engine::Events::NativeExitRequested&)
-		{
-			nativeExitRequested = true;
-		}
-	);
-
-    Engine::SystemsManager& systemsManager = Engine::SystemsManager::get();
-    systemsManager.addSystem(std::make_unique<Engine::Systems::StatsSystem>());
-    systemsManager.addSystem(std::make_unique<Engine::Systems::RenderingSystem>(window));
-    systemsManager.addSystem(std::make_unique<Engine::Systems::PhysicsSystem>());
-    systemsManager.addSystem(std::make_unique<Engine::Systems::InputSystem>());
-
-    Engine::ComponentsManager& componentsManager = Engine::ComponentsManager::get();
-    Engine::EntitiesManager& entitiesManager = Engine::EntitiesManager::get();
-
-    const nlohmann::json& json = Engine::Utils::Parser::readJson(jsonPath);
-    for (const nlohmann::json& entityJson: json["Entities"])
-    {
-        Engine::EntityID id = entitiesManager.createEntity();
-        for (const nlohmann::json& compJson : entityJson["Components"])
-        {
-            componentsManager.createComponentFromJson(id, compJson);
+            Engine::GameController::get().getEventsManager().emit(Engine::Events::NativeKeyStateChanged{param, state});
         }
-    }
+    );
 
-    float dt = 0;
-    while (!nativeExitRequested)
-    {
-        // Measure the time taken for the frame
-
-        bool needToExit = window.update();
-        if (needToExit)
-        {
-            break;
-        }
-
-		systemsManager.processAddedSystems();
-		systemsManager.processRemovedSystems();
-        
-        // Update all systems
-        auto start = std::chrono::high_resolution_clock::now();
-        systemsManager.update(dt);
-        auto end = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<float> elapsed = end - start;
-        dt = elapsed.count();
-    
-    }
-
-    systemsManager.stop();
-
-    
+	Engine::GameController& gameController = Engine::GameController::get();
+	gameController.setWindow(window);
+	gameController.setConfig(jsonPath);
+	gameController.init();
+	gameController.run();
+	gameController.clear();
 
     return 0;
 }

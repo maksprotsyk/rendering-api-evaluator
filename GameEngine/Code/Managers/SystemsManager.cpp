@@ -1,18 +1,9 @@
 #include "SystemsManager.h"
 
+#include "Utils/DebugMacros.h"
+
 namespace Engine
 {
-
-	std::unique_ptr<SystemsManager> SystemsManager::_instance = nullptr;
-
-	SystemsManager& SystemsManager::get()
-	{
-		if (!_instance)
-		{
-			_instance = std::make_unique<SystemsManager>();
-		}
-		return *_instance;
-	}
 
 	void SystemsManager::addSystem(std::unique_ptr<Systems::ISystem>&& system)
 	{
@@ -62,6 +53,13 @@ namespace Engine
 		{
 			system->onStop();
 		}
+	}
+
+	void SystemsManager::clear()
+	{
+		ASSERT(_addedSystems.empty(), "There are still systems to be added");
+		ASSERT(_removedSystems.empty(), "There are still systems to be removed");
+		_systems.clear();
 	}
 
 	bool SystemsManager::LessPriority::operator()(const std::unique_ptr<Systems::ISystem>& lhs, const std::unique_ptr<Systems::ISystem>& rhs) const

@@ -2,6 +2,8 @@
 
 #ifdef _DEBUG
 
+#include <iostream>
+#include <format>
 #include <GL/glew.h>
 
 #define ASSERT(condition, message, ...) \

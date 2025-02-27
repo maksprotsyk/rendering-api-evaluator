@@ -7,6 +7,7 @@
 #include "Components/Model.h"
 #include "Components/JsonData.h"
 #include "Utils/BasicUtils.h"
+#include "Managers/GameController.h"
 
 
 namespace Engine::Systems
@@ -16,7 +17,7 @@ namespace Engine::Systems
 	}
 	void RenderingSystem::onStart()
 	{
-		auto& compManager = ComponentsManager::get();
+		auto& compManager = GameController::get().getComponentsManager();
 
 		const auto& tagSet = compManager.getComponentSet<Components::Tag>();
 		const auto& jsonDataSet = compManager.getComponentSet<Components::JsonData>();
@@ -82,7 +83,7 @@ namespace Engine::Systems
 
 	void RenderingSystem::onUpdate(float dt)
 	{
-		auto& compManager = ComponentsManager::get();
+		auto& compManager = GameController::get().getComponentsManager();
 		const auto& cameraTransform = compManager.getComponentSet<Components::Transform>().getElement(_cameraId);
 		_renderer->setCameraProperties(cameraTransform.position, cameraTransform.rotation);
 

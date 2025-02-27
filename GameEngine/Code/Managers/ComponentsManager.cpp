@@ -2,16 +2,6 @@
 
 namespace Engine
 {
-	std::unique_ptr<ComponentsManager> ComponentsManager::_instance = nullptr;
-
-	ComponentsManager& ComponentsManager::get()
-	{
-		if (!_instance)
-		{
-			_instance = std::make_unique<ComponentsManager>();
-		}
-		return *_instance;
-	}
 
 	void ComponentsManager::createComponentFromJson(EntityID id, const nlohmann::json& value)
 	{
@@ -35,6 +25,14 @@ namespace Engine
 		for (auto& [name, componentsSet] : _sparseSets)
 		{
 			componentsSet->removeElement(id);
+		}
+	}
+
+	void ComponentsManager::clear()
+	{
+		for (auto& [name, componentsSet] : _sparseSets)
+		{
+			componentsSet->clear();
 		}
 	}
 

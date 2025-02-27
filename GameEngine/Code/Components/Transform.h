@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Managers/ComponentsManager.h"
 #include "Utils/Vector.h"
 
 namespace Engine::Components

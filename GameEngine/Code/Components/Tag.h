@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Managers/ComponentsManager.h"
+#include "Utils/Parser.h"
 
 namespace Engine::Components
 {

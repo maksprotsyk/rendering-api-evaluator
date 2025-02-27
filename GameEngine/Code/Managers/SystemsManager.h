@@ -14,11 +14,11 @@ namespace Engine
 	class SystemsManager
 	{
 	public:
-		static SystemsManager& get();
 		void addSystem(std::unique_ptr<Systems::ISystem>&& system);
 		void removeSystem(Systems::ISystem* system);
 		void update(float dt) const;
 		void stop() const;
+		void clear();
 		void processAddedSystems();
 		void processRemovedSystems();
 
@@ -33,8 +33,6 @@ namespace Engine
 
 		std::queue<Systems::ISystem*> _removedSystems;
 		std::queue<std::unique_ptr<Systems::ISystem>> _addedSystems;
-
-		static std::unique_ptr<SystemsManager> _instance;
 	};
 }
 

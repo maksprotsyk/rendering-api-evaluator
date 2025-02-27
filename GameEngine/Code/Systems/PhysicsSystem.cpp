@@ -1,5 +1,5 @@
 #include "PhysicsSystem.h"
-#include "Managers/ComponentsManager.h"
+#include "Managers/GameController.h"
 #include "Components/Transform.h"
 #include "Components/Tag.h"
 
@@ -13,7 +13,7 @@ namespace Engine::Systems
 
 	void PhysicsSystem::onUpdate(float dt)
 	{
-		ComponentsManager& compManager = ComponentsManager::get();
+		ComponentsManager& compManager = GameController::get().getComponentsManager();
 		auto& transformSet = compManager.getComponentSet<Components::Transform>();
 		const auto& tagSet = compManager.getComponentSet<Components::Tag>();
 		_scalingTime += dt;

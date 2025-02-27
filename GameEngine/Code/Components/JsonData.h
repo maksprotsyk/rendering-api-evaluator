@@ -1,7 +1,6 @@
 #pragma once
 
-#include "Managers/ComponentsManager.h"
-#include "nlohmann/json.hpp"
+#include "Utils/Parser.h"
 
 namespace Engine::Components
 {

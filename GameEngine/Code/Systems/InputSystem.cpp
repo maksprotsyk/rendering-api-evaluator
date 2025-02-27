@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-#include "Managers/EventsManager.h"
+#include "Managers/GameController.h"
 #include "Events/NativeInputEvents.h"
 #include "Components/Transform.h"
 #include "Components/Tag.h"
@@ -11,15 +11,15 @@ namespace Engine::Systems
 {
 	void InputSystem::onStart()
 	{
-		EventsManager::get().subscribe<Events::NativeKeyStateChanged>(
+		GameController::get().getEventsManager().subscribe<Events::NativeKeyStateChanged>(
 			[this](const Events::NativeKeyStateChanged& e)
 			{
 				_keyStates[(char)e.key] = e.pressed;
 			}
 		);
 
-		auto& tagSet = ComponentsManager::get().getComponentSet<Components::Tag>();
-		for (EntityID id : ComponentsManager::get().entitiesWithComponents<Components::Tag>())
+		auto& tagSet = GameController::get().getComponentsManager().getComponentSet<Components::Tag>();
+		for (EntityID id : GameController::get().getComponentsManager().entitiesWithComponents<Components::Tag>())
 		{
 			if (tagSet.getElement(id).tag == "MainCamera")
 			{
@@ -40,7 +40,7 @@ namespace Engine::Systems
 		float movementZ = getAxisInput('S', 'W');
 		float movementY = getAxisInput('Q', 'E');
 
-		Components::Transform& transform = ComponentsManager::get().getComponentSet<Components::Transform>().getElement(_cameraId);
+		Components::Transform& transform = GameController::get().getComponentsManager().getComponentSet<Components::Transform>().getElement(_cameraId);
 
 		Utils::Vector3& position = transform.position;
 

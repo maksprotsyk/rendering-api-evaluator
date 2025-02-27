@@ -3,17 +3,6 @@
 namespace Engine
 {
 
-	std::unique_ptr<EntitiesManager> EntitiesManager::_instance = nullptr;
-
-	EntitiesManager& EntitiesManager::get()
-	{
-		if (!_instance)
-		{
-			_instance = std::make_unique<EntitiesManager>();
-		}
-		return *_instance;
-	}
-
 	EntityID EntitiesManager::createEntity()
 	{
 		EntityID id = 0;
@@ -33,5 +22,10 @@ namespace Engine
 	void EntitiesManager::destroyEntity(EntityID id)
 	{
 		_takenIds.erase(id);
+	}
+
+	void EntitiesManager::clear()
+	{
+		_takenIds.clear();
 	}
 }

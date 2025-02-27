@@ -14,6 +14,7 @@ namespace Engine::Utils
         bool isPresent(IDType entity) const;
         size_t size() const;
         virtual bool removeElement(IDType id);
+        virtual void clear();
 
     protected:
         std::vector<int> _sparse; // Maps entity ID to index in dense array
@@ -31,6 +32,7 @@ namespace Engine::Utils
         const ElemType& getElement(IDType entity) const;
 
         bool removeElement(IDType entity) override;
+        void clear() override;
 
         const std::vector<ElemType>& getElements() const;
         std::vector<ElemType>& getElements();
@@ -135,6 +137,13 @@ namespace Engine::Utils
         return true;
     }
 
+    template<typename ElemType, typename IDType>
+    inline void SparseSet<ElemType, IDType>::clear()
+    {
+		SparseSetBase<IDType>::clear();
+		_dense.clear();
+    }
+
     template <typename ElemType, typename IDType>
     const std::vector<ElemType>& SparseSet<ElemType, IDType>::getElements() const
     {
@@ -181,6 +190,13 @@ namespace Engine::Utils
         }
 
         return true;
+    }
+
+    template<typename IDType>
+    inline void SparseSetBase<IDType>::clear()
+	{
+		_sparse.clear();
+		_denseEntities.clear();
     }
 
     template <typename IDType>

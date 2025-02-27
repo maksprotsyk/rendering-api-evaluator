@@ -10,9 +10,9 @@ namespace Engine
 	class EntitiesManager
 	{
 	public:
-		static EntitiesManager& get();
 		EntityID createEntity();
 		void destroyEntity(EntityID id);
+		void clear();
 
 	private:
 		static std::unique_ptr<EntitiesManager> _instance;

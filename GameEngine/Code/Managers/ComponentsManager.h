@@ -10,15 +10,13 @@
 #include "Utils/BasicUtils.h"
 #include "Utils/Parser.h"
 
-#include "Managers/EntitiesManager.h"
+#include "EntitiesManager.h"
 
 namespace Engine
 {
 	class ComponentsManager
 	{
 	public:
-
-		static ComponentsManager& get();
 
 		void createComponentFromJson(EntityID id, const nlohmann::json& value);
 
@@ -39,25 +37,12 @@ namespace Engine
 		template <typename... Components>
 		std::vector<EntityID> entitiesWithComponents();
 
+		void clear();
+
 
 	private:
-		static std::unique_ptr<ComponentsManager> _instance;
 		std::unordered_map<std::string, std::unique_ptr<Utils::SparseSetBase<EntityID>>> _sparseSets;
 		std::unordered_map<std::string, std::function<void(EntityID, const nlohmann::json& val)>> _componentCreators;
-	};
-
-	template <typename Component>
-	class ComponentRegisterer
-	{
-	public:
-		explicit ComponentRegisterer();
-	};
-
-	template <typename Component, typename Serializer>
-	class SerializableComponentRegisterer
-	{
-	public:
-		explicit SerializableComponentRegisterer();
 	};
 }
 
@@ -161,25 +146,4 @@ namespace Engine
 
 		return result;
 	}
-
-	template <typename Component>
-	ComponentRegisterer<Component>::ComponentRegisterer()
-	{
-		ComponentsManager::get().registerComponent<Component>();
-	}
-
-	template <typename Component, typename Serializer>
-	SerializableComponentRegisterer<Component, Serializer>::SerializableComponentRegisterer()
-	{
-		ComponentsManager::get().registerComponent<Component, Serializer>();
-	}
 }
-
-#define REGISTER_COMPONENT(T) \
-static const Engine::ComponentRegisterer<T> reg = Engine::ComponentRegisterer<T>();
-
-#define REGISTER_SERIALIZABLE_COMPONENT(T) \
-static const Engine::SerializableComponentRegisterer<T, T> reg = Engine::SerializableComponentRegisterer<T, T>();
-
-#define REGISTER_SERIALIZABLE_COMPONENT_S(T, S) \
-static const Engine::SerializableComponentRegisterer<T, S> reg = Engine::SerializableComponentRegisterer<T, S>();

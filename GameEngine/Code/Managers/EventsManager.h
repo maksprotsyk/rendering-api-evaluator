@@ -8,8 +8,6 @@ namespace Engine
     {
     public:
 
-        static EventsManager& get();
-
         template <typename EventType>
         using EventCallback = std::function<void(const EventType&)>;
 
@@ -55,6 +53,5 @@ namespace Engine
 
         mutable std::unordered_map<std::type_index, std::unique_ptr<IListenerHolder>> _eventsListeners;
 
-        static std::unique_ptr<EventsManager> _instance;
     };
 }

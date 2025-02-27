@@ -7,6 +7,7 @@
 
 #include "Visual/Window.h"
 #include "Components/Transform.h"
+#include "Managers/EntitiesManager.h"
 
 namespace Engine::Systems
 {

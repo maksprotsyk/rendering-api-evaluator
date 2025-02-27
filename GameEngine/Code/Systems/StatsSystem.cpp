@@ -1,6 +1,5 @@
 #include "StatsSystem.h"
-#include "Managers/ComponentsManager.h"
-#include "Managers/EventsManager.h"
+#include "Managers/GameController.h"
 #include "Events/NativeInputEvents.h"
 #include "Components/Transform.h"
 #include "Components/Tag.h"
@@ -65,7 +64,7 @@ namespace Engine::Systems
 		//PdhCloseQuery(gpuQuery);
 		PdhCloseQuery(cpuQuery);
 
-		auto& compManager = ComponentsManager::get();
+		auto& compManager = GameController::get().getComponentsManager();
 
 		const auto& tagSet = compManager.getComponentSet<Components::Tag>();
 		const auto& jsonDataSet = compManager.getComponentSet<Components::JsonData>();
