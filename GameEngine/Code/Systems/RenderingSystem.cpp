@@ -1,49 +1,36 @@
 #include "RenderingSystem.h"
 
-#include <codecvt>
-
 #include "Components/Transform.h"
 #include "Components/Tag.h"
 #include "Components/Model.h"
-#include "Components/JsonData.h"
 #include "Utils/BasicUtils.h"
+#include "Utils/DebugMacros.h"
 #include "Managers/GameController.h"
 
+REGISTER_SYSTEM(Engine::Systems::RenderingSystem);
 
 namespace Engine::Systems
 {
-	RenderingSystem::RenderingSystem(const Visual::Window& window): _window(window)
+	RenderingSystem::RenderingSystem(): _window(GameController::get().getWindow())
 	{
 	}
+
 	void RenderingSystem::onStart()
 	{
-		auto& compManager = GameController::get().getComponentsManager();
-
-		const auto& tagSet = compManager.getComponentSet<Components::Tag>();
-		const auto& jsonDataSet = compManager.getComponentSet<Components::JsonData>();
-		for (EntityID id: compManager.entitiesWithComponents<Components::JsonData, Components::Tag>())
+		if (m_config.contains("Renderer"))
 		{
-			const std::string& tag = tagSet.getElement(id).tag;
-			if (tag == "Config")
+			const std::string& renderer = m_config["Renderer"];
+			if (renderer == "DirectX")
 			{
-				const nlohmann::json& data = jsonDataSet.getElement(id).data;
-				if (data.contains("Renderer"))
-				{
-					const std::string& renderer = data["Renderer"];
-					if (renderer == "DirectX")
-					{
-						_renderer = std::make_unique<Visual::DirectXRenderer>();
-					}
-					else if (renderer == "Vulkan")
-					{
-						_renderer = std::make_unique<Visual::VulkanRenderer>();
-					}
-					else if (renderer == "OpenGL")
-					{
-						_renderer = std::make_unique<Visual::OpenGLRenderer>();
-					}
-				}
-				break;
+				_renderer = std::make_unique<Visual::DirectXRenderer>();
+			}
+			else if (renderer == "Vulkan")
+			{
+				_renderer = std::make_unique<Visual::VulkanRenderer>();
+			}
+			else if (renderer == "OpenGL")
+			{
+				_renderer = std::make_unique<Visual::OpenGLRenderer>();
 			}
 		}
 
@@ -55,15 +42,19 @@ namespace Engine::Systems
 		_renderer->init(_window);
 
 
+		auto& compManager = GameController::get().getComponentsManager();
 		auto& modelSet = compManager.getComponentSet<Components::Model>();
+		auto& tagSet = compManager.getComponentSet<Components::Tag>();
 		auto& transformSet = compManager.getComponentSet<Components::Transform>();
+
 		for (EntityID id : compManager.entitiesWithComponents<Components::Model, Components::Transform>())
 		{
 			Components::Model& model = modelSet.getElement(id);
 
-			if (!_renderer->loadModel(model.path))
+			bool loadResult = _renderer->loadModel(model.path);
+			ASSERT(loadResult, "Failed to load model: {}", model.path);
+			if (!loadResult)
 			{
-				// TODO: asserts, error handling
 				continue;
 			}
 

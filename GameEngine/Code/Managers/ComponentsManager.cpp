@@ -1,10 +1,13 @@
 #include "ComponentsManager.h"
 
+#include "Utils/DebugMacros.h"
+
 namespace Engine
 {
 
 	void ComponentsManager::createComponentFromJson(EntityID id, const nlohmann::json& value)
 	{
+		ASSERT(value.contains("typename"), "Component must have a typename field");
 		if (!value.contains("typename"))
 		{
 			return;

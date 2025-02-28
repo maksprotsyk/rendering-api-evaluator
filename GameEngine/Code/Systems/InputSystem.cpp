@@ -7,6 +7,8 @@
 #include "Components/Transform.h"
 #include "Components/Tag.h"
 
+REGISTER_SYSTEM(Engine::Systems::InputSystem);
+
 namespace Engine::Systems
 {
 	void InputSystem::onStart()

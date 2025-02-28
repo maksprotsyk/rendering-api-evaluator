@@ -15,6 +15,22 @@ namespace Engine
 		_removedSystems.emplace(system);
 	}
 
+	void SystemsManager::loadSystemFromJson(const nlohmann::json& systemJson)
+	{
+		ASSERT(systemJson.contains("typename"), "System must have a typename field");
+		if (!systemJson.contains("typename"))
+		{
+			return;
+		}
+		std::string type = systemJson["typename"].get<std::string>();
+		auto creator = m_systemCreators.find(type);
+		if (creator == m_systemCreators.end())
+		{
+			return;
+		}
+		creator->second(systemJson);
+	}
+
 	void SystemsManager::processAddedSystems()
 	{
 		while (!_addedSystems.empty())

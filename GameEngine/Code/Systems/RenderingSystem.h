@@ -14,7 +14,7 @@ namespace Engine::Systems
 	class RenderingSystem: public ISystem
 	{
 	public:
-		explicit RenderingSystem(const Visual::Window& window);
+		explicit RenderingSystem();
 		void onStart() override;
 		void onUpdate(float dt) override;
 		void onStop() override;

@@ -31,6 +31,11 @@ namespace Engine
 		);
 	}
 
+	const Visual::Window& GameController::getWindow() const
+	{
+		return m_window;
+	}
+
 	void GameController::setConfig(const std::string& configPath)
 	{
 		m_configPath = configPath;
@@ -46,6 +51,7 @@ namespace Engine
 
 	void GameController::init()
 	{
+		initPrefabs();
 		initEntities();
 		initSystems();
 	}
@@ -125,24 +131,98 @@ namespace Engine
 		return m_entitiesManager;
 	}
 
-	void GameController::initEntities()
+	EntityID GameController::createPrefab(const std::string& prefabName)
 	{
-		for (const nlohmann::json& entityJson : m_config["Entities"])
+		Engine::EntityID id = m_entitiesManager.createEntity();
+		const auto& prefabItr = m_prefabs.find(prefabName);
+
+		ASSERT(prefabItr != m_prefabs.end(), "Prefab not found");
+		if (prefabItr == m_prefabs.end())
 		{
-			Engine::EntityID id = m_entitiesManager.createEntity();
+			return id;
+		}
+
+		const nlohmann::json& prefabJson = prefabItr->second;
+		ASSERT(prefabJson.contains("Components"), "Prefab must have components");
+		if (!prefabJson.contains("Components"))
+		{
+			return id;
+		}
+
+		for (const nlohmann::json& compJson : prefabJson["Components"])
+		{
+			m_componentsManager.createComponentFromJson(id, compJson);
+		}
+
+		return id;
+	}
+
+	void GameController::createEntity(const nlohmann::json& entityJson)
+	{
+		Engine::EntityID id = m_entitiesManager.createEntity();
+
+		if (entityJson.contains("Components"))
+		{
 			for (const nlohmann::json& compJson : entityJson["Components"])
 			{
 				m_componentsManager.createComponentFromJson(id, compJson);
 			}
 		}
+
+		if (!entityJson.contains("Prefab"))
+		{
+			return;
+		}
+
+		std::string prefabName = entityJson["Prefab"].get<std::string>();
+		const auto& prefabItr = m_prefabs.find(prefabName);
+		if (prefabItr == m_prefabs.end())
+		{
+			return;
+		}
+
+		const nlohmann::json& prefabJson = prefabItr->second;
+		if (!prefabJson.contains("Components"))
+		{
+			return;
+		}
+
+		for (const nlohmann::json& compJson : prefabJson["Components"])
+		{
+			m_componentsManager.createComponentFromJson(id, compJson);
+		}		
+		
+	}
+
+	void GameController::initPrefabs()
+	{
+		for (const nlohmann::json& prefabJson : m_config["Prefabs"])
+		{
+			if (!prefabJson.contains("Name"))
+			{
+				continue;
+			}
+
+			std::string prefabName = prefabJson["Name"].get<std::string>();
+			m_prefabs[prefabName] = prefabJson;
+		}
+	}
+
+	void GameController::initEntities()
+	{
+		for (const nlohmann::json& entityJson : m_config["Entities"])
+		{
+			createEntity(entityJson);
+		}
 	}
 
 	void GameController::initSystems()
 	{
-		m_systemsManager.addSystem(std::make_unique<Engine::Systems::StatsSystem>());
-		m_systemsManager.addSystem(std::make_unique<Engine::Systems::RenderingSystem>(m_window));
-		m_systemsManager.addSystem(std::make_unique<Engine::Systems::PhysicsSystem>());
-		m_systemsManager.addSystem(std::make_unique<Engine::Systems::InputSystem>());
+		for (const nlohmann::json& entityJson : m_config["Systems"])
+		{
+			m_systemsManager.loadSystemFromJson(entityJson);
+		}
+
 	}
 
 }

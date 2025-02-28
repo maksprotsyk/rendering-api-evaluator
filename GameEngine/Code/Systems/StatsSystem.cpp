@@ -4,11 +4,12 @@
 #include "Components/Transform.h"
 #include "Components/Tag.h"
 #include "Components/Model.h"
-#include "Components/JsonData.h"
 
 #include <iostream>
 #include <fstream>
 #include <psapi.h>
+
+REGISTER_SYSTEM(Engine::Systems::StatsSystem);
 
 namespace Engine::Systems
 {
@@ -64,36 +65,15 @@ namespace Engine::Systems
 		//PdhCloseQuery(gpuQuery);
 		PdhCloseQuery(cpuQuery);
 
-		auto& compManager = GameController::get().getComponentsManager();
-
-		const auto& tagSet = compManager.getComponentSet<Components::Tag>();
-		const auto& jsonDataSet = compManager.getComponentSet<Components::JsonData>();
-
-		std::string rendererName = "DirectX";
-		std::string outputPath = "";
-		for (EntityID id : compManager.entitiesWithComponents<Components::JsonData, Components::Tag>())
-		{
-			const std::string& tag = tagSet.getElement(id).tag;
-			if (tag == "Config")
-			{
-				const nlohmann::json& data = jsonDataSet.getElement(id).data;
-				if (data.contains("Renderer"))
-				{
-					rendererName = data["Renderer"];
-				}
-				if (data.contains("OutputStatsFile"))
-				{
-					outputPath = data["OutputStatsFile"];
-				}
-				break;
-			}
-		}
+		std::string rendererName = m_config["Renderer"];
+		std::string outputPath = m_config["OutputFile"];
 
 		if (outputPath.empty())
 		{
 			return;
 		}
-		
+
+		auto& compManager = GameController::get().getComponentsManager();
 		auto const& models = compManager.getComponentSet<Components::Model>();
 		size_t objectsCount = models.size();
 		size_t totalNumberOfVertices = 0;

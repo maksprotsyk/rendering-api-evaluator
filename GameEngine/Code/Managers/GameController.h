@@ -17,6 +17,7 @@ namespace Engine
 		static GameController& get();
 
 		void setWindow(const Visual::Window& window);
+		const Visual::Window& getWindow() const;
 		void setConfig(const std::string& configPath);
 		const std::string& getConfigRelativePath(const std::string& path) const;
 
@@ -34,8 +35,14 @@ namespace Engine
 		const SystemsManager& getSystemsManager() const;
 		const EntitiesManager& getEntitiesManager() const;
 
+		EntityID createPrefab(const std::string& prefabName);
+
+
 	private:
 		GameController() = default;
+		
+		void createEntity(const nlohmann::json& entityJson);
+		void initPrefabs();
 		void initEntities();
 		void initSystems();
 
@@ -45,6 +52,7 @@ namespace Engine
 		Visual::Window m_window;
 		nlohmann::json m_config;
 		std::string m_configPath;
+		std::unordered_map<std::string, nlohmann::json> m_prefabs;
 
 		EventsManager m_eventsManager;
 		ComponentsManager m_componentsManager;
@@ -68,6 +76,13 @@ namespace Engine
 		explicit SerializableComponentRegisterer();
 	};
 
+	template <typename System>
+	class SystemRegisterer
+	{
+	public:
+		explicit SystemRegisterer();
+	};
+
 	template <typename Component>
 	ComponentRegisterer<Component>::ComponentRegisterer()
 	{
@@ -79,6 +94,11 @@ namespace Engine
 	{
 		GameController::get().getComponentsManager().registerComponent<Component, Serializer>();
 	}
+	template<typename System>
+	SystemRegisterer<System>::SystemRegisterer()
+	{
+		GameController::get().getSystemsManager().registerSystem<System>();
+	}
 }
 
 #define REGISTER_COMPONENT(T) \
@@ -89,3 +109,6 @@ static const Engine::SerializableComponentRegisterer<T, T> reg = Engine::Seriali
 
 #define REGISTER_SERIALIZABLE_COMPONENT_S(T, S) \
 static const Engine::SerializableComponentRegisterer<T, S> reg = Engine::SerializableComponentRegisterer<T, S>();
+
+#define REGISTER_SYSTEM(T) \
+static const Engine::SystemRegisterer<T> reg = Engine::SystemRegisterer<T>();

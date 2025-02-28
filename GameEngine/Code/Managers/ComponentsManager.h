@@ -42,7 +42,7 @@ namespace Engine
 
 	private:
 		std::unordered_map<std::string, std::unique_ptr<Utils::SparseSetBase<EntityID>>> _sparseSets;
-		std::unordered_map<std::string, std::function<void(EntityID, const nlohmann::json& val)>> _componentCreators;
+		std::unordered_map<std::string, std::function<void(EntityID, const nlohmann::json&)>> _componentCreators;
 	};
 }
 

@@ -103,12 +103,14 @@
     <ClCompile Include="Code\Systems\StatsSystem.cpp">
       <Filter>Code\Systems</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Components\JsonData.cpp">
-      <Filter>Code\Components</Filter>
-    </ClCompile>
-    <ClCompile Include="Code\Visual\IRenderer.cpp" />
     <ClCompile Include="Code\Visual\ModelInstanceBase.cpp">
       <Filter>Code\Visual</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Managers\GameController.cpp">
+      <Filter>Code\Managers</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Systems\ISystem.cpp">
+      <Filter>Code\Systems</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -190,11 +192,14 @@
     <ClInclude Include="Code\Systems\StatsSystem.h">
       <Filter>Code\Systems</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Components\JsonData.h">
-      <Filter>Code\Components</Filter>
-    </ClInclude>
     <ClInclude Include="Code\Visual\ModelInstanceBase.h">
       <Filter>Code\Visual</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Utils\DebugMacros.h">
+      <Filter>Code\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Managers\GameController.h">
+      <Filter>Code\Managers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

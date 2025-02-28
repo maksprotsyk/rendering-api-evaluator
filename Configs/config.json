@@ -1,6 +1,43 @@
 {
+	"Prefabs": [
+	    {
+			"Name": "Cube",
+            "Components": [
+                {
+                    "typename": "Engine::Components::Model",
+                    "path": "../../Models/cube.obj"
+                },
+	            {
+                    "typename": "Engine::Components::Transform",
+                    "position": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    }
+                }
+            ]
+        },
+		{
+			"Name": "Bunny",
+            "Components": [
+                {
+                    "typename": "Engine::Components::Model",
+                    "path": "../../Models/bunny.obj"
+                },
+	            {
+                    "typename": "Engine::Components::Transform",
+                    "position": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    }
+                }
+            ]
+        }
+	],
     "Entities": [
         {
+			"Prefab": "Cube",
             "Components": [
                 {
                     "typename": "Engine::Components::Transform",
@@ -8,41 +45,25 @@
                         "x": 0,
                         "y": 0,
                         "z": 0
-                    },
-                    "scale": {
-                        "x": 1,
-                        "y": 1,
-                        "z": 1
                     }
-                },
-                {
-                    "typename": "Engine::Components::Model",
-                    "path": "../../Models/cube.obj"
                 }
             ]
         },
 		{
+			"Prefab": "Bunny",
             "Components": [
                 {
                     "typename": "Engine::Components::Transform",
                     "position": {
-                        "x": -2,
+                        "x": 0,
                         "y": 0,
-                        "z": 0
-                    },
-                    "scale": {
-                        "x": 1,
-                        "y": 1,
-                        "z": 1
+                        "z": 5
                     }
-                },
-                {
-                    "typename": "Engine::Components::Model",
-                    "path": "../../Models/cube.obj"
                 }
             ]
         },
 		{
+			"Prefab": "Bunny",
             "Components": [
                 {
                     "typename": "Engine::Components::Transform",
@@ -56,14 +77,11 @@
                         "y": 1,
                         "z": 1
                     }
-                },
-                {
-                    "typename": "Engine::Components::Model",
-                    "path": "../../Models/bunny.obj"
                 }
             ]
         },
 		{
+			"Prefab": "Bunny",
             "Components": [
                 {
                     "typename": "Engine::Components::Transform",
@@ -77,14 +95,11 @@
                         "y": 1,
                         "z": 1
                     }
-                },
-                {
-                    "typename": "Engine::Components::Model",
-                    "path": "../../Models/bunny.obj"
                 }
             ]
         },
 		{
+			"Prefab": "Bunny",
             "Components": [
                 {
                     "typename": "Engine::Components::Transform",
@@ -98,14 +113,11 @@
                         "y": 1,
                         "z": 1
                     }
-                },
-                {
-                    "typename": "Engine::Components::Model",
-                    "path": "../../Models/bunny.obj"
                 }
             ]
         },
 		{
+			"Prefab": "Cube",
             "Components": [
                 {
                     "typename": "Engine::Components::Transform",
@@ -119,10 +131,27 @@
                         "y": 1,
                         "z": 1
                     }
+                }
+            ]
+        },
+		{
+            "Components": [
+                {
+                    "typename": "Engine::Components::Transform",
+                    "position": {
+                        "x": 3,
+                        "y": 0,
+                        "z": 3
+                    },
+                    "scale": {
+                        "x": 1,
+                        "y": 1,
+                        "z": 1
+                    }
                 },
                 {
                     "typename": "Engine::Components::Model",
-                    "path": "../../Models/cube.obj"
+                    "path": "../../Models/mori_knob/testObj.obj"
                 }
             ]
         },
@@ -141,21 +170,23 @@
                     "tag": "MainCamera"
                 }
             ]
-        },
-        {
-            "Components": [
-                {
-                    "typename": "Engine::Components::JsonData",
-                    "data": {
-                        "OutputStatsFile": "TTT.txt",
-                        "Renderer": "Vulkan"
-                    }
-                },
-                {
-                    "typename": "Engine::Components::Tag",
-                    "tag": "Config"
-                }
-            ]
         }
-    ]
+    ],
+	"Systems": [
+		{
+			"typename": "Engine::Systems::RenderingSystem",
+			"Renderer": "OpenGL"
+		},
+		{
+			"typename": "Engine::Systems::StatsSystem",
+			"OutputFile": "../../vulkan_test.txt",
+			"Renderer": "OpenGL"
+		},
+		{
+			"typename": "Engine::Systems::PhysicsSystem"
+		},
+		{
+			"typename": "Engine::Systems::InputSystem"
+		}
+	]
 }

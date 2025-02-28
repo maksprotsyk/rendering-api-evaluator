@@ -3,6 +3,7 @@
 #include "Components/Transform.h"
 #include "Components/Tag.h"
 
+REGISTER_SYSTEM(Engine::Systems::PhysicsSystem);
 
 namespace Engine::Systems
 {
