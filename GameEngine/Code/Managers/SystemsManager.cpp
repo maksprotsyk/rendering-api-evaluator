@@ -5,24 +5,30 @@
 namespace Engine
 {
 
+	//////////////////////////////////////////////////////////////////////////
+
 	void SystemsManager::addSystem(std::unique_ptr<Systems::ISystem>&& system)
 	{
-		_addedSystems.emplace(std::move(system));
+		m_addedSystems.emplace(std::move(system));
 	}
+
+	//////////////////////////////////////////////////////////////////////////
 
 	void SystemsManager::removeSystem(Systems::ISystem* system)
 	{
-		_removedSystems.emplace(system);
+		m_removedSystems.emplace(system);
 	}
+
+	//////////////////////////////////////////////////////////////////////////
 
 	void SystemsManager::loadSystemFromJson(const nlohmann::json& systemJson)
 	{
-		ASSERT(systemJson.contains("typename"), "System must have a typename field");
-		if (!systemJson.contains("typename"))
+		ASSERT(systemJson.contains(k_typenameField), "System must have a {} field", k_typenameField);
+		if (!systemJson.contains(k_typenameField))
 		{
 			return;
 		}
-		std::string type = systemJson["typename"].get<std::string>();
+		std::string type = systemJson[k_typenameField].get<std::string>();
 		auto creator = m_systemCreators.find(type);
 		if (creator == m_systemCreators.end())
 		{
@@ -31,52 +37,64 @@ namespace Engine
 		creator->second(systemJson);
 	}
 
+	//////////////////////////////////////////////////////////////////////////
+
 	void SystemsManager::processAddedSystems()
 	{
-		while (!_addedSystems.empty())
+		while (!m_addedSystems.empty())
 		{
-			_addedSystems.front()->onStart();
-			_systems.emplace(std::move(_addedSystems.front()));
-			_addedSystems.pop();
+			m_addedSystems.front()->onStart();
+			m_systems.emplace(std::move(m_addedSystems.front()));
+			m_addedSystems.pop();
 		}
 	}
+
+	//////////////////////////////////////////////////////////////////////////
 
 	void SystemsManager::processRemovedSystems()
 	{
-		while (!_removedSystems.empty())
+		while (!m_removedSystems.empty())
 		{
-			auto itr = std::find_if(_systems.begin(), _systems.end(), [this](const std::unique_ptr<Systems::ISystem>& s) {return s.get() == _removedSystems.front(); });
-			if (itr != _systems.end())
+			auto itr = std::find_if(m_systems.begin(), m_systems.end(), [this](const std::unique_ptr<Systems::ISystem>& s) {return s.get() == m_removedSystems.front(); });
+			if (itr != m_systems.end())
 			{
 				(*itr)->onStop();
-				_systems.erase(itr);
+				m_systems.erase(itr);
 			}
-			_removedSystems.pop();
+			m_removedSystems.pop();
 		}
 	}
 
+	//////////////////////////////////////////////////////////////////////////
+
 	void SystemsManager::update(float dt) const
 	{
-		for (const std::unique_ptr<Systems::ISystem>& system : _systems)
+		for (const std::unique_ptr<Systems::ISystem>& system : m_systems)
 		{
 			system->onUpdate(dt);
 		}
 	}
 
+	//////////////////////////////////////////////////////////////////////////
+
 	void SystemsManager::stop() const
 	{
-		for (const std::unique_ptr<Systems::ISystem>& system : _systems)
+		for (const std::unique_ptr<Systems::ISystem>& system : m_systems)
 		{
 			system->onStop();
 		}
 	}
 
+	//////////////////////////////////////////////////////////////////////////
+
 	void SystemsManager::clear()
 	{
-		ASSERT(_addedSystems.empty(), "There are still systems to be added");
-		ASSERT(_removedSystems.empty(), "There are still systems to be removed");
-		_systems.clear();
+		ASSERT(m_addedSystems.empty(), "There are still systems to be added");
+		ASSERT(m_removedSystems.empty(), "There are still systems to be removed");
+		m_systems.clear();
 	}
+
+	//////////////////////////////////////////////////////////////////////////
 
 	bool SystemsManager::LessPriority::operator()(const std::unique_ptr<Systems::ISystem>& lhs, const std::unique_ptr<Systems::ISystem>& rhs) const
 	{
@@ -86,4 +104,6 @@ namespace Engine
 		}
 		return lhs < rhs;
 	}
+
+	//////////////////////////////////////////////////////////////////////////
 }

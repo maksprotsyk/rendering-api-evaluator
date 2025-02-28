@@ -18,12 +18,13 @@ namespace Engine::Systems
 		int getPriority() const override;
 
 	private:
-		std::unordered_map<char, bool> _keyStates;
-
-		EntityID _cameraId = -1;
-
 		bool isPressed(char key) const;
-
 		float getAxisInput(char negativeKey, char positiveKey) const;
+
+	private:
+
+		std::unordered_map<char, bool> m_keyStates;
+
+		EntityID m_cameraId = -1;
 	};
 }

@@ -39,111 +39,12 @@ namespace Engine
 
 		void clear();
 
-
 	private:
-		std::unordered_map<std::string, std::unique_ptr<Utils::SparseSetBase<EntityID>>> _sparseSets;
-		std::unordered_map<std::string, std::function<void(EntityID, const nlohmann::json&)>> _componentCreators;
+		static constexpr const char* k_typenameField = "typename";
+
+		std::unordered_map<std::string, std::unique_ptr<Utils::SparseSetBase<EntityID>>> m_sparseSets;
+		std::unordered_map<std::string, std::function<void(EntityID, const nlohmann::json&)>> m_componentCreators;
 	};
 }
 
-namespace Engine
-{
-	template<typename Component>
-	void ComponentsManager::registerComponent()
-	{
-		auto sparseSet = std::make_unique<Utils::SparseSet<Component, EntityID>>();
-		_sparseSets[Utils::getTypeName<Component>()] = std::move(sparseSet);
-	}
-
-	template<typename Component, typename Serializer>
-	void ComponentsManager::registerComponent()
-	{
-		registerComponent<Component>();
-		auto creatorMethod = [this](EntityID id, const nlohmann::json& val)
-			{
-				Serializer serializer{};
-				Utils::Parser::fillFromJson(serializer, val);
-				Utils::SparseSet<Component, EntityID>& compSet = getComponentSet<Component>();
-
-				if constexpr (std::is_same<Component, Serializer>::value)
-				{
-					if constexpr (std::is_move_constructible<Component>::value)
-					{
-						compSet.addElement(id, std::move(serializer));
-					}
-					else
-					{
-						compSet.addElement(id, serializer);
-					}
-				}
-				else
-				{
-					Component comp{};
-					serializer.fill(comp);
-
-					if constexpr (std::is_move_constructible<Component>::value)
-					{
-						compSet.addElement(id, std::move(comp));
-					}
-					else
-					{
-						compSet.addElement(id, comp);
-					}
-				}
-			};
-
-		_componentCreators[Utils::getTypeName<Component>()] = creatorMethod;
-	}
-
-	template<typename Component>
-	const Utils::SparseSet<Component, EntityID>& ComponentsManager::getComponentSet() const
-	{
-		std::string name = Utils::getTypeName<Component>();
-		return *(std::static_pointer_cast<Utils::SparseSet<Component, EntityID>>(_sparseSets.find(name)->second));
-	}
-
-	template<typename Component>
-	Utils::SparseSet<Component, EntityID>& ComponentsManager::getComponentSet()
-	{
-		std::string name = Utils::getTypeName<Component>();
-		return *((Utils::SparseSet<Component, EntityID>*)_sparseSets[name].get());
-	}
-
-	template <typename... Components>
-	std::vector<EntityID> ComponentsManager::entitiesWithComponents()
-	{
-		std::vector<std::string> names = Utils::getTypeNames<Components...>();
-		std::vector<Utils::SparseSetBase<EntityID>*> sets;
-		sets.reserve(names.size());
-		for (const auto& name : names)
-		{
-			sets.push_back(_sparseSets[name].get());
-		}
-		std::sort(
-			sets.begin(), sets.end(),
-			[](const auto& set1, const auto& set2)
-			{
-				return set1->size() < set2->size();
-			}
-		);
-		std::vector<EntityID> result;
-		for (const EntityID& id : sets[0]->getIds())
-		{
-			bool isPresent = true;
-			for (int setIdx = 1; setIdx < sets.size(); setIdx++)
-			{
-				if (!sets[setIdx]->isPresent(id))
-				{
-					isPresent = false;
-					break;
-				}
-			}
-			if (isPresent)
-			{
-				result.push_back(id);
-			}
-		}
-
-		return result;
-	}
-}
+#include "ComponentsManager.inl"

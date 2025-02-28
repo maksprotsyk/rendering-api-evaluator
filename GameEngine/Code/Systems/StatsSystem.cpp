@@ -13,29 +13,34 @@ REGISTER_SYSTEM(Engine::Systems::StatsSystem);
 
 namespace Engine::Systems
 {
+
+	//////////////////////////////////////////////////////////////////////////
+
 	void StatsSystem::onStart()
 	{
-		firstUpdate = true;
+		m_firstUpdate = true;
 
-		PdhOpenQuery(nullptr, 0, &cpuQuery);
-		PdhAddCounter(cpuQuery, TEXT("\\Processor(_Total)\\% Processor Time"), 0, &cpuUsageCounter);
+		PdhOpenQuery(nullptr, 0, &m_cpuQuery);
+		PdhAddCounter(m_cpuQuery, TEXT("\\Processor(_Total)\\% Processor Time"), 0, &m_cpuUsageCounter);
 
 		//PdhOpenQuery(nullptr, 0, &gpuQuery);
 		//PdhAddCounter(gpuQuery, TEXT("\\GPU Engine(*)\\Utilization Percentage"), 0, &gpuUsageCounter);
 
 	}
 
+	//////////////////////////////////////////////////////////////////////////
+
 	void StatsSystem::onUpdate(float dt)
 	{
-		if (firstUpdate)
+		if (m_firstUpdate)
 		{
 			creationTime = dt;
-			firstUpdate = false;
+			m_firstUpdate = false;
 
-			PdhCollectQueryData(cpuQuery);
+			PdhCollectQueryData(m_cpuQuery);
 			PDH_FMT_COUNTERVALUE counterVal;
-			PdhGetFormattedCounterValue(cpuUsageCounter, PDH_FMT_DOUBLE, nullptr, &counterVal);
-			cpuUsage.push_back((float)counterVal.doubleValue);
+			PdhGetFormattedCounterValue(m_cpuUsageCounter, PDH_FMT_DOUBLE, nullptr, &counterVal);
+			m_cpuUsage.push_back((float)counterVal.doubleValue);
 
 
 			//PdhCollectQueryData(gpuQuery);
@@ -46,27 +51,29 @@ namespace Engine::Systems
 			PROCESS_MEMORY_COUNTERS memCounter;
 			if (GetProcessMemoryInfo(GetCurrentProcess(), &memCounter, sizeof(memCounter)))
 			{
-				memoryUsage.push_back(memCounter.WorkingSetSize / (1024.0 * 1024.0)); // in MB
+				m_memoryUsage.push_back(memCounter.WorkingSetSize / (1024.0 * 1024.0)); // in MB
 			}
 
 			return;
 		}
 
-		frameTimes.push_back(dt);
-		if (frameTimes.size() >= 1000)
+		m_frameTimes.push_back(dt);
+		if (m_frameTimes.size() >= 1000)
 		{
 			//EventsManager::get().emit<Events::NativeExitRequested>({});
 		}
 
 	}
 
+	//////////////////////////////////////////////////////////////////////////
+
 	void StatsSystem::onStop()
 	{
 		//PdhCloseQuery(gpuQuery);
-		PdhCloseQuery(cpuQuery);
+		PdhCloseQuery(m_cpuQuery);
 
-		std::string rendererName = m_config["Renderer"];
-		std::string outputPath = m_config["OutputFile"];
+		std::string rendererName = m_config["renderer"];
+		std::string outputPath = m_config["outputFile"];
 
 		if (outputPath.empty())
 		{
@@ -78,17 +85,17 @@ namespace Engine::Systems
 		size_t objectsCount = models.size();
 		size_t totalNumberOfVertices = 0;
 
-		std::sort(frameTimes.begin(), frameTimes.end());
-		float medianFrameTime = frameTimes[frameTimes.size() / 2];
-		float averageFrameTime = std::accumulate(frameTimes.begin(), frameTimes.end(), 0.0f) / frameTimes.size();
+		std::sort(m_frameTimes.begin(), m_frameTimes.end());
+		float medianFrameTime = m_frameTimes[m_frameTimes.size() / 2];
+		float averageFrameTime = std::accumulate(m_frameTimes.begin(), m_frameTimes.end(), 0.0f) / m_frameTimes.size();
 		
-		size_t fivePercents = frameTimes.size() / 20;
-		float percentile95 = frameTimes[frameTimes.size() - fivePercents];
-		float percentile5 = frameTimes[fivePercents];
+		size_t fivePercents = m_frameTimes.size() / 20;
+		float percentile95 = m_frameTimes[m_frameTimes.size() - fivePercents];
+		float percentile5 = m_frameTimes[fivePercents];
 
-		float averageCPUUsage = std::accumulate(cpuUsage.begin(), cpuUsage.end(), 0.0) / cpuUsage.size();
+		float averageCPUUsage = std::accumulate(m_cpuUsage.begin(), m_cpuUsage.end(), 0.0) / m_cpuUsage.size();
 		//float averageGPUUsage = std::accumulate(gpuUsage.begin(), gpuUsage.end(), 0.0) / gpuUsage.size();
-		float averageMemoryUsage = std::accumulate(memoryUsage.begin(), memoryUsage.end(), 0.0) / memoryUsage.size();
+		float averageMemoryUsage = std::accumulate(m_memoryUsage.begin(), m_memoryUsage.end(), 0.0) / m_memoryUsage.size();
 
 
 		std::ofstream outFile(outputPath);
@@ -110,8 +117,12 @@ namespace Engine::Systems
 		outFile << "5th percentile frame time: " << percentile5 << std::endl;
 	}
 
+	//////////////////////////////////////////////////////////////////////////
+
 	int StatsSystem::getPriority() const
 	{
 		return 1;
 	}
+
+	//////////////////////////////////////////////////////////////////////////
 }

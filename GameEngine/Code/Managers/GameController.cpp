@@ -10,7 +10,11 @@
 
 namespace Engine
 {
+	//////////////////////////////////////////////////////////////////////////
+
 	std::unique_ptr<GameController> GameController::m_instance = nullptr;
+
+	//////////////////////////////////////////////////////////////////////////
 
 	GameController& GameController::get()
 	{
@@ -20,6 +24,8 @@ namespace Engine
 		}
 		return *m_instance;
 	}
+
+	//////////////////////////////////////////////////////////////////////////
 
 	void GameController::setWindow(const Visual::Window& window)
 	{
@@ -31,16 +37,22 @@ namespace Engine
 		);
 	}
 
+	//////////////////////////////////////////////////////////////////////////
+
 	const Visual::Window& GameController::getWindow() const
 	{
 		return m_window;
 	}
+
+	//////////////////////////////////////////////////////////////////////////
 
 	void GameController::setConfig(const std::string& configPath)
 	{
 		m_configPath = configPath;
 		m_config = Utils::Parser::readJson(configPath);
 	}
+
+	//////////////////////////////////////////////////////////////////////////
 
 	const std::string& GameController::getConfigRelativePath(const std::string& path) const
 	{
@@ -49,12 +61,16 @@ namespace Engine
 		return (configDir / path).string();
 	}
 
+	//////////////////////////////////////////////////////////////////////////
+
 	void GameController::init()
 	{
 		initPrefabs();
 		initEntities();
 		initSystems();
 	}
+
+	//////////////////////////////////////////////////////////////////////////
 
 	void GameController::run()
 	{
@@ -84,6 +100,8 @@ namespace Engine
 		m_systemsManager.stop();
 	}
 
+	//////////////////////////////////////////////////////////////////////////
+
 	void GameController::clear()
 	{
 		m_systemsManager.clear();
@@ -91,30 +109,42 @@ namespace Engine
 		m_entitiesManager.clear();
 	}
 
+	//////////////////////////////////////////////////////////////////////////
+
 	EventsManager& GameController::getEventsManager()
 	{
 		return m_eventsManager;
 	}
+
+	//////////////////////////////////////////////////////////////////////////
 
 	ComponentsManager& GameController::getComponentsManager()
 	{
 		return m_componentsManager;
 	}
 
+	//////////////////////////////////////////////////////////////////////////
+
 	SystemsManager& GameController::getSystemsManager()
 	{
 		return m_systemsManager;
 	}
+
+	//////////////////////////////////////////////////////////////////////////
 	
 	EntitiesManager& GameController::getEntitiesManager()
 	{
 		return m_entitiesManager;
 	}
 
+	//////////////////////////////////////////////////////////////////////////
+
 	const EventsManager& GameController::getEventsManager() const
 	{
 		return m_eventsManager;
 	}
+
+	//////////////////////////////////////////////////////////////////////////
 
 	const ComponentsManager& GameController::getComponentsManager() const
 	{
@@ -126,10 +156,14 @@ namespace Engine
 		return m_systemsManager;
 	}
 
+	//////////////////////////////////////////////////////////////////////////
+
 	const EntitiesManager& GameController::getEntitiesManager() const
 	{
 		return m_entitiesManager;
 	}
+
+	//////////////////////////////////////////////////////////////////////////
 
 	EntityID GameController::createPrefab(const std::string& prefabName)
 	{
@@ -143,13 +177,13 @@ namespace Engine
 		}
 
 		const nlohmann::json& prefabJson = prefabItr->second;
-		ASSERT(prefabJson.contains("Components"), "Prefab must have components");
-		if (!prefabJson.contains("Components"))
+		ASSERT(prefabJson.contains(k_componentsField), "Prefab must have {} field", k_componentsField);
+		if (!prefabJson.contains(k_componentsField))
 		{
 			return id;
 		}
 
-		for (const nlohmann::json& compJson : prefabJson["Components"])
+		for (const nlohmann::json& compJson : prefabJson[k_componentsField])
 		{
 			m_componentsManager.createComponentFromJson(id, compJson);
 		}
@@ -157,24 +191,26 @@ namespace Engine
 		return id;
 	}
 
+	//////////////////////////////////////////////////////////////////////////
+
 	void GameController::createEntity(const nlohmann::json& entityJson)
 	{
 		Engine::EntityID id = m_entitiesManager.createEntity();
 
-		if (entityJson.contains("Components"))
+		if (entityJson.contains(k_componentsField))
 		{
-			for (const nlohmann::json& compJson : entityJson["Components"])
+			for (const nlohmann::json& compJson : entityJson[k_componentsField])
 			{
 				m_componentsManager.createComponentFromJson(id, compJson);
 			}
 		}
 
-		if (!entityJson.contains("Prefab"))
+		if (!entityJson.contains(k_prefabField))
 		{
 			return;
 		}
 
-		std::string prefabName = entityJson["Prefab"].get<std::string>();
+		std::string prefabName = entityJson[k_prefabField].get<std::string>();
 		const auto& prefabItr = m_prefabs.find(prefabName);
 		if (prefabItr == m_prefabs.end())
 		{
@@ -182,47 +218,54 @@ namespace Engine
 		}
 
 		const nlohmann::json& prefabJson = prefabItr->second;
-		if (!prefabJson.contains("Components"))
+		if (!prefabJson.contains(k_componentsField))
 		{
 			return;
 		}
 
-		for (const nlohmann::json& compJson : prefabJson["Components"])
+		for (const nlohmann::json& compJson : prefabJson[k_componentsField])
 		{
 			m_componentsManager.createComponentFromJson(id, compJson);
 		}		
 		
 	}
 
+	//////////////////////////////////////////////////////////////////////////
+
 	void GameController::initPrefabs()
 	{
-		for (const nlohmann::json& prefabJson : m_config["Prefabs"])
+		for (const nlohmann::json& prefabJson : m_config[k_prefabsField])
 		{
-			if (!prefabJson.contains("Name"))
+			if (!prefabJson.contains(k_nameField))
 			{
 				continue;
 			}
 
-			std::string prefabName = prefabJson["Name"].get<std::string>();
+			std::string prefabName = prefabJson[k_nameField].get<std::string>();
 			m_prefabs[prefabName] = prefabJson;
 		}
 	}
 
+	//////////////////////////////////////////////////////////////////////////
+
 	void GameController::initEntities()
 	{
-		for (const nlohmann::json& entityJson : m_config["Entities"])
+		for (const nlohmann::json& entityJson : m_config[k_entitiesField])
 		{
 			createEntity(entityJson);
 		}
 	}
 
+	//////////////////////////////////////////////////////////////////////////
+
 	void GameController::initSystems()
 	{
-		for (const nlohmann::json& entityJson : m_config["Systems"])
+		for (const nlohmann::json& entityJson : m_config[k_systemsField])
 		{
 			m_systemsManager.loadSystemFromJson(entityJson);
 		}
-
 	}
+
+	//////////////////////////////////////////////////////////////////////////
 
 }

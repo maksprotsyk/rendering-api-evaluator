@@ -13,6 +13,6 @@ namespace Engine::Systems
 		int getPriority() const override;
 
 	private:
-		float _scalingTime = 0;
+		float m_scalingTime = 0;
 	};
 }

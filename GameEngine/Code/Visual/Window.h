@@ -15,11 +15,12 @@ namespace Engine::Visual
 		HWND getHandle() const;
 
 	private:
-
-		HWND _window;
-		std::function<void(WPARAM, bool)> _onKeyStateChanged = nullptr;
-
 		static LRESULT CALLBACK windowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 		LRESULT CALLBACK handleMessage(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+
+	private:
+		HWND m_window;
+		std::function<void(WPARAM, bool)> m_onKeyStateChanged = nullptr;
+
 	};
 }

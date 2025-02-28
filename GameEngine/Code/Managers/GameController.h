@@ -14,6 +14,7 @@ namespace Engine
 	class GameController
 	{
 	public:
+
 		static GameController& get();
 
 		void setWindow(const Visual::Window& window);
@@ -47,6 +48,13 @@ namespace Engine
 		void initSystems();
 
 	private:
+		static constexpr const char* k_prefabsField = "Prefabs";
+		static constexpr const char* k_entitiesField = "Entities";
+		static constexpr const char* k_systemsField = "Systems";
+		static constexpr const char* k_nameField = "Name";
+		static constexpr const char* k_prefabField = "Prefab";
+		static constexpr const char* k_componentsField = "Components";
+
 		static std::unique_ptr<GameController> m_instance;
 
 		Visual::Window m_window;

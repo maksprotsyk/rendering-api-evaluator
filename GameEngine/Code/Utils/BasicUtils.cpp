@@ -6,6 +6,7 @@
 
 namespace Engine::Utils
 {
+    //////////////////////////////////////////////////////////////////////////
 
     std::wstring stringToWString(const std::string& str) 
     {
@@ -18,6 +19,8 @@ namespace Engine::Utils
         return wstr;
     }
 
+    //////////////////////////////////////////////////////////////////////////
+
     std::string wstringToString(const std::wstring& wstr)
     {
         if (wstr.empty()) return std::string();
@@ -27,6 +30,8 @@ namespace Engine::Utils
         WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), &str[0], sizeNeeded, NULL, NULL);
         return str;
     }
+
+    //////////////////////////////////////////////////////////////////////////
 
     std::vector<char> loadBytesFromFile(const std::string& filename)
     {
@@ -39,6 +44,8 @@ namespace Engine::Utils
         // Read the file content
         return std::vector<char>(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
     }
+
+    //////////////////////////////////////////////////////////////////////////
 
     std::vector<std::string> splitString(const std::string& str, char delimiter)
     {
@@ -59,6 +66,8 @@ namespace Engine::Utils
         return result;
     }
 
+    //////////////////////////////////////////////////////////////////////////
+
     std::string readFile(const std::string& filePath)
     {
         std::ifstream file(filePath, std::ios::in | std::ios::binary);
@@ -72,5 +81,7 @@ namespace Engine::Utils
 
         return contents.str();
     }
+
+    //////////////////////////////////////////////////////////////////////////
 
 }

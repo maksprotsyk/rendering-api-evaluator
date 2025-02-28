@@ -13,6 +13,7 @@ namespace Engine::Components
 	public:
 
 		std::string path;
+
 		bool markedForDestroy = false;
 		std::unique_ptr<Visual::IModelInstance> instance = nullptr;
 

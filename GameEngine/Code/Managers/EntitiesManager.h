@@ -15,8 +15,7 @@ namespace Engine
 		void clear();
 
 	private:
-		static std::unique_ptr<EntitiesManager> _instance;
-		std::set<EntityID> _takenIds;
+		std::set<EntityID> m_takenIds;
 	};
 		
 }

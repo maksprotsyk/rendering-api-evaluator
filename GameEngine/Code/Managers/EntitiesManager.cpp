@@ -2,11 +2,12 @@
 
 namespace Engine
 {
+	//////////////////////////////////////////////////////////////////////////
 
 	EntityID EntitiesManager::createEntity()
 	{
 		EntityID id = 0;
-		for (EntityID takenId : _takenIds)
+		for (EntityID takenId : m_takenIds)
 		{
 			if (takenId != id)
 			{
@@ -15,17 +16,23 @@ namespace Engine
 			id++;
 		}
 
-		_takenIds.insert(id);
+		m_takenIds.insert(id);
 		return id;
 	}
 
+	//////////////////////////////////////////////////////////////////////////
+
 	void EntitiesManager::destroyEntity(EntityID id)
 	{
-		_takenIds.erase(id);
+		m_takenIds.erase(id);
 	}
+
+	//////////////////////////////////////////////////////////////////////////
 
 	void EntitiesManager::clear()
 	{
-		_takenIds.clear();
+		m_takenIds.clear();
 	}
+
+	//////////////////////////////////////////////////////////////////////////
 }

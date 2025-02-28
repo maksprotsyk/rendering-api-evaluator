@@ -25,7 +25,6 @@
     <ClCompile Include="Code\GameEngine.cpp" />
     <ClCompile Include="Code\Managers\ComponentsManager.cpp" />
     <ClCompile Include="Code\Managers\EntitiesManager.cpp" />
-    <ClCompile Include="Code\Managers\EventsManager.cpp" />
     <ClCompile Include="Code\Managers\GameController.cpp" />
     <ClCompile Include="Code\Managers\SystemsManager.cpp" />
     <ClCompile Include="Code\Systems\InputSystem.cpp" />
@@ -77,6 +76,12 @@
     <ClInclude Include="Externals\tiny_obj_loader.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Code\Managers\ComponentsManager.inl" />
+    <None Include="Code\Managers\EventsManager.inl" />
+    <None Include="Code\Managers\SystemsManager.inl" />
+    <None Include="Code\Utils\BasicUtils.inl" />
+    <None Include="Code\Utils\Parser.inl" />
+    <None Include="Code\Utils\SparseSet.inl" />
     <None Include="packages.config" />
     <None Include="Shaders\FragmentShader.glsl" />
     <None Include="Shaders\shader.frag" />

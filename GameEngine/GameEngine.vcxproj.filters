@@ -49,9 +49,6 @@
     <ClCompile Include="Code\Managers\SystemsManager.cpp">
       <Filter>Code\Managers</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Managers\EventsManager.cpp">
-      <Filter>Code\Managers</Filter>
-    </ClCompile>
     <ClCompile Include="Code\Systems\InputSystem.cpp">
       <Filter>Code\Systems</Filter>
     </ClCompile>
@@ -215,6 +212,24 @@
     </None>
     <None Include="Shaders\shader.vert">
       <Filter>Shaders</Filter>
+    </None>
+    <None Include="Code\Utils\Parser.inl">
+      <Filter>Code\Utils</Filter>
+    </None>
+    <None Include="Code\Managers\ComponentsManager.inl">
+      <Filter>Code\Managers</Filter>
+    </None>
+    <None Include="Code\Managers\SystemsManager.inl">
+      <Filter>Code\Managers</Filter>
+    </None>
+    <None Include="Code\Managers\EventsManager.inl">
+      <Filter>Code\Managers</Filter>
+    </None>
+    <None Include="Code\Utils\SparseSet.inl">
+      <Filter>Code\Utils</Filter>
+    </None>
+    <None Include="Code\Utils\BasicUtils.inl">
+      <Filter>Code\Utils</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

@@ -4,18 +4,19 @@
 
 namespace Engine
 {
+	//////////////////////////////////////////////////////////////////////////
 
 	void ComponentsManager::createComponentFromJson(EntityID id, const nlohmann::json& value)
 	{
-		ASSERT(value.contains("typename"), "Component must have a typename field");
-		if (!value.contains("typename"))
+		ASSERT(value.contains(k_typenameField), "Component must have a {} field", k_typenameField);
+		if (!value.contains(k_typenameField))
 		{
 			return;
 		}
 
-		std::string type = value["typename"].get<std::string>();
-		auto creator = _componentCreators.find(type);
-		if (creator == _componentCreators.end())
+		std::string type = value[k_typenameField].get<std::string>();
+		auto creator = m_componentCreators.find(type);
+		if (creator == m_componentCreators.end())
 		{
 			return;
 		}
@@ -23,20 +24,25 @@ namespace Engine
 		creator->second(id, value);
 	}
 
+	//////////////////////////////////////////////////////////////////////////
+
 	void ComponentsManager::destroyEntity(EntityID id)
 	{
-		for (auto& [name, componentsSet] : _sparseSets)
+		for (auto& [name, componentsSet] : m_sparseSets)
 		{
 			componentsSet->removeElement(id);
 		}
 	}
 
+	//////////////////////////////////////////////////////////////////////////
+
 	void ComponentsManager::clear()
 	{
-		for (auto& [name, componentsSet] : _sparseSets)
+		for (auto& [name, componentsSet] : m_sparseSets)
 		{
 			componentsSet->clear();
 		}
 	}
 
+	//////////////////////////////////////////////////////////////////////////
 }

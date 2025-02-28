@@ -4,6 +4,8 @@
 
 namespace Engine::Visual
 {
+    //////////////////////////////////////////////////////////////////////////
+
     bool Window::initWindow(HINSTANCE hInstance, int width, int height)
     {
         const wchar_t* CLASS_NAME = TEXT("Sample Window Class");
@@ -15,7 +17,7 @@ namespace Engine::Visual
 
         RegisterClass(&wc);
 
-        _window = CreateWindowEx(
+        m_window = CreateWindowEx(
             0,
             CLASS_NAME,
             TEXT("Render Tester"),
@@ -27,13 +29,17 @@ namespace Engine::Visual
             this
         );
 
-        return _window != nullptr;
+        return m_window != nullptr;
     }
+
+    //////////////////////////////////////////////////////////////////////////
 
     void Window::showWindow(int nCmdShow)
     {
-        ShowWindow(_window, nCmdShow);
+        ShowWindow(m_window, nCmdShow);
     }
+
+    //////////////////////////////////////////////////////////////////////////
 
     LRESULT CALLBACK Window::handleMessage(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
@@ -48,16 +54,16 @@ namespace Engine::Visual
             {
                 PostQuitMessage(0); // Quit when Escape is pressed
             }
-            if (_onKeyStateChanged)
+            if (m_onKeyStateChanged)
             {
-                _onKeyStateChanged(wParam, true);
+                m_onKeyStateChanged(wParam, true);
             }
             return 0;
 
         case WM_KEYUP:
-            if (_onKeyStateChanged)
+            if (m_onKeyStateChanged)
             {
-                _onKeyStateChanged(wParam, false);
+                m_onKeyStateChanged(wParam, false);
             }
             return 0;
 
@@ -85,6 +91,8 @@ namespace Engine::Visual
         return DefWindowProc(hwnd, uMsg, wParam, lParam);
     }
 
+    //////////////////////////////////////////////////////////////////////////
+
     bool Window::update()
     {
         MSG msg = { };
@@ -101,15 +109,21 @@ namespace Engine::Visual
         return false;
     }
 
+    //////////////////////////////////////////////////////////////////////////
+
     void Window::SetOnKetStateChanged(const std::function<void(WPARAM, bool)>& callback)
     {
-        _onKeyStateChanged = callback;
+        m_onKeyStateChanged = callback;
     }
+
+    //////////////////////////////////////////////////////////////////////////
 
     HWND Window::getHandle() const
     {
-        return _window;
+        return m_window;
     }
+
+    //////////////////////////////////////////////////////////////////////////
 
     LRESULT CALLBACK Window::windowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
@@ -139,5 +153,7 @@ namespace Engine::Visual
             return DefWindowProc(hwnd, uMsg, wParam, lParam);
         }
     }
+
+    //////////////////////////////////////////////////////////////////////////
 
 }

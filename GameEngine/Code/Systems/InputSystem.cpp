@@ -11,12 +11,14 @@ REGISTER_SYSTEM(Engine::Systems::InputSystem);
 
 namespace Engine::Systems
 {
+	//////////////////////////////////////////////////////////////////////////
+
 	void InputSystem::onStart()
 	{
 		GameController::get().getEventsManager().subscribe<Events::NativeKeyStateChanged>(
 			[this](const Events::NativeKeyStateChanged& e)
 			{
-				_keyStates[(char)e.key] = e.pressed;
+				m_keyStates[(char)e.key] = e.pressed;
 			}
 		);
 
@@ -25,10 +27,12 @@ namespace Engine::Systems
 		{
 			if (tagSet.getElement(id).tag == "MainCamera")
 			{
-				_cameraId = id;
+				m_cameraId = id;
 			}
 		}
 	}
+
+	//////////////////////////////////////////////////////////////////////////
 
 	void InputSystem::onUpdate(float dt)
 	{
@@ -42,7 +46,7 @@ namespace Engine::Systems
 		float movementZ = getAxisInput('S', 'W');
 		float movementY = getAxisInput('Q', 'E');
 
-		Components::Transform& transform = GameController::get().getComponentsManager().getComponentSet<Components::Transform>().getElement(_cameraId);
+		Components::Transform& transform = GameController::get().getComponentsManager().getComponentSet<Components::Transform>().getElement(m_cameraId);
 
 		Utils::Vector3& position = transform.position;
 
@@ -61,25 +65,33 @@ namespace Engine::Systems
 		rotation.x += angleDistance * rotationX;
 	}
 
+	//////////////////////////////////////////////////////////////////////////
+
 	void InputSystem::onStop()
 	{
 
 	}
+
+	//////////////////////////////////////////////////////////////////////////
 
 	int InputSystem::getPriority() const
 	{
 		return 0;
 	}
 
+	//////////////////////////////////////////////////////////////////////////
+
 	bool InputSystem::isPressed(char key) const
 	{
-		auto itr = _keyStates.find(key);
-		if (itr == _keyStates.end())
+		auto itr = m_keyStates.find(key);
+		if (itr == m_keyStates.end())
 		{
 			return false;
 		}
 		return itr->second;
 	}
+
+	//////////////////////////////////////////////////////////////////////////
 
 	float InputSystem::getAxisInput(char negativeKey, char positiveKey) const
 	{
@@ -96,4 +108,6 @@ namespace Engine::Systems
 
 		return input;
 	}
+
+	//////////////////////////////////////////////////////////////////////////
 }

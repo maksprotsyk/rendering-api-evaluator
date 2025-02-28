@@ -175,12 +175,12 @@
 	"Systems": [
 		{
 			"typename": "Engine::Systems::RenderingSystem",
-			"Renderer": "OpenGL"
+			"renderer": "OpenGL"
 		},
 		{
 			"typename": "Engine::Systems::StatsSystem",
-			"OutputFile": "../../vulkan_test.txt",
-			"Renderer": "OpenGL"
+			"outputFile": "../../vulkan_test.txt",
+			"renderer": "OpenGL"
 		},
 		{
 			"typename": "Engine::Systems::PhysicsSystem"

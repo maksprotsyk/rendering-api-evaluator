@@ -21,9 +21,9 @@ namespace Engine::Systems
 		int getPriority() const override;
 
 	private:
-		const Visual::Window& _window;
-		std::unique_ptr<Visual::IRenderer> _renderer;
+		const Visual::Window& m_window;
+		std::unique_ptr<Visual::IRenderer> m_renderer;
 
-		EntityID _cameraId = -1;
+		EntityID m_cameraId = -1;
 	};
 }

@@ -18,17 +18,17 @@ namespace Engine::Systems
 
 	private:
 
-		PDH_HQUERY gpuQuery;
-		PDH_HCOUNTER gpuUsageCounter;
-		PDH_HQUERY cpuQuery;
-		PDH_HCOUNTER cpuUsageCounter;
+		PDH_HQUERY m_gpuQuery;
+		PDH_HCOUNTER m_gpuUsageCounter;
+		PDH_HQUERY m_cpuQuery;
+		PDH_HCOUNTER m_cpuUsageCounter;
 
 		float creationTime;
-		std::vector<float> frameTimes;
-		std::vector<float> memoryUsage;
-		std::vector<float> cpuUsage;
-		std::vector<float> gpuUsage;
+		std::vector<float> m_frameTimes;
+		std::vector<float> m_memoryUsage;
+		std::vector<float> m_cpuUsage;
+		std::vector<float> m_gpuUsage;
 
-		bool firstUpdate = true;
+		bool m_firstUpdate = true;
 	};
 }
