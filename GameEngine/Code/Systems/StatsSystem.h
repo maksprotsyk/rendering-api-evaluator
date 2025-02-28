@@ -23,12 +23,14 @@ namespace Engine::Systems
 		PDH_HQUERY m_cpuQuery;
 		PDH_HCOUNTER m_cpuUsageCounter;
 
-		float creationTime;
+		float m_creationTime;
 		std::vector<float> m_frameTimes;
 		std::vector<float> m_memoryUsage;
 		std::vector<float> m_cpuUsage;
 		std::vector<float> m_gpuUsage;
 
-		bool m_firstUpdate = true;
+		bool m_firstUpdate;
+		float m_timePassed;
+
 	};
 }
