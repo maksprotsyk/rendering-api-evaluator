@@ -19,7 +19,6 @@ namespace Engine::Systems
 		void onUpdate(float dt) override;
 		void onStop() override;
 		int getPriority() const override;
-
 	private:
 		const Visual::Window& m_window;
 		std::unique_ptr<Visual::IRenderer> m_renderer;

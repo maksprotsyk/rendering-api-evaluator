@@ -1228,6 +1228,9 @@ namespace Engine::Visual
 	{
 		auto modelInstance = std::make_unique<VulkanModelInstance>(filename);
 
+		EntityID poolId = getPoolToUse();
+		DescriptorPoolState& poolState = m_instanceDescriptorPools.getElement(poolId);
+
 		bool createBufferResult = createBuffer(
 			sizeof(UniformBufferObject),
 			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
@@ -1245,7 +1248,7 @@ namespace Engine::Visual
 		std::vector<VkDescriptorSetLayout> instanceLayouts(1, m_instanceSetLayout);
 		VkDescriptorSetAllocateInfo allocateInfoMesh{};
 		allocateInfoMesh.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		allocateInfoMesh.descriptorPool = m_instancesDescriptorPool;
+		allocateInfoMesh.descriptorPool = poolState.pool;
 		allocateInfoMesh.descriptorSetCount = 1;
 		allocateInfoMesh.pSetLayouts = instanceLayouts.data();
 
@@ -1254,6 +1257,9 @@ namespace Engine::Visual
 		{
 			return nullptr;
 		}
+
+		modelInstance->descriptorPoolID = poolId;
+		poolState.usedSets += 1;
 
 		VkDescriptorBufferInfo uniformBufferInfo{};
 		uniformBufferInfo.buffer = modelInstance->uniformBuffer;
@@ -1282,10 +1288,20 @@ namespace Engine::Visual
 
 		if (vkModelInstance.descriptorSet != VK_NULL_HANDLE)
 		{
-			VkResult freeDescriptorSetResult = vkFreeDescriptorSets(m_device, m_instancesDescriptorPool, 1, &vkModelInstance.descriptorSet);
+			DescriptorPoolState& poolState = m_instanceDescriptorPools.getElement(vkModelInstance.descriptorPoolID);
+			VkResult freeDescriptorSetResult = vkFreeDescriptorSets(m_device, poolState.pool, 1, &vkModelInstance.descriptorSet);
 			if (!validateResult(freeDescriptorSetResult, "Failed to free descriptor set"))
 			{
 				return false;
+			}
+
+			// Destroy pool if it is not used anymore
+			poolState.usedSets -= 1;
+			if (poolState.usedSets == 0)
+			{
+				vkDestroyDescriptorPool(m_device, poolState.pool, nullptr);
+				m_instanceDescriptorPools.removeElement(vkModelInstance.descriptorPoolID);
+				m_instanceDescriptorPoolsManager.destroyEntity(vkModelInstance.descriptorPoolID);
 			}
 
 			vkModelInstance.descriptorSet = VK_NULL_HANDLE;
@@ -1433,8 +1449,16 @@ namespace Engine::Visual
 		vkDestroyCommandPool(m_device, m_commandPool, nullptr);
 
 		vkDestroyDescriptorPool(m_device, m_materialsDescriptorPool, nullptr);
-		vkDestroyDescriptorPool(m_device, m_instancesDescriptorPool, nullptr);
 		vkDestroyDescriptorPool(m_device, m_texturesDescriptorPool, nullptr);
+
+		for (const EntityID& poolId : m_instanceDescriptorPools.getIds())
+		{
+			DescriptorPoolState poolState = m_instanceDescriptorPools.getElement(poolId);
+			vkDestroyDescriptorPool(m_device, poolState.pool, nullptr);
+			ASSERT(poolState.usedSets == 0, "Descriptor pool is not empty");
+		}
+		m_instanceDescriptorPoolsManager.clear();
+		m_instanceDescriptorPools.clear();
 
 		vkDestroySampler(m_device, m_textureSampler, nullptr);
 
@@ -2048,24 +2072,6 @@ namespace Engine::Visual
 		{
 			return;
 		}
-
-		std::array<VkDescriptorPoolSize, 1> instancesPoolSizes{};
-		instancesPoolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		instancesPoolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_MODEL_INSTANCES);
-
-		VkDescriptorPoolCreateInfo instancesPoolCreateInfo{};
-		instancesPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		instancesPoolCreateInfo.poolSizeCount = static_cast<uint32_t>(instancesPoolSizes.size());
-		instancesPoolCreateInfo.pPoolSizes = instancesPoolSizes.data();
-		instancesPoolCreateInfo.maxSets = MAX_MODEL_INSTANCES;
-		instancesPoolCreateInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-
-		createDescriptorPoolResult = vkCreateDescriptorPool(m_device, &instancesPoolCreateInfo, nullptr, &m_instancesDescriptorPool);
-		if (!validateResult(createDescriptorPoolResult, "Failed to create descriptor pool"))
-		{
-			return;
-		}
-
 	}
 
 	////////////////////////////////////////////////////////////////////////
@@ -2117,6 +2123,57 @@ namespace Engine::Visual
 		vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 
 		return true;
+	}
+
+	////////////////////////////////////////////////////////////////////////
+
+	VkDescriptorPool VulkanRenderer::createInstancesDescriptorPool()
+	{
+		std::array<VkDescriptorPoolSize, 1> instancesPoolSizes{};
+		instancesPoolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		instancesPoolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_MODEL_INSTANCES);
+
+		VkDescriptorPoolCreateInfo instancesPoolCreateInfo{};
+		instancesPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		instancesPoolCreateInfo.poolSizeCount = static_cast<uint32_t>(instancesPoolSizes.size());
+		instancesPoolCreateInfo.pPoolSizes = instancesPoolSizes.data();
+		instancesPoolCreateInfo.maxSets = MAX_MODEL_INSTANCES;
+		instancesPoolCreateInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+
+		VkDescriptorPool instancesDescriptorPool;
+		VkResult createDescriptorPoolResult = vkCreateDescriptorPool(m_device, &instancesPoolCreateInfo, nullptr, &instancesDescriptorPool);
+		if (!validateResult(createDescriptorPoolResult, "Failed to create descriptor pool"))
+		{
+			return VK_NULL_HANDLE;
+		}
+
+		return instancesDescriptorPool;
+	}
+
+	////////////////////////////////////////////////////////////////////////
+
+	EntityID VulkanRenderer::getPoolToUse()
+	{
+		EntityID poolToUse = -1;
+		for (const EntityID& poolId : m_instanceDescriptorPools.getIds())
+		{
+			if (m_instanceDescriptorPools.getElement(poolId).usedSets != MAX_MODEL_INSTANCES)
+			{
+				poolToUse = poolId;
+			}
+		}
+
+		if (poolToUse == -1)
+		{
+			DescriptorPoolState poolState;
+			poolState.usedSets = 0;
+			poolState.pool = createInstancesDescriptorPool();
+			EntityID newPoolId = m_instanceDescriptorPoolsManager.createEntity();
+			m_instanceDescriptorPools.addElement(newPoolId, poolState);
+			poolToUse = newPoolId;
+		}
+
+		return poolToUse;
 	}
 
 	////////////////////////////////////////////////////////////////////////

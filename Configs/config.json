@@ -175,7 +175,7 @@
 	"Systems": [
 		{
 			"typename": "Engine::Systems::RenderingSystem",
-			"renderer": "OpenGL"
+			"renderer": "Vulkan"
 		},
 		{
 			"typename": "Engine::Systems::StatsSystem",
@@ -183,7 +183,12 @@
 			"renderer": "OpenGL"
 		},
 		{
-			"typename": "Engine::Systems::PhysicsSystem"
+			"typename": "Engine::Systems::Experiment1System",
+			"prefab": "Bunny",
+			"experimentTime": 10,
+			"prefabCount": 20,
+			"rotationSpeed": 1,
+			"radiuses": [2, 4, 6]
 		},
 		{
 			"typename": "Engine::Systems::InputSystem"

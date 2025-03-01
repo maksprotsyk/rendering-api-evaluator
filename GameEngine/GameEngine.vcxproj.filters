@@ -52,7 +52,7 @@
     <ClCompile Include="Code\Systems\InputSystem.cpp">
       <Filter>Code\Systems</Filter>
     </ClCompile>
-    <ClCompile Include="Code\Systems\PhysicsSystem.cpp">
+    <ClCompile Include="Code\Systems\Experiment1System.cpp">
       <Filter>Code\Systems</Filter>
     </ClCompile>
     <ClCompile Include="Code\Systems\RenderingSystem.cpp">
@@ -109,6 +109,9 @@
     <ClCompile Include="Code\Systems\ISystem.cpp">
       <Filter>Code\Systems</Filter>
     </ClCompile>
+    <ClCompile Include="Code\Systems\ExperimentSystemBase.cpp">
+      <Filter>Code\Systems</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Code\Components\Transform.h">
@@ -135,7 +138,7 @@
     <ClInclude Include="Code\Systems\InputSystem.h">
       <Filter>Code\Systems</Filter>
     </ClInclude>
-    <ClInclude Include="Code\Systems\PhysicsSystem.h">
+    <ClInclude Include="Code\Systems\Experiment1System.h">
       <Filter>Code\Systems</Filter>
     </ClInclude>
     <ClInclude Include="Code\Systems\RenderingSystem.h">
@@ -197,6 +200,9 @@
     </ClInclude>
     <ClInclude Include="Code\Managers\GameController.h">
       <Filter>Code\Managers</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Systems\ExperimentSystemBase.h">
+      <Filter>Code\Systems</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

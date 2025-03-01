@@ -2,10 +2,6 @@
 
 #include "Utils/DebugMacros.h"
 #include "Events/NativeInputEvents.h"
-#include "Systems/RenderingSystem.h"
-#include "Systems/PhysicsSystem.h"
-#include "Systems/InputSystem.h"
-#include "Systems/StatsSystem.h"
 
 
 namespace Engine
@@ -74,8 +70,17 @@ namespace Engine
 
 	void GameController::run()
 	{
+
+		bool nativeExitRequested = false;
+		m_eventsManager.subscribe<Engine::Events::NativeExitRequested>(
+			[&nativeExitRequested](const Engine::Events::NativeExitRequested&)
+			{
+				nativeExitRequested = true;
+			}
+		);
+
 		float dt = 0;
-		while (true)
+		while (!nativeExitRequested)
 		{
 			// Measure the time taken for the frame
 

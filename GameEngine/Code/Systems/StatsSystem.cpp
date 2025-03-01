@@ -50,9 +50,10 @@ namespace Engine::Systems
 			m_timePassed = 0.0f;
 			return;
 		}
-		m_timePassed += dt;
+
 		m_frameTimes.push_back(dt);
 
+		m_timePassed += dt;
 		if (m_timePassed > 1.0f)
 		{
 			m_timePassed = 0.0f;
@@ -81,11 +82,6 @@ namespace Engine::Systems
 			{
 				m_memoryUsage.push_back(memCounter.WorkingSetSize / (1024.0 * 1024.0)); // in MB
 			}
-		}
-
-		if (m_frameTimes.size() >= 10000)
-		{
-			GameController::get().getEventsManager().emit<Events::NativeExitRequested>({});
 		}
 
 	}

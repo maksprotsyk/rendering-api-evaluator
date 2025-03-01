@@ -27,9 +27,10 @@
     <ClCompile Include="Code\Managers\EntitiesManager.cpp" />
     <ClCompile Include="Code\Managers\GameController.cpp" />
     <ClCompile Include="Code\Managers\SystemsManager.cpp" />
+    <ClCompile Include="Code\Systems\ExperimentSystemBase.cpp" />
     <ClCompile Include="Code\Systems\InputSystem.cpp" />
     <ClCompile Include="Code\Systems\ISystem.cpp" />
-    <ClCompile Include="Code\Systems\PhysicsSystem.cpp" />
+    <ClCompile Include="Code\Systems\Experiment1System.cpp" />
     <ClCompile Include="Code\Systems\RenderingSystem.cpp" />
     <ClCompile Include="Code\Systems\StatsSystem.cpp" />
     <ClCompile Include="Code\Utils\BasicUtils.cpp" />
@@ -54,9 +55,10 @@
     <ClInclude Include="Code\Managers\GameController.h" />
     <ClInclude Include="Code\Managers\SystemsManager.h" />
     <ClInclude Include="Code\Managers\EventsManager.h" />
+    <ClInclude Include="Code\Systems\ExperimentSystemBase.h" />
     <ClInclude Include="Code\Systems\InputSystem.h" />
     <ClInclude Include="Code\Systems\ISystem.h" />
-    <ClInclude Include="Code\Systems\PhysicsSystem.h" />
+    <ClInclude Include="Code\Systems\Experiment1System.h" />
     <ClInclude Include="Code\Systems\RenderingSystem.h" />
     <ClInclude Include="Code\Systems\StatsSystem.h" />
     <ClInclude Include="Code\Utils\BasicUtils.h" />

@@ -114,6 +114,17 @@ namespace Engine::Systems
 
 	void RenderingSystem::onStop()
 	{
+		auto& compManager = GameController::get().getComponentsManager();
+
+		auto& modelSet = compManager.getComponentSet<Components::Model>();
+
+		for (EntityID id : compManager.entitiesWithComponents<Components::Model, Components::Transform>())
+		{
+			Components::Model& model = modelSet.getElement(id);
+			m_renderer->destroyModelInstance(*model.instance);
+			model.instance = nullptr;
+		}
+
 		m_renderer->cleanUp();
 	}
 

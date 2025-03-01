@@ -4,7 +4,10 @@
 #include <glm/glm.hpp>
 #include <memory>
 #include <string>
+
 #include "IRenderer.h"
+#include "Utils/SparseSet.h"
+#include "Managers/EntitiesManager.h"
 
 namespace Engine::Visual
 {
@@ -116,6 +119,7 @@ namespace Engine::Visual
             VkBuffer uniformBuffer;
             VkDeviceMemory uniformBufferMemory;
             VkDescriptorSet descriptorSet;
+			EntityID descriptorPoolID;
         };
 
         struct QueueFamilyIndices
@@ -130,6 +134,12 @@ namespace Engine::Visual
             VkSurfaceCapabilitiesKHR capabilities;
             std::vector<VkSurfaceFormatKHR> formats;
             std::vector<VkPresentModeKHR> presentModes;
+        };
+
+        struct DescriptorPoolState
+        {
+			VkDescriptorPool pool;
+			uint32_t usedSets;
         };
 
     private:
@@ -150,6 +160,9 @@ namespace Engine::Visual
         void createDepthResources();
         void createFramebuffers();
         void createDescriptorPool();
+        VkDescriptorPool createInstancesDescriptorPool();
+        EntityID getPoolToUse();
+
         void createSyncObjects();
         void createCommandBuffers();
         void createTextureSampler();
@@ -243,8 +256,10 @@ namespace Engine::Visual
 
         VkSampler m_textureSampler{};
 
+        EntitiesManager m_instanceDescriptorPoolsManager;
+		Utils::SparseSet<DescriptorPoolState, EntityID> m_instanceDescriptorPools;
+
         VkDescriptorPool m_materialsDescriptorPool{};
-        VkDescriptorPool m_instancesDescriptorPool{};
         VkDescriptorPool m_texturesDescriptorPool{};
 
         std::vector<VkCommandBuffer> m_commandBuffers;
