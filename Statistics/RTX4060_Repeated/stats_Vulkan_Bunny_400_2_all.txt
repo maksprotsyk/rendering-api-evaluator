@@ -1,0 +1,460 @@
+Renderer: Vulkan
+Objects count: 400
+Total number of vertices: 0
+Creation time: 0.562156
+Average CPU usage: 6.72666
+Max CPU usage: 23.4373
+Min CPU usage: 0.270754
+Average GPU usage: 87.7763
+Max GPU usage: 97.5552
+Min GPU usage: 38.5907
+Average memory usage: 91.2524
+Max memory usage: 96.4023
+Min memory usage: 87.5
+Average GPU memory usage: 45.2986
+Max GPU memory usage: 45.3008
+Min GPU memory usage: 45.293
+Average FPS: 59.6495
+Average frame time: 0.0167646
+Median frame time: 0.0168148
+99th percentile frame time: 0.0190451
+1th percentile frame time: 0.0144768
+
+
+Renderer: Vulkan
+Objects count: 400
+Total number of vertices: 0
+Creation time: 0.548968
+Average CPU usage: 14.7197
+Max CPU usage: 27.7518
+Min CPU usage: 3.64433
+Average GPU usage: 88.9618
+Max GPU usage: 97.6028
+Min GPU usage: 39.172
+Average memory usage: 89.396
+Max memory usage: 94.5312
+Min memory usage: 85.6289
+Average GPU memory usage: 45.2986
+Max GPU memory usage: 45.3008
+Min GPU memory usage: 45.293
+Average FPS: 59.6318
+Average frame time: 0.0167696
+Median frame time: 0.0168093
+99th percentile frame time: 0.0190855
+1th percentile frame time: 0.0145139
+
+
+Renderer: Vulkan
+Objects count: 400
+Total number of vertices: 0
+Creation time: 0.545523
+Average CPU usage: 5.86337
+Max CPU usage: 17.0891
+Min CPU usage: 0.0992064
+Average GPU usage: 93.5498
+Max GPU usage: 98.7287
+Min GPU usage: 39.0227
+Average memory usage: 87.5289
+Max memory usage: 94.2969
+Min memory usage: 83.3945
+Average GPU memory usage: 45.2973
+Max GPU memory usage: 45.3008
+Min GPU memory usage: 45.293
+Average FPS: 59.7315
+Average frame time: 0.0167416
+Median frame time: 0.0167918
+99th percentile frame time: 0.0190158
+1th percentile frame time: 0.0140861
+
+
+Renderer: Vulkan
+Objects count: 400
+Total number of vertices: 0
+Creation time: 0.554445
+Average CPU usage: 6.45787
+Max CPU usage: 31.7674
+Min CPU usage: 1.52405
+Average GPU usage: 93.461
+Max GPU usage: 97.7798
+Min GPU usage: 38.5287
+Average memory usage: 87.3971
+Max memory usage: 94.1641
+Min memory usage: 83.2617
+Average GPU memory usage: 45.2973
+Max GPU memory usage: 45.3008
+Min GPU memory usage: 45.293
+Average FPS: 59.6479
+Average frame time: 0.016765
+Median frame time: 0.0168131
+99th percentile frame time: 0.0188569
+1th percentile frame time: 0.0145214
+
+
+Renderer: Vulkan
+Objects count: 400
+Total number of vertices: 0
+Creation time: 0.552909
+Average CPU usage: 7.08119
+Max CPU usage: 18.6646
+Min CPU usage: 0
+Average GPU usage: 90.2459
+Max GPU usage: 97.7619
+Min GPU usage: 38.1048
+Average memory usage: 91.1786
+Max memory usage: 96.3164
+Min memory usage: 87.4141
+Average GPU memory usage: 45.2986
+Max GPU memory usage: 45.3008
+Min GPU memory usage: 45.293
+Average FPS: 59.7144
+Average frame time: 0.0167464
+Median frame time: 0.0168081
+99th percentile frame time: 0.0188002
+1th percentile frame time: 0.0141659
+
+
+Renderer: Vulkan
+Objects count: 400
+Total number of vertices: 0
+Creation time: 0.594685
+Average CPU usage: 8.8718
+Max CPU usage: 31.2072
+Min CPU usage: 1.51223
+Average GPU usage: 88.9319
+Max GPU usage: 98.1189
+Min GPU usage: 38.5062
+Average memory usage: 89.1267
+Max memory usage: 94.2656
+Min memory usage: 85.3633
+Average GPU memory usage: 45.2986
+Max GPU memory usage: 45.3008
+Min GPU memory usage: 45.293
+Average FPS: 59.4951
+Average frame time: 0.0168081
+Median frame time: 0.016838
+99th percentile frame time: 0.0190484
+1th percentile frame time: 0.0142551
+
+
+Renderer: Vulkan
+Objects count: 400
+Total number of vertices: 0
+Creation time: 0.568519
+Average CPU usage: 5.9519
+Max CPU usage: 11.7192
+Min CPU usage: 1.41388
+Average GPU usage: 88.8118
+Max GPU usage: 97.696
+Min GPU usage: 38.2176
+Average memory usage: 89.1641
+Max memory usage: 94.2969
+Min memory usage: 85.3945
+Average GPU memory usage: 45.2986
+Max GPU memory usage: 45.3008
+Min GPU memory usage: 45.293
+Average FPS: 59.6622
+Average frame time: 0.016761
+Median frame time: 0.0167765
+99th percentile frame time: 0.0194008
+1th percentile frame time: 0.0142221
+
+
+Renderer: Vulkan
+Objects count: 400
+Total number of vertices: 0
+Creation time: 0.584169
+Average CPU usage: 7.56651
+Max CPU usage: 22.5814
+Min CPU usage: 1.83946
+Average GPU usage: 91.6083
+Max GPU usage: 98.6353
+Min GPU usage: 38.9456
+Average memory usage: 87.4275
+Max memory usage: 94.1992
+Min memory usage: 83.2969
+Average GPU memory usage: 45.2973
+Max GPU memory usage: 45.3008
+Min GPU memory usage: 45.293
+Average FPS: 59.7099
+Average frame time: 0.0167476
+Median frame time: 0.0168158
+99th percentile frame time: 0.0189548
+1th percentile frame time: 0.0141807
+
+
+Renderer: Vulkan
+Objects count: 400
+Total number of vertices: 0
+Creation time: 0.607837
+Average CPU usage: 6.43633
+Max CPU usage: 14.4408
+Min CPU usage: 1.35453
+Average GPU usage: 89.0883
+Max GPU usage: 97.9829
+Min GPU usage: 37.459
+Average memory usage: 89.025
+Max memory usage: 94.1641
+Min memory usage: 85.2617
+Average GPU memory usage: 45.2986
+Max GPU memory usage: 45.3008
+Min GPU memory usage: 45.293
+Average FPS: 59.6393
+Average frame time: 0.0167675
+Median frame time: 0.0167776
+99th percentile frame time: 0.0192394
+1th percentile frame time: 0.0144841
+
+
+Renderer: Vulkan
+Objects count: 400
+Total number of vertices: 0
+Creation time: 0.59744
+Average CPU usage: 8.95118
+Max CPU usage: 28.5974
+Min CPU usage: 0
+Average GPU usage: 90.0936
+Max GPU usage: 97.95
+Min GPU usage: 38.3033
+Average memory usage: 91.2526
+Max memory usage: 96.3906
+Min memory usage: 87.4883
+Average GPU memory usage: 45.2986
+Max GPU memory usage: 45.3008
+Min GPU memory usage: 45.293
+Average FPS: 59.6659
+Average frame time: 0.01676
+Median frame time: 0.0167793
+99th percentile frame time: 0.0190759
+1th percentile frame time: 0.01431
+
+
+Renderer: Vulkan
+Objects count: 400
+Total number of vertices: 0
+Creation time: 0.58527
+Average CPU usage: 6.1868
+Max CPU usage: 15.7379
+Min CPU usage: 0.917318
+Average GPU usage: 93.5855
+Max GPU usage: 98.0655
+Min GPU usage: 37.6441
+Average memory usage: 87.5432
+Max memory usage: 94.3242
+Min memory usage: 83.4219
+Average GPU memory usage: 45.2973
+Max GPU memory usage: 45.3008
+Min GPU memory usage: 45.293
+Average FPS: 59.7092
+Average frame time: 0.0167479
+Median frame time: 0.0167655
+99th percentile frame time: 0.0190695
+1th percentile frame time: 0.0143184
+
+
+Renderer: Vulkan
+Objects count: 400
+Total number of vertices: 0
+Creation time: 0.554485
+Average CPU usage: 9.58972
+Max CPU usage: 27.4378
+Min CPU usage: 1.41569
+Average GPU usage: 90.6459
+Max GPU usage: 98.1008
+Min GPU usage: 38.5819
+Average memory usage: 89.128
+Max memory usage: 94.2617
+Min memory usage: 85.3633
+Average GPU memory usage: 45.2986
+Max GPU memory usage: 45.3008
+Min GPU memory usage: 45.293
+Average FPS: 59.6295
+Average frame time: 0.0167702
+Median frame time: 0.0167878
+99th percentile frame time: 0.0192139
+1th percentile frame time: 0.0143626
+
+
+Renderer: Vulkan
+Objects count: 400
+Total number of vertices: 0
+Creation time: 0.552705
+Average CPU usage: 7.94324
+Max CPU usage: 24.5402
+Min CPU usage: 1.55821
+Average GPU usage: 90.2191
+Max GPU usage: 97.8454
+Min GPU usage: 38.6108
+Average memory usage: 89.0692
+Max memory usage: 94.1758
+Min memory usage: 85.3125
+Average GPU memory usage: 45.2986
+Max GPU memory usage: 45.3008
+Min GPU memory usage: 45.293
+Average FPS: 59.6267
+Average frame time: 0.016771
+Median frame time: 0.0167966
+99th percentile frame time: 0.0193699
+1th percentile frame time: 0.0141507
+
+
+Renderer: Vulkan
+Objects count: 400
+Total number of vertices: 0
+Creation time: 0.548933
+Average CPU usage: 12.4183
+Max CPU usage: 25.7453
+Min CPU usage: 1.02673
+Average GPU usage: 91.7216
+Max GPU usage: 97.8228
+Min GPU usage: 38.2089
+Average memory usage: 87.4744
+Max memory usage: 94.2266
+Min memory usage: 83.3242
+Average GPU memory usage: 45.2973
+Max GPU memory usage: 45.3008
+Min GPU memory usage: 45.293
+Average FPS: 59.7204
+Average frame time: 0.0167447
+Median frame time: 0.0167921
+99th percentile frame time: 0.0192297
+1th percentile frame time: 0.0142506
+
+
+Renderer: Vulkan
+Objects count: 400
+Total number of vertices: 0
+Creation time: 0.589398
+Average CPU usage: 8.77164
+Max CPU usage: 24.9386
+Min CPU usage: 3.80333
+Average GPU usage: 93.5547
+Max GPU usage: 98.5354
+Min GPU usage: 37.4531
+Average memory usage: 87.4286
+Max memory usage: 94.1992
+Min memory usage: 83.2969
+Average GPU memory usage: 45.2973
+Max GPU memory usage: 45.3008
+Min GPU memory usage: 45.293
+Average FPS: 59.7166
+Average frame time: 0.0167458
+Median frame time: 0.0167761
+99th percentile frame time: 0.0189775
+1th percentile frame time: 0.0143178
+
+
+Renderer: Vulkan
+Objects count: 400
+Total number of vertices: 0
+Creation time: 0.53064
+Average CPU usage: 14.9258
+Max CPU usage: 32.7458
+Min CPU usage: 1.99053
+Average GPU usage: 87.6548
+Max GPU usage: 96.7553
+Min GPU usage: 39.0858
+Average memory usage: 91.2843
+Max memory usage: 96.418
+Min memory usage: 87.5195
+Average GPU memory usage: 45.2986
+Max GPU memory usage: 45.3008
+Min GPU memory usage: 45.293
+Average FPS: 59.6898
+Average frame time: 0.0167533
+Median frame time: 0.016794
+99th percentile frame time: 0.0189613
+1th percentile frame time: 0.013756
+
+
+Renderer: Vulkan
+Objects count: 400
+Total number of vertices: 0
+Creation time: 0.557913
+Average CPU usage: 9.83485
+Max CPU usage: 29.5819
+Min CPU usage: 4.16625
+Average GPU usage: 88.2397
+Max GPU usage: 96.5941
+Min GPU usage: 38.9116
+Average memory usage: 91.2404
+Max memory usage: 96.3789
+Min memory usage: 87.4805
+Average GPU memory usage: 45.2986
+Max GPU memory usage: 45.3008
+Min GPU memory usage: 45.293
+Average FPS: 59.6304
+Average frame time: 0.01677
+Median frame time: 0.0168003
+99th percentile frame time: 0.0191066
+1th percentile frame time: 0.0143458
+
+
+Renderer: Vulkan
+Objects count: 400
+Total number of vertices: 0
+Creation time: 0.578147
+Average CPU usage: 11.4242
+Max CPU usage: 27.4817
+Min CPU usage: 1.53731
+Average GPU usage: 88.98
+Max GPU usage: 97.9074
+Min GPU usage: 38.5603
+Average memory usage: 89.0352
+Max memory usage: 94.168
+Min memory usage: 85.2656
+Average GPU memory usage: 45.2986
+Max GPU memory usage: 45.3008
+Min GPU memory usage: 45.293
+Average FPS: 59.6721
+Average frame time: 0.0167583
+Median frame time: 0.0167999
+99th percentile frame time: 0.0190506
+1th percentile frame time: 0.0140804
+
+
+Renderer: Vulkan
+Objects count: 400
+Total number of vertices: 0
+Creation time: 0.538469
+Average CPU usage: 9.87982
+Max CPU usage: 21.6335
+Min CPU usage: 2.42636
+Average GPU usage: 92.9712
+Max GPU usage: 98.4059
+Min GPU usage: 38.1262
+Average memory usage: 87.5477
+Max memory usage: 94.3008
+Min memory usage: 83.3984
+Average GPU memory usage: 45.2973
+Max GPU memory usage: 45.3008
+Min GPU memory usage: 45.293
+Average FPS: 59.7177
+Average frame time: 0.0167454
+Median frame time: 0.0167758
+99th percentile frame time: 0.0189796
+1th percentile frame time: 0.0141511
+
+
+Renderer: Vulkan
+Objects count: 400
+Total number of vertices: 0
+Creation time: 0.551148
+Average CPU usage: 12.8508
+Max CPU usage: 30.6931
+Min CPU usage: 3.14012
+Average GPU usage: 90.8402
+Max GPU usage: 99.041
+Min GPU usage: 37.9929
+Average memory usage: 87.5883
+Max memory usage: 94.3242
+Min memory usage: 83.4219
+Average GPU memory usage: 45.2973
+Max GPU memory usage: 45.3008
+Min GPU memory usage: 45.293
+Average FPS: 59.7095
+Average frame time: 0.0167477
+Median frame time: 0.0167922
+99th percentile frame time: 0.0190436
+1th percentile frame time: 0.0143764
+
+

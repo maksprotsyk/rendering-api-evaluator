@@ -1,0 +1,21 @@
+Renderer: DirectX
+Objects count: 40
+Total number of vertices: 0
+Creation time: 1.02442
+Average CPU usage: 99.8456
+Max CPU usage: 100
+Min CPU usage: 97.7661
+Average GPU usage: 85.7782
+Max GPU usage: 89.1067
+Min GPU usage: 42.5528
+Average memory usage: 39.5039
+Max memory usage: 39.5469
+Min memory usage: 39.4219
+Average GPU memory usage: 17.3047
+Max GPU memory usage: 17.3047
+Min GPU memory usage: 17.3047
+Average FPS: 830.271
+Average frame time: 0.00120443
+Median frame time: 0.0011818
+99th percentile frame time: 0.001952
+1th percentile frame time: 0.0007133
