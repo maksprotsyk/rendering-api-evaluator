@@ -1,0 +1,21 @@
+Renderer: Vulkan
+Objects count: 2000
+Total number of vertices: 0
+Creation time: 0.729763
+Average CPU usage: 8.15172
+Max CPU usage: 17.9695
+Min CPU usage: 3.98866
+Average GPU usage: 94.5098
+Max GPU usage: 100
+Min GPU usage: 34.1904
+Average memory usage: 99.3293
+Max memory usage: 102.605
+Min memory usage: 97.9727
+Average GPU memory usage: 47.3086
+Max GPU memory usage: 47.3086
+Min GPU memory usage: 47.3086
+Average FPS: 12.3052
+Average frame time: 0.0812661
+Median frame time: 0.082287
+99th percentile frame time: 0.0902767
+1th percentile frame time: 0.0019027
