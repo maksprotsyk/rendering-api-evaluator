@@ -101,6 +101,12 @@ namespace Engine::Systems
 			
 			if (!model.instance)
 			{
+				bool loadResult = m_renderer->loadModel(model.path);
+				ASSERT(loadResult, "Failed to load model: {}", model.path);
+				if (!loadResult)
+				{
+					continue;
+				}
 				model.instance = m_renderer->createModelInstance(model.path);
 			}
 
@@ -132,7 +138,7 @@ namespace Engine::Systems
 
 	int RenderingSystem::getPriority() const
 	{
-		return 0;
+		return 10;
 	}
 
 	//////////////////////////////////////////////////////////////////////////

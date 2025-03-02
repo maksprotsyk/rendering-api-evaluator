@@ -26,11 +26,6 @@ namespace Engine
 	void GameController::setWindow(const Visual::Window& window)
 	{
 		m_window = window;
-		m_window.SetOnKetStateChanged([this](WPARAM param, bool state)
-			{
-				m_eventsManager.emit(Engine::Events::NativeKeyStateChanged{ param, state });
-			}
-		);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -80,6 +75,7 @@ namespace Engine
 		);
 
 		float dt = 0;
+		auto start = std::chrono::high_resolution_clock::now();
 		while (!nativeExitRequested)
 		{
 			// Measure the time taken for the frame
@@ -92,14 +88,14 @@ namespace Engine
 
 			m_systemsManager.processAddedSystems();
 			m_systemsManager.processRemovedSystems();
-
-			// Update all systems
-			auto start = std::chrono::high_resolution_clock::now();
-			m_systemsManager.update(dt);
+			
+			// calculating frame time
 			auto end = std::chrono::high_resolution_clock::now();
 			std::chrono::duration<float> elapsed = end - start;
 			dt = elapsed.count();
 
+			start = std::chrono::high_resolution_clock::now();
+			m_systemsManager.update(dt);
 		}
 
 		m_systemsManager.stop();

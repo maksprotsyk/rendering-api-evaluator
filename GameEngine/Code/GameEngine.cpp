@@ -63,7 +63,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         }
     );
 
-	Engine::GameController& gameController = Engine::GameController::get();
+    Engine::GameController& gameController = Engine::GameController::get();
 	gameController.setWindow(window);
 	gameController.setConfig(jsonPath);
 	gameController.init();

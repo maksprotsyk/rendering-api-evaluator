@@ -13,7 +13,12 @@
                         "x": 0,
                         "y": 0,
                         "z": 0
-                    }
+                    },
+					"scale": {
+						"x": 0.3,
+						"y": 0.3,
+						"z": 0.3
+					}
                 }
             ]
         },
@@ -30,131 +35,17 @@
                         "x": 0,
                         "y": 0,
                         "z": 0
-                    }
+                    },
+					"scale": {
+						"x": 0.2,
+						"y": 0.2,
+						"z": 0.2
+					}
                 }
             ]
         }
 	],
     "Entities": [
-        {
-			"Prefab": "Cube",
-            "Components": [
-                {
-                    "typename": "Engine::Components::Transform",
-                    "position": {
-                        "x": 0,
-                        "y": 0,
-                        "z": 0
-                    }
-                }
-            ]
-        },
-		{
-			"Prefab": "Bunny",
-            "Components": [
-                {
-                    "typename": "Engine::Components::Transform",
-                    "position": {
-                        "x": 0,
-                        "y": 0,
-                        "z": 5
-                    }
-                }
-            ]
-        },
-		{
-			"Prefab": "Bunny",
-            "Components": [
-                {
-                    "typename": "Engine::Components::Transform",
-                    "position": {
-                        "x": 2,
-                        "y": 0,
-                        "z": 0
-                    },
-                    "scale": {
-                        "x": 1,
-                        "y": 1,
-                        "z": 1
-                    }
-                }
-            ]
-        },
-		{
-			"Prefab": "Bunny",
-            "Components": [
-                {
-                    "typename": "Engine::Components::Transform",
-                    "position": {
-                        "x": 0,
-                        "y": -2,
-                        "z": 0
-                    },
-                    "scale": {
-                        "x": 1,
-                        "y": 1,
-                        "z": 1
-                    }
-                }
-            ]
-        },
-		{
-			"Prefab": "Bunny",
-            "Components": [
-                {
-                    "typename": "Engine::Components::Transform",
-                    "position": {
-                        "x": 0,
-                        "y": 2,
-                        "z": 0
-                    },
-                    "scale": {
-                        "x": 1,
-                        "y": 1,
-                        "z": 1
-                    }
-                }
-            ]
-        },
-		{
-			"Prefab": "Cube",
-            "Components": [
-                {
-                    "typename": "Engine::Components::Transform",
-                    "position": {
-                        "x": 0,
-                        "y": 0,
-                        "z": -10
-                    },
-                    "scale": {
-                        "x": 1,
-                        "y": 1,
-                        "z": 1
-                    }
-                }
-            ]
-        },
-		{
-            "Components": [
-                {
-                    "typename": "Engine::Components::Transform",
-                    "position": {
-                        "x": 3,
-                        "y": 0,
-                        "z": 3
-                    },
-                    "scale": {
-                        "x": 1,
-                        "y": 1,
-                        "z": 1
-                    }
-                },
-                {
-                    "typename": "Engine::Components::Model",
-                    "path": "../../Models/mori_knob/testObj.obj"
-                }
-            ]
-        },
         {
             "Components": [
                 {
@@ -174,24 +65,28 @@
     ],
 	"Systems": [
 		{
-			"typename": "Engine::Systems::RenderingSystem",
-			"renderer": "Vulkan"
-		},
-		{
 			"typename": "Engine::Systems::StatsSystem",
 			"outputFile": "../../vulkan_test.txt",
 			"renderer": "OpenGL"
 		},
 		{
-			"typename": "Engine::Systems::Experiment1System",
-			"prefab": "Bunny",
-			"experimentTime": 10,
-			"prefabCount": 20,
+			"typename": "Engine::Systems::Experiment2System",
+			"prefab": "Cube",
+			"experimentTime": 20,
+			"prefabCount": 1000,
 			"rotationSpeed": 1,
-			"radiuses": [2, 4, 6]
+			"radiuses": [1, 2, 3],
+			"distanceDelta": 0.7,
+			"elementsPerRow": 10,
+			"cameraMaxDistance": 6,
+			"cameraSpeed": 2.0
 		},
 		{
 			"typename": "Engine::Systems::InputSystem"
+		},
+		{
+			"typename": "Engine::Systems::RenderingSystem",
+			"renderer": "Vulkan"
 		}
 	]
 }

@@ -16,7 +16,6 @@ namespace Engine::Systems
 
 		std::string m_prefabName = "Cube";
 		size_t m_prefabsCount = 10;
-		float m_rotationSpeed = 2.0f;
 		float m_timeLeft = 10.0f;
 	};
 }

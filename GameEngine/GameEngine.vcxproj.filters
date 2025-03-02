@@ -112,6 +112,9 @@
     <ClCompile Include="Code\Systems\ExperimentSystemBase.cpp">
       <Filter>Code\Systems</Filter>
     </ClCompile>
+    <ClCompile Include="Code\Systems\Experiment2System.cpp">
+      <Filter>Code\Systems</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Code\Components\Transform.h">
@@ -202,6 +205,9 @@
       <Filter>Code\Managers</Filter>
     </ClInclude>
     <ClInclude Include="Code\Systems\ExperimentSystemBase.h">
+      <Filter>Code\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Systems\Experiment2System.h">
       <Filter>Code\Systems</Filter>
     </ClInclude>
   </ItemGroup>
