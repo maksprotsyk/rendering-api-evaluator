@@ -90,7 +90,7 @@ namespace Engine::Systems
 				ASSERT(res == ERROR_SUCCESS, "Failed to format GPU query data");
 				if (res == ERROR_SUCCESS)
 				{
-					m_gpuUsage.push_back(100.0f * (float)gpuLoadCounterVal.doubleValue);
+					m_gpuUsage.push_back((float)gpuLoadCounterVal.doubleValue);
 				}
 			}
 
@@ -143,9 +143,9 @@ namespace Engine::Systems
 		float medianFrameTime = m_frameTimes[m_frameTimes.size() / 2];
 		float averageFrameTime = std::accumulate(m_frameTimes.begin(), m_frameTimes.end(), 0.0f) / m_frameTimes.size();
 		
-		size_t fivePercents = m_frameTimes.size() / 20;
-		float percentile95 = m_frameTimes[m_frameTimes.size() - fivePercents];
-		float percentile5 = m_frameTimes[fivePercents];
+		size_t onePercent = m_frameTimes.size() / 100;
+		float percentile99 = onePercent > 0? m_frameTimes[m_frameTimes.size() - onePercent]: m_frameTimes.back();
+		float percentile1 = m_frameTimes[onePercent];
 
 		float averageCPUUsage = std::accumulate(m_cpuUsage.begin(), m_cpuUsage.end(), 0.0) / m_cpuUsage.size();
 		float maxCpuUsage = *std::max_element(m_cpuUsage.begin(), m_cpuUsage.end());
@@ -186,8 +186,8 @@ namespace Engine::Systems
 		outFile << "Average FPS: " << 1.0f / averageFrameTime << std::endl;
 		outFile << "Average frame time: " << averageFrameTime << std::endl;
 		outFile << "Median frame time: " << medianFrameTime << std::endl;
-		outFile << "95th percentile frame time: " << percentile95 << std::endl;
-		outFile << "5th percentile frame time: " << percentile5 << std::endl;
+		outFile << "99th percentile frame time: " << percentile99 << std::endl;
+		outFile << "1th percentile frame time: " << percentile1 << std::endl;
 	}
 
 	//////////////////////////////////////////////////////////////////////////
