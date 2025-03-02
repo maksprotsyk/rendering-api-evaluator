@@ -54,7 +54,16 @@ namespace Engine::Visual
 		);
 		ASSERT(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR, "Failed to acquire swap chain image, result: {}", (int)result);
 
+		// Wait for the fence of the current frame before reusing the command buffer
+		vkWaitForFences(m_device, 1, &m_inFlightFences[m_currentImageInFlight], VK_TRUE, UINT64_MAX);
+		vkResetFences(m_device, 1, &m_inFlightFences[m_currentImageInFlight]);
+
 		const VkCommandBuffer& commandBuffer = m_commandBuffers[m_imageIndex];
+		VkResult resetResult = vkResetCommandBuffer(m_commandBuffers[m_imageIndex], 0);
+		if (!validateResult(resetResult, "Failed to reset command buffer"))
+		{
+			return;
+		}
 
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -140,10 +149,6 @@ namespace Engine::Visual
 
 	void VulkanRenderer::render()
 	{
-		// Wait for the fence of the current frame before reusing the command buffer
-		vkWaitForFences(m_device, 1, &m_inFlightFences[m_currentImageInFlight], VK_TRUE, UINT64_MAX);
-		vkResetFences(m_device, 1, &m_inFlightFences[m_currentImageInFlight]);
-
 		VkCommandBuffer commandBuffer = m_commandBuffers[m_imageIndex];
 
 		vkCmdEndRenderPass(commandBuffer);
@@ -2026,6 +2031,7 @@ namespace Engine::Visual
 
 		VkCommandPoolCreateInfo poolInfo{};
 		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+		poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 		poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
 
 		VkResult createCommandPoolResult = vkCreateCommandPool(m_device, &poolInfo, nullptr, &m_commandPool);

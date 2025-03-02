@@ -3,7 +3,7 @@ import subprocess
 
 def run_game_engine_with_inputs():
     # Define the input folder and the path to the GameEngine executable
-    input_folder = "../../Resources/inputs/"
+    input_folder = "../../Configs/"
     game_engine_exe = "GameEngine.exe"
     
     # Get all files in the input folder

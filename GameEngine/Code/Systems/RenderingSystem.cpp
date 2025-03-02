@@ -45,8 +45,8 @@ namespace Engine::Systems
 
 		m_renderer->init(m_window);
 
-
-		auto& compManager = GameController::get().getComponentsManager();
+		auto& gameController = GameController::get();
+		auto& compManager = gameController.getComponentsManager();
 		auto& modelSet = compManager.getComponentSet<Components::Model>();
 		auto& tagSet = compManager.getComponentSet<Components::Tag>();
 		auto& transformSet = compManager.getComponentSet<Components::Transform>();
@@ -55,14 +55,14 @@ namespace Engine::Systems
 		{
 			Components::Model& model = modelSet.getElement(id);
 
-			bool loadResult = m_renderer->loadModel(model.path);
-			ASSERT(loadResult, "Failed to load model: {}", model.path);
+			bool loadResult = m_renderer->loadModel(gameController.getConfigRelativePath(model.path));
+			ASSERT(loadResult, "Failed to load model: {}", gameController.getConfigRelativePath(model.path));
 			if (!loadResult)
 			{
 				continue;
 			}
 
-			model.instance = m_renderer->createModelInstance(model.path);
+			model.instance = m_renderer->createModelInstance(gameController.getConfigRelativePath(model.path));
 		}
 
 
@@ -80,7 +80,8 @@ namespace Engine::Systems
 
 	void RenderingSystem::onUpdate(float dt)
 	{
-		auto& compManager = GameController::get().getComponentsManager();
+		auto& gameController = GameController::get();
+		auto& compManager = gameController.getComponentsManager();
 		const auto& cameraTransform = compManager.getComponentSet<Components::Transform>().getElement(m_cameraId);
 		m_renderer->setCameraProperties(cameraTransform.position, cameraTransform.rotation);
 
@@ -101,13 +102,13 @@ namespace Engine::Systems
 			
 			if (!model.instance)
 			{
-				bool loadResult = m_renderer->loadModel(model.path);
-				ASSERT(loadResult, "Failed to load model: {}", model.path);
+				bool loadResult = m_renderer->loadModel(gameController.getConfigRelativePath(model.path));
+				ASSERT(loadResult, "Failed to load model: {}", gameController.getConfigRelativePath(model.path));
 				if (!loadResult)
 				{
 					continue;
 				}
-				model.instance = m_renderer->createModelInstance(model.path);
+				model.instance = m_renderer->createModelInstance(gameController.getConfigRelativePath(model.path));
 			}
 
 			const Components::Transform& transform = transformSet.getElement(id);

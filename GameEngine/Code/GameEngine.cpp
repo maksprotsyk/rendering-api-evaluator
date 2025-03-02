@@ -40,8 +40,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
         jsonPath = Engine::Utils::wstringToString(argv[1]);
     }
 
-    int width = 1000;
-    int height = 750;
+    int width = 1280;
+    int height = 720;
     if (argc > 3)
     {
         width = std::stoi(Engine::Utils::wstringToString(argv[2]));

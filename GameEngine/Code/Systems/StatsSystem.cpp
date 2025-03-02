@@ -134,7 +134,8 @@ namespace Engine::Systems
 			return;
 		}
 
-		auto& compManager = GameController::get().getComponentsManager();
+		auto& gameController = GameController::get();
+		auto& compManager = gameController.getComponentsManager();
 		auto const& models = compManager.getComponentSet<Components::Model>();
 		size_t objectsCount = models.size();
 		size_t totalNumberOfVertices = 0;
@@ -160,7 +161,8 @@ namespace Engine::Systems
 		float maxGpuMemoryUsage = *std::max_element(m_gpuMemoryUsage.begin(), m_gpuMemoryUsage.end());
 		float minGpuMemoryUsage = *std::min_element(m_gpuMemoryUsage.begin(), m_gpuMemoryUsage.end());
 
-		std::ofstream outFile(outputPath);
+		std::string filePath = gameController.getConfigRelativePath(outputPath);
+		std::ofstream outFile(filePath);
 
 		if (!outFile.is_open())
 		{

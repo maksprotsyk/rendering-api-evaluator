@@ -38,7 +38,7 @@ namespace Engine::Visual
         virtual ~IRenderer() = default;
 
     protected:
-        static inline const std::string DEFAULT_TEXTURE = "../../Models/default.png";
+        static inline const std::string DEFAULT_TEXTURE = "default.png";
     };
 
 }

@@ -20,7 +20,7 @@ namespace Engine
 		void setWindow(const Visual::Window& window);
 		const Visual::Window& getWindow() const;
 		void setConfig(const std::string& configPath);
-		const std::string& getConfigRelativePath(const std::string& path) const;
+		std::string getConfigRelativePath(const std::string& path) const;
 
 		void init();
 		void run();

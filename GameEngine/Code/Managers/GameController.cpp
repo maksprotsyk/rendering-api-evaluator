@@ -45,7 +45,7 @@ namespace Engine
 
 	//////////////////////////////////////////////////////////////////////////
 
-	const std::string& GameController::getConfigRelativePath(const std::string& path) const
+	std::string GameController::getConfigRelativePath(const std::string& path) const
 	{
 		std::filesystem::path fullConfigPath(m_configPath);
 		std::filesystem::path configDir = fullConfigPath.parent_path();
