@@ -1,0 +1,460 @@
+Renderer: OpenGL
+Objects count: 2000
+Total number of vertices: 0
+Creation time: 0.430143
+Average CPU usage: 13.0974
+Max CPU usage: 18.2688
+Min CPU usage: 9.32822
+Average GPU usage: 3.92091
+Max GPU usage: 5.27239
+Min GPU usage: 1.03321
+Average memory usage: 69.5814
+Max memory usage: 70.2578
+Min memory usage: 69.2617
+Average GPU memory usage: 31.5938
+Max GPU memory usage: 31.5938
+Min GPU memory usage: 31.5938
+Average FPS: 659.888
+Average frame time: 0.00151541
+Median frame time: 0.0014387
+99th percentile frame time: 0.0022408
+1th percentile frame time: 0.001344
+
+
+Renderer: OpenGL
+Objects count: 2000
+Total number of vertices: 0
+Creation time: 0.391714
+Average CPU usage: 12.9958
+Max CPU usage: 22.4872
+Min CPU usage: 7.80212
+Average GPU usage: 3.7147
+Max GPU usage: 5.30472
+Min GPU usage: 1.451
+Average memory usage: 67.1665
+Max memory usage: 67.8359
+Min memory usage: 66.8359
+Average GPU memory usage: 31.5938
+Max GPU memory usage: 31.5938
+Min GPU memory usage: 31.5938
+Average FPS: 661.313
+Average frame time: 0.00151214
+Median frame time: 0.0014367
+99th percentile frame time: 0.0022528
+1th percentile frame time: 0.0013522
+
+
+Renderer: OpenGL
+Objects count: 2000
+Total number of vertices: 0
+Creation time: 0.407099
+Average CPU usage: 14.1375
+Max CPU usage: 28.2502
+Min CPU usage: 10.2028
+Average GPU usage: 4.02303
+Max GPU usage: 5.29214
+Min GPU usage: 1.56966
+Average memory usage: 67.2422
+Max memory usage: 67.9102
+Min memory usage: 66.9102
+Average GPU memory usage: 31.5938
+Max GPU memory usage: 31.5938
+Min GPU memory usage: 31.5938
+Average FPS: 661.48
+Average frame time: 0.00151176
+Median frame time: 0.0014341
+99th percentile frame time: 0.0023232
+1th percentile frame time: 0.001346
+
+
+Renderer: OpenGL
+Objects count: 2000
+Total number of vertices: 0
+Creation time: 0.404051
+Average CPU usage: 13.4146
+Max CPU usage: 17.2026
+Min CPU usage: 10.5223
+Average GPU usage: 4.00335
+Max GPU usage: 5.23149
+Min GPU usage: 1.36159
+Average memory usage: 69.337
+Max memory usage: 70.0039
+Min memory usage: 69.0039
+Average GPU memory usage: 31.5938
+Max GPU memory usage: 31.5938
+Min GPU memory usage: 31.5938
+Average FPS: 656.121
+Average frame time: 0.00152411
+Median frame time: 0.0014498
+99th percentile frame time: 0.0022648
+1th percentile frame time: 0.0013564
+
+
+Renderer: OpenGL
+Objects count: 2000
+Total number of vertices: 0
+Creation time: 0.408112
+Average CPU usage: 14.0448
+Max CPU usage: 19.2348
+Min CPU usage: 10.3904
+Average GPU usage: 4.06974
+Max GPU usage: 5.36769
+Min GPU usage: 1.48701
+Average memory usage: 67.2214
+Max memory usage: 67.8906
+Min memory usage: 66.8906
+Average GPU memory usage: 31.5938
+Max GPU memory usage: 31.5938
+Min GPU memory usage: 31.5938
+Average FPS: 661.049
+Average frame time: 0.00151275
+Median frame time: 0.0014342
+99th percentile frame time: 0.0022792
+1th percentile frame time: 0.0013444
+
+
+Renderer: OpenGL
+Objects count: 2000
+Total number of vertices: 0
+Creation time: 0.420105
+Average CPU usage: 13.2441
+Max CPU usage: 16.531
+Min CPU usage: 9.83575
+Average GPU usage: 4.07179
+Max GPU usage: 5.32399
+Min GPU usage: 0.968165
+Average memory usage: 67.0354
+Max memory usage: 67.7031
+Min memory usage: 66.7031
+Average GPU memory usage: 31.5938
+Max GPU memory usage: 31.5938
+Min GPU memory usage: 31.5938
+Average FPS: 663.25
+Average frame time: 0.00150773
+Median frame time: 0.001435
+99th percentile frame time: 0.002199
+1th percentile frame time: 0.0013475
+
+
+Renderer: OpenGL
+Objects count: 2000
+Total number of vertices: 0
+Creation time: 0.395741
+Average CPU usage: 13.1852
+Max CPU usage: 16.928
+Min CPU usage: 9.42836
+Average GPU usage: 3.90097
+Max GPU usage: 5.30855
+Min GPU usage: 1.28997
+Average memory usage: 69.3665
+Max memory usage: 70.043
+Min memory usage: 69.043
+Average GPU memory usage: 31.5938
+Max GPU memory usage: 31.5938
+Min GPU memory usage: 31.5938
+Average FPS: 656.698
+Average frame time: 0.00152277
+Median frame time: 0.0014471
+99th percentile frame time: 0.0022475
+1th percentile frame time: 0.0013522
+
+
+Renderer: OpenGL
+Objects count: 2000
+Total number of vertices: 0
+Creation time: 0.407826
+Average CPU usage: 14.2471
+Max CPU usage: 19.773
+Min CPU usage: 9.19648
+Average GPU usage: 3.9602
+Max GPU usage: 5.34116
+Min GPU usage: 1.27872
+Average memory usage: 67.4436
+Max memory usage: 68.1133
+Min memory usage: 67.1133
+Average GPU memory usage: 31.5938
+Max GPU memory usage: 31.5938
+Min GPU memory usage: 31.5938
+Average FPS: 655.856
+Average frame time: 0.00152473
+Median frame time: 0.0014415
+99th percentile frame time: 0.0023406
+1th percentile frame time: 0.0013513
+
+
+Renderer: OpenGL
+Objects count: 2000
+Total number of vertices: 0
+Creation time: 0.423912
+Average CPU usage: 12.7489
+Max CPU usage: 16.7333
+Min CPU usage: 9.53548
+Average GPU usage: 4.008
+Max GPU usage: 5.35612
+Min GPU usage: 1.34046
+Average memory usage: 67.2506
+Max memory usage: 67.918
+Min memory usage: 66.918
+Average GPU memory usage: 31.5938
+Max GPU memory usage: 31.5938
+Min GPU memory usage: 31.5938
+Average FPS: 660.503
+Average frame time: 0.001514
+Median frame time: 0.0014378
+99th percentile frame time: 0.00224
+1th percentile frame time: 0.0013494
+
+
+Renderer: OpenGL
+Objects count: 2000
+Total number of vertices: 0
+Creation time: 0.394557
+Average CPU usage: 13.2826
+Max CPU usage: 18.6246
+Min CPU usage: 9.85948
+Average GPU usage: 4.01739
+Max GPU usage: 5.27794
+Min GPU usage: 0.915368
+Average memory usage: 67.4447
+Max memory usage: 68.1172
+Min memory usage: 67.1172
+Average GPU memory usage: 31.5938
+Max GPU memory usage: 31.5938
+Min GPU memory usage: 31.5938
+Average FPS: 656.087
+Average frame time: 0.00152419
+Median frame time: 0.0014467
+99th percentile frame time: 0.0022356
+1th percentile frame time: 0.0013518
+
+
+Renderer: OpenGL
+Objects count: 2000
+Total number of vertices: 0
+Creation time: 0.399269
+Average CPU usage: 13.3105
+Max CPU usage: 16.3699
+Min CPU usage: 10.4505
+Average GPU usage: 4.04104
+Max GPU usage: 5.42595
+Min GPU usage: 1.3398
+Average memory usage: 67.4431
+Max memory usage: 68.125
+Min memory usage: 67.125
+Average GPU memory usage: 31.5938
+Max GPU memory usage: 31.5938
+Min GPU memory usage: 31.5938
+Average FPS: 657.303
+Average frame time: 0.00152137
+Median frame time: 0.0014436
+99th percentile frame time: 0.0022684
+1th percentile frame time: 0.0013573
+
+
+Renderer: OpenGL
+Objects count: 2000
+Total number of vertices: 0
+Creation time: 0.393203
+Average CPU usage: 12.9948
+Max CPU usage: 15.3566
+Min CPU usage: 8.78809
+Average GPU usage: 3.86624
+Max GPU usage: 5.32213
+Min GPU usage: 1.49158
+Average memory usage: 67.1775
+Max memory usage: 67.8477
+Min memory usage: 66.8477
+Average GPU memory usage: 31.5938
+Max GPU memory usage: 31.5938
+Min GPU memory usage: 31.5938
+Average FPS: 654.526
+Average frame time: 0.00152782
+Median frame time: 0.0014509
+99th percentile frame time: 0.0022566
+1th percentile frame time: 0.0013545
+
+
+Renderer: OpenGL
+Objects count: 2000
+Total number of vertices: 0
+Creation time: 0.415053
+Average CPU usage: 13.4776
+Max CPU usage: 16.4281
+Min CPU usage: 11.4774
+Average GPU usage: 3.91525
+Max GPU usage: 5.3631
+Min GPU usage: 1.03441
+Average memory usage: 67.4644
+Max memory usage: 68.1289
+Min memory usage: 67.1328
+Average GPU memory usage: 31.5938
+Max GPU memory usage: 31.5938
+Min GPU memory usage: 31.5938
+Average FPS: 660.652
+Average frame time: 0.00151366
+Median frame time: 0.0014351
+99th percentile frame time: 0.0022524
+1th percentile frame time: 0.0013448
+
+
+Renderer: OpenGL
+Objects count: 2000
+Total number of vertices: 0
+Creation time: 0.403187
+Average CPU usage: 13.1033
+Max CPU usage: 15.7756
+Min CPU usage: 10.3634
+Average GPU usage: 3.96753
+Max GPU usage: 5.33745
+Min GPU usage: 1.35583
+Average memory usage: 67.4481
+Max memory usage: 68.1016
+Min memory usage: 67.1016
+Average GPU memory usage: 31.5938
+Max GPU memory usage: 31.5938
+Min GPU memory usage: 31.5938
+Average FPS: 661.085
+Average frame time: 0.00151266
+Median frame time: 0.0014328
+99th percentile frame time: 0.0022813
+1th percentile frame time: 0.0013465
+
+
+Renderer: OpenGL
+Objects count: 2000
+Total number of vertices: 0
+Creation time: 0.39629
+Average CPU usage: 13.1122
+Max CPU usage: 15.5147
+Min CPU usage: 9.94445
+Average GPU usage: 3.70222
+Max GPU usage: 5.28497
+Min GPU usage: 1.30468
+Average memory usage: 67.528
+Max memory usage: 68.1914
+Min memory usage: 67.1953
+Average GPU memory usage: 31.5938
+Max GPU memory usage: 31.5938
+Min GPU memory usage: 31.5938
+Average FPS: 670.44
+Average frame time: 0.00149156
+Median frame time: 0.0014283
+99th percentile frame time: 0.002223
+1th percentile frame time: 0.0013484
+
+
+Renderer: OpenGL
+Objects count: 2000
+Total number of vertices: 0
+Creation time: 0.412557
+Average CPU usage: 13.217
+Max CPU usage: 17.7035
+Min CPU usage: 9.28056
+Average GPU usage: 4.02587
+Max GPU usage: 5.29582
+Min GPU usage: 1.4864
+Average memory usage: 67.2049
+Max memory usage: 67.875
+Min memory usage: 66.875
+Average GPU memory usage: 31.5938
+Max GPU memory usage: 31.5938
+Min GPU memory usage: 31.5938
+Average FPS: 660.977
+Average frame time: 0.00151291
+Median frame time: 0.0014366
+99th percentile frame time: 0.0022613
+1th percentile frame time: 0.0013543
+
+
+Renderer: OpenGL
+Objects count: 2000
+Total number of vertices: 0
+Creation time: 0.406703
+Average CPU usage: 13.4035
+Max CPU usage: 19.038
+Min CPU usage: 10.8726
+Average GPU usage: 3.77883
+Max GPU usage: 5.38424
+Min GPU usage: 1.4691
+Average memory usage: 67.1836
+Max memory usage: 67.8516
+Min memory usage: 66.8516
+Average GPU memory usage: 31.5938
+Max GPU memory usage: 31.5938
+Min GPU memory usage: 31.5938
+Average FPS: 660.76
+Average frame time: 0.00151341
+Median frame time: 0.0014353
+99th percentile frame time: 0.0022521
+1th percentile frame time: 0.0013465
+
+
+Renderer: OpenGL
+Objects count: 2000
+Total number of vertices: 0
+Creation time: 0.400677
+Average CPU usage: 12.6571
+Max CPU usage: 15.5356
+Min CPU usage: 8.99603
+Average GPU usage: 4.07815
+Max GPU usage: 5.2654
+Min GPU usage: 1.34929
+Average memory usage: 67.4805
+Max memory usage: 68.1523
+Min memory usage: 67.1523
+Average GPU memory usage: 31.5938
+Max GPU memory usage: 31.5938
+Min GPU memory usage: 31.5938
+Average FPS: 664.298
+Average frame time: 0.00150535
+Median frame time: 0.0014311
+99th percentile frame time: 0.0022286
+1th percentile frame time: 0.0013501
+
+
+Renderer: OpenGL
+Objects count: 2000
+Total number of vertices: 0
+Creation time: 0.394618
+Average CPU usage: 13.5874
+Max CPU usage: 16.5217
+Min CPU usage: 10.6085
+Average GPU usage: 3.90656
+Max GPU usage: 5.26343
+Min GPU usage: 1.30234
+Average memory usage: 67.4694
+Max memory usage: 68.1602
+Min memory usage: 67.1641
+Average GPU memory usage: 31.5938
+Max GPU memory usage: 31.5938
+Min GPU memory usage: 31.5938
+Average FPS: 663.675
+Average frame time: 0.00150676
+Median frame time: 0.0014337
+99th percentile frame time: 0.0022608
+1th percentile frame time: 0.0013526
+
+
+Renderer: OpenGL
+Objects count: 2000
+Total number of vertices: 0
+Creation time: 0.402159
+Average CPU usage: 13.1235
+Max CPU usage: 19.1395
+Min CPU usage: 8.80458
+Average GPU usage: 3.99269
+Max GPU usage: 5.45007
+Min GPU usage: 1.36075
+Average memory usage: 67.4809
+Max memory usage: 68.1523
+Min memory usage: 67.1523
+Average GPU memory usage: 31.5938
+Max GPU memory usage: 31.5938
+Min GPU memory usage: 31.5938
+Average FPS: 669.666
+Average frame time: 0.00149328
+Median frame time: 0.0014221
+99th percentile frame time: 0.0022548
+1th percentile frame time: 0.0013453
+
+
