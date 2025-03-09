@@ -120,6 +120,9 @@ namespace Engine::Visual
 		VkDeviceSize offsets[] = { 0 };
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
+		std::array<VkDescriptorSet, 1> instanceDescriptorSets{ modelInstance.descriptorSet };
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, static_cast<uint32_t>(instanceDescriptorSets.size()), instanceDescriptorSets.data(), 0, nullptr);
+
 		for (const auto& mat : modelData.materials)
 		{
 			MaterialBufferObject mbo{};
@@ -132,15 +135,25 @@ namespace Engine::Visual
 			ASSERT(setMboMemoryResult, "Failed to set memory data for material buffer");
 		}
 
-		for (const auto& mesh : modelData.meshes)
+		std::unordered_map<int, std::vector<size_t>> materialMeshes;
+		for (size_t i = 0; i < modelData.meshes.size(); i++)
 		{
-			const Material& material = mesh.materialId != -1 ? modelData.materials[mesh.materialId] : m_defaultMaterial;
-			const TextureData& texture = getTexture(material.diffuseTextureId);
-			std::array<VkDescriptorSet, 3> descriptorSets{modelInstance.descriptorSet, material.descriptorSet, texture.descriptorSet};
+			materialMeshes[modelData.meshes[i].materialId].push_back(i);
+		}
 
-			vkCmdBindIndexBuffer(commandBuffer, mesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
-			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, static_cast<uint32_t>(descriptorSets.size()), descriptorSets.data(), 0, nullptr);
-			vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(mesh.indices.size()), 1, 0, 0, 0);
+		for (const auto& [materialId, meshIndices] : materialMeshes)
+		{
+			const Material& material = materialId != -1 ? modelData.materials[materialId] : m_defaultMaterial;
+			const TextureData& texture = getTexture(material.diffuseTextureId);
+			std::array<VkDescriptorSet, 2> materialDescriptorSets{ material.descriptorSet, texture.descriptorSet };
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 1, static_cast<uint32_t>(materialDescriptorSets.size()), materialDescriptorSets.data(), 0, nullptr);
+			for (size_t meshIndex : meshIndices)
+			{
+				const SubMesh& mesh = modelData.meshes[meshIndex];
+				vkCmdBindIndexBuffer(commandBuffer, mesh.indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+				vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(mesh.indices.size()), 1, 0, 0, 0);
+			}
+
 		}
 
 	}
@@ -522,14 +535,14 @@ namespace Engine::Visual
 		mbo.specularColor = m_defaultMaterial.specularColor;
 		mbo.diffuseColor = m_defaultMaterial.diffuseColor;
 		mbo.shininess = m_defaultMaterial.shininess;
-
-		result = setBufferMemoryData(m_defaultMaterial.materialBufferMemory, &mbo, sizeof(mbo));
+		
+		result = createDescriptorSet(m_defaultMaterial);
 		if (!result)
 		{
 			return;
 		}
-		
-		result = createDescriptorSet(m_defaultMaterial);
+
+		result = setBufferMemoryData(m_defaultMaterial.materialBufferMemory, &mbo, sizeof(mbo));
 		if (!result)
 		{
 			return;

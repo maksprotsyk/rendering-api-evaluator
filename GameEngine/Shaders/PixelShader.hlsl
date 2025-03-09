@@ -3,6 +3,10 @@ cbuffer ConstantBuffer : register(b0)
     matrix worldMatrix;
     matrix viewMatrix;
     matrix projectionMatrix;
+};
+
+cbuffer MaterialBuffer : register(b1)
+{
     float3 ambientColor;
     float shininess;
     

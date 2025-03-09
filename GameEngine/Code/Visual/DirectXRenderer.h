@@ -66,6 +66,7 @@ namespace Engine::Visual
             XMFLOAT3 specularColor;
             float shininess;
             std::string diffuseTextureId;
+            ComPtr<ID3D11Buffer> materialBuffer;
         };
 
         struct ModelData
@@ -81,6 +82,10 @@ namespace Engine::Visual
             XMMATRIX worldMatrix;
             XMMATRIX viewMatrix;
             XMMATRIX projectionMatrix;
+        };
+
+        struct MaterialBuffer
+        {
             XMFLOAT3 ambientColor;
             float shininess;
 

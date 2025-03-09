@@ -3,14 +3,6 @@ cbuffer ConstantBuffer : register(b0)
     matrix worldMatrix;
     matrix viewMatrix;
     matrix projectionMatrix;
-    float3 ambientColor;
-    float shininess;
-    
-    float3 diffuseColor;
-    float padding1;
-    
-    float3 specularColor;
-    float padding2;
 };
 
 struct VSInput

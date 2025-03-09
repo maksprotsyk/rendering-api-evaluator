@@ -144,7 +144,7 @@ namespace Engine::Visual
 
     private:
         static glm::mat4 getWorldMatrix(const Utils::Vector3& position, const Utils::Vector3& rotation, const Utils::Vector3& scale);
-        static bool validateResult(VkResult result, const std::string& message);
+        static inline bool validateResult(VkResult result, const std::string& message);
 
         // Init methods
         void createInstance();
@@ -217,8 +217,8 @@ namespace Engine::Visual
     private:
 
         static const int MAX_MODEL_INSTANCES = 50;
-        static const int MAX_MATERIALS = 20;
-        static const int MAX_TEXTURES = 20;
+        static const int MAX_MATERIALS = 80;
+        static const int MAX_TEXTURES = 80;
 
         static const int MAX_FRAMES_IN_FLIGHT = 3;
         static inline const std::vector<const char*> DEVICE_EXTENSIONS = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };

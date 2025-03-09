@@ -66,26 +66,37 @@ namespace Engine::Visual
         glUniformMatrix4fv(m_projectionMatrixLoc, 1, GL_FALSE, glm::value_ptr(m_projectionMatrix));
         glUniformMatrix4fv(m_modelMatrixLoc, 1, GL_FALSE, glm::value_ptr(worldMatrix));
 
-        for (const auto& mesh : modelData.meshes)
-        {
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.indexBuffer);
-            ASSERT_OPENGL("Unable to bind index buffer for mesh of model: {}", model.GetId());
+        std::unordered_map<int, std::vector<size_t>> materialMeshes;
+		for (size_t i = 0; i < modelData.meshes.size(); i++)
+		{
+			materialMeshes[modelData.meshes[i].materialId].push_back(i);
+		}
 
-            const Material& material = mesh.materialId != -1 ? modelData.materials[mesh.materialId] : m_defaultMaterial;
-            glUniform3fv(glGetUniformLocation(m_shaderProgram, "ambientColor"), 1, glm::value_ptr(material.ambientColor));
-            glUniform3fv(glGetUniformLocation(m_shaderProgram, "diffuseColor"), 1, glm::value_ptr(material.diffuseColor));
-            glUniform3fv(glGetUniformLocation(m_shaderProgram, "specularColor"), 1, glm::value_ptr(material.specularColor));
-            glUniform1f(glGetUniformLocation(m_shaderProgram, "shininess"), material.shininess);
+		for (const auto& [materialId, meshIndices] : materialMeshes)
+		{
+			const Material& material = materialId != -1 ? modelData.materials[materialId]: m_defaultMaterial;
+			glUniform3fv(glGetUniformLocation(m_shaderProgram, "ambientColor"), 1, glm::value_ptr(material.ambientColor));
+			glUniform3fv(glGetUniformLocation(m_shaderProgram, "diffuseColor"), 1, glm::value_ptr(material.diffuseColor));
+			glUniform3fv(glGetUniformLocation(m_shaderProgram, "specularColor"), 1, glm::value_ptr(material.specularColor));
+			glUniform1f(glGetUniformLocation(m_shaderProgram, "shininess"), material.shininess);
             ASSERT_OPENGL("Unable to set material properties for mesh of model: {}", model.GetId());
 
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, getTexture(material.diffuseTextureId));
-            glUniform1i(glGetUniformLocation(m_shaderProgram, "diffuseTexture"), 0);
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, getTexture(material.diffuseTextureId));
+			glUniform1i(glGetUniformLocation(m_shaderProgram, "diffuseTexture"), 0);
             ASSERT_OPENGL("Unable to set texture for mesh of model: {}", model.GetId());
 
-            glDrawElements(GL_TRIANGLES, mesh.indices.size(), GL_UNSIGNED_INT, 0);
-            ASSERT_OPENGL("Unable to draw mesh of model: {}", model.GetId());
-        }
+			for (size_t meshIndex : meshIndices)
+			{
+				const SubMesh& mesh = modelData.meshes[meshIndex];
+
+                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.indexBuffer);
+                ASSERT_OPENGL("Unable to bind index buffer for mesh of model: {}", model.GetId());
+
+				glDrawElements(GL_TRIANGLES, mesh.indices.size(), GL_UNSIGNED_INT, 0);
+				ASSERT_OPENGL("Unable to draw mesh of model: {}", model.GetId());
+			}
+		}
 
         glBindVertexArray(0);
     }

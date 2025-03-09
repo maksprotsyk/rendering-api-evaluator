@@ -43,43 +43,53 @@ namespace Engine::Visual
 			return;
 		}
 
-		const ModelData& modelData = modelItr->second;
+		ModelData& modelData = modelItr->second;
 
 		XMMATRIX worldMatrix = getWorldMatrix(position, rotation, scale);
 
-		// Bind the vertex and index buffers
+		ConstantBuffer cb{};
+		cb.worldMatrix = XMMatrixTranspose(worldMatrix);
+		cb.viewMatrix = XMMatrixTranspose(m_viewMatrix);
+		cb.projectionMatrix = XMMatrixTranspose(m_projectionMatrix);
+		m_deviceContext->UpdateSubresource(m_constantBuffer.Get(), 0, nullptr, &cb, 0, 0);
+
+		m_deviceContext->VSSetConstantBuffers(0, 1, m_constantBuffer.GetAddressOf());
+		m_deviceContext->PSSetConstantBuffers(0, 1, m_constantBuffer.GetAddressOf());
+
+		for (Material& material : modelData.materials)
+		{
+			MaterialBuffer mb{};
+			mb.ambientColor = material.ambientColor;
+			mb.diffuseColor = material.diffuseColor;
+			mb.specularColor = material.specularColor;
+			mb.shininess = material.shininess;
+			m_deviceContext->UpdateSubresource(material.materialBuffer.Get(), 0, nullptr, &mb, 0, 0);
+		}
+
 		UINT stride = sizeof(Vertex);
 		UINT offset = 0;
 		m_deviceContext->IASetVertexBuffers(0, 1, modelData.vertexBuffer.GetAddressOf(), &stride, &offset);
-
-		// Set the primitive topology
 		m_deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		for (const auto& mesh : modelData.meshes)
+
+		m_deviceContext->PSSetSamplers(0, 1, m_samplerState.GetAddressOf());
+
+		std::unordered_map<int, std::vector<size_t>> materialMeshes;
+		for (size_t i = 0; i < modelData.meshes.size(); i++)
 		{
-			// Update the constant buffer (world, view, projection matrices)
-			ConstantBuffer cb;
-			cb.worldMatrix = XMMatrixTranspose(worldMatrix);  // Transpose for HLSL
-			cb.viewMatrix = XMMatrixTranspose(m_viewMatrix);
-			cb.projectionMatrix = XMMatrixTranspose(m_projectionMatrix);
+			materialMeshes[modelData.meshes[i].materialId].push_back(i);
+		}
 
-			const Material& material = mesh.materialId != -1 ? modelData.materials[mesh.materialId] : m_defaultMaterial;
-			cb.ambientColor = material.ambientColor;
-			cb.diffuseColor = material.diffuseColor;
-			cb.specularColor = material.specularColor;
-			cb.shininess = material.shininess;
-			m_deviceContext->UpdateSubresource(m_constantBuffer.Get(), 0, nullptr, &cb, 0, 0);
-
-			// Bind the constant buffer and texture
-			m_deviceContext->VSSetConstantBuffers(0, 1, m_constantBuffer.GetAddressOf());
-			m_deviceContext->PSSetConstantBuffers(0, 1, m_constantBuffer.GetAddressOf());
+		for (const auto& [materialId, meshIndices] : materialMeshes)
+		{
+			const Material& material = materialId != -1 ? modelData.materials[materialId] : m_defaultMaterial;
+			m_deviceContext->PSSetConstantBuffers(1, 1, material.materialBuffer.GetAddressOf());
 			m_deviceContext->PSSetShaderResources(0, 1, getTexture(material.diffuseTextureId).GetAddressOf());
-			m_deviceContext->PSSetSamplers(0, 1, m_samplerState.GetAddressOf());
-
-			// Bind the index buffer for this sub-mesh
-			m_deviceContext->IASetIndexBuffer(mesh.indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
-
-			// Draw the model
-			m_deviceContext->DrawIndexed(mesh.indices.size(), 0, 0);
+			for (size_t meshIndex : meshIndices)
+			{
+				const SubMesh& mesh = modelData.meshes[meshIndex];
+				m_deviceContext->IASetIndexBuffer(mesh.indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+				m_deviceContext->DrawIndexed(mesh.indices.size(), 0, 0);
+			}
 		}
 
 	}
@@ -242,7 +252,18 @@ namespace Engine::Visual
 			return false;
 		}
 
-		for (auto& subMesh: model.meshes)
+		for (Material& material : model.materials)
+		{
+			D3D11_BUFFER_DESC cbDesc = {};
+			cbDesc.Usage = D3D11_USAGE_DEFAULT;
+			cbDesc.ByteWidth = sizeof(MaterialBuffer);
+			cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+			cbDesc.CPUAccessFlags = 0;
+			HRESULT hr = m_device->CreateBuffer(&cbDesc, nullptr, material.materialBuffer.GetAddressOf());
+			ASSERT(!FAILED(hr), "Can't create constant buffer, error code: {}", hr);
+		}
+
+		for (SubMesh& subMesh: model.meshes)
 		{
 			// Create the index buffer for this sub-mesh
 			D3D11_BUFFER_DESC indexBufferDesc = {};
@@ -570,6 +591,22 @@ namespace Engine::Visual
 		m_defaultMaterial.ambientColor = XMFLOAT3(0.5f, 0.5f, 0.5f);
 		m_defaultMaterial.specularColor = XMFLOAT3(0.5f, 0.5f, 0.5f);
 		m_defaultMaterial.shininess = 32.0f;
+
+		// Create constant buffer
+		D3D11_BUFFER_DESC cbDesc = {};
+		cbDesc.Usage = D3D11_USAGE_DEFAULT;
+		cbDesc.ByteWidth = sizeof(MaterialBuffer);
+		cbDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+		cbDesc.CPUAccessFlags = 0;
+		HRESULT hr = m_device->CreateBuffer(&cbDesc, nullptr, m_defaultMaterial.materialBuffer.GetAddressOf());
+		ASSERT(!FAILED(hr), "Can't create constant buffer, error code: {}", hr);
+
+		MaterialBuffer mb{};
+		mb.ambientColor = m_defaultMaterial.ambientColor;
+		mb.diffuseColor = m_defaultMaterial.diffuseColor;
+		mb.specularColor = m_defaultMaterial.specularColor;
+		mb.shininess = m_defaultMaterial.shininess;
+		m_deviceContext->UpdateSubresource(m_defaultMaterial.materialBuffer.Get(), 0, nullptr, &mb, 0, 0);
 	}
 
 	////////////////////////////////////////////////////////////////////////
