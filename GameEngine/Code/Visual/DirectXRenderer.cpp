@@ -402,7 +402,7 @@ namespace Engine::Visual
 			SubMesh mesh;
 			for (const auto& index : shape.mesh.indices)
 			{
-				Vertex vertex;
+				Vertex vertex{};
 
 				vertex.position = {
 					attrib.vertices[3 * index.vertex_index + 0],
@@ -422,7 +422,7 @@ namespace Engine::Visual
 				{
 					vertex.texCoord = {
 						attrib.texcoords[2 * index.texcoord_index + 0],
-						attrib.texcoords[2 * index.texcoord_index + 1]
+						1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
 					};
 				}
 
