@@ -1,0 +1,21 @@
+Renderer: OpenGL
+Objects count: 1200
+Total number of vertices: 0
+Creation time: 0.392649
+Average CPU usage: 7.44119
+Max CPU usage: 15.5747
+Min CPU usage: 1.00311
+Average GPU usage: 54.3993
+Max GPU usage: 58.6509
+Min GPU usage: 17.6787
+Average memory usage: 73.2498
+Max memory usage: 73.8984
+Min memory usage: 72.8984
+Average GPU memory usage: 33.0938
+Max GPU memory usage: 33.0938
+Min GPU memory usage: 33.0938
+Average FPS: 162.81
+Average frame time: 0.00614213
+Median frame time: 0.0061434
+99th percentile frame time: 0.0067745
+1th percentile frame time: 0.0054581
