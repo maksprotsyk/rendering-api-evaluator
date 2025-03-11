@@ -51,6 +51,28 @@ ORIGINAL_CONFIG = {
 					}
                 }
             ]
+        },
+        {
+			"Name": "Teapot",
+            "Components": [
+                {
+                    "typename": "Engine::Components::Model",
+                    "path": "../Models/teapot.obj"
+                },
+	            {
+                    "typename": "Engine::Components::Transform",
+                    "position": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    },
+					"scale": {
+						"x": 0.005,
+						"y": 0.005,
+						"z": 0.005
+					}
+                }
+            ]
         }
 	],
     "Entities": [
@@ -133,7 +155,7 @@ def create_config(renderer, prefab_name, prefab_count, experiment):
 # Usage example
 
 rendering_methods = ["DirectX", "OpenGL", "Vulkan"]
-prefabs = ["Cube", "Bunny"]
+prefabs = ["Teapot", "Bunny", "Cube"]
 prefabs_count = {0: [25, 50, 100, 200, 300, 400, 500], 1: [100, 200, 400, 800, 1200, 1600, 2000]}
 configs_amount = 0
 for renderer in rendering_methods:

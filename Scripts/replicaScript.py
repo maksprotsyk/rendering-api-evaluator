@@ -7,8 +7,15 @@ def run_game_engine_with_inputs():
     input_folder = "../../Configs/"
     game_engine_exe = "GameEngine.exe"
     
+    for i in range(5):
+        warmup_path = os.path.join(input_folder, "config_DirectX_Teapot_2000_2.json")
+        process = subprocess.run([game_engine_exe, warmup_path], check=True)
+        print("Runned warmup experiment:", i+1)
+    
     # Get all files in the input folder
-    input_files = ["config_DirectX_Bunny_400_2.json", "config_OpenGL_Bunny_400_2.json", "config_Vulkan_Bunny_400_2.json"]
+    input_files = ["config_DirectX_Bunny_2000_2.json", "config_OpenGL_Bunny_2000_2.json", "config_Vulkan_Bunny_2000_2.json",
+                    "config_DirectX_Cube_2000_2.json", "config_OpenGL_Cube_2000_2.json", "config_Vulkan_Cube_2000_2.json",
+                    "config_DirectX_Teapot_2000_2.json", "config_OpenGL_Teapot_2000_2.json", "config_Vulkan_Teapot_2000_2.json"]
     repeats = 20
     # Run GameEngine.exe with each file as an argument
     for input_file in input_files:

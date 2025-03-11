@@ -15,9 +15,9 @@
                         "z": 0
                     },
 					"scale": {
-						"x": 0.3,
-						"y": 0.3,
-						"z": 0.3
+						"x": 1,
+						"y": 1,
+						"z": 1
 					}
                 }
             ]
@@ -37,15 +37,72 @@
                         "z": 0
                     },
 					"scale": {
-						"x": 0.2,
-						"y": 0.2,
-						"z": 0.2
+						"x": 0.5,
+						"y": 0.5,
+						"z": 0.5
 					}
                 }
             ]
         }
 	],
     "Entities": [
+        {
+            "Prefab": "Bunny",
+            "Components": [
+                {
+                    "typename": "Engine::Components::Transform",
+                    "position": {
+                        "x": 0,
+                        "y": 0,
+                        "z": 0
+                    }
+                }
+            ]
+        },
+        {
+            "Prefab": "Cube",
+            "Components": [
+                {
+                    "typename": "Engine::Components::Transform",
+                    "position": {
+                        "x": 0,
+                        "y": -0.5,
+                        "z": 0
+                    },
+		            "scale": {
+                        "x": 10,
+                        "y": 1,
+                        "z": 10
+                    }
+                }
+            ]
+        },
+        {
+            "Components": [
+                {
+                    "typename": "Engine::Components::Model",
+                    "path": "../Models/sportsCar/sportsCar.obj"
+                },
+                {
+                    "typename": "Engine::Components::Transform",
+                    "position": {
+                        "x": -2,
+                        "y": 0,
+                        "z": 0
+                    },
+                    "scale": {
+                        "x": 0.5,
+                        "y": 0.5,
+                        "z": 0.5
+                    },
+					"rotation": {
+						"x": 0,
+						"y": 3.14,
+						"z": 0
+					}
+                }
+            ]
+        },
         {
             "Components": [
                 {
@@ -70,23 +127,11 @@
 			"renderer": "OpenGL"
 		},
 		{
-			"typename": "Engine::Systems::Experiment2System",
-			"prefab": "Cube",
-			"experimentTime": 20,
-			"prefabCount": 1000,
-			"rotationSpeed": 1,
-			"radiuses": [1, 2, 3],
-			"distanceDelta": 0.7,
-			"elementsPerRow": 10,
-			"cameraMaxDistance": 6,
-			"cameraSpeed": 2.0
-		},
-		{
 			"typename": "Engine::Systems::InputSystem"
 		},
 		{
 			"typename": "Engine::Systems::RenderingSystem",
-			"renderer": "Vulkan"
+			"renderer": "OpenGL"
 		}
 	]
 }
