@@ -20,9 +20,20 @@ namespace Engine::Systems
 		void onStop() override;
 		int getPriority() const override;
 	private:
+		std::map<std::string, std::function<std::unique_ptr<Visual::IRenderer>()>> m_rendererCreators;
+		std::vector<std::string> m_rendererNames;
+
 		const Visual::Window& m_window;
+		std::string m_rendererName;
+		std::string m_nextRendererName;
 		std::unique_ptr<Visual::IRenderer> m_renderer;
 
 		EntityID m_cameraId = -1;
+
+		void initUI();
+		void renderUI();
+		void cleanUpUI();
+		void removeRenderer();
+		void setRenderer(const std::string& rendererName);
 	};
 }

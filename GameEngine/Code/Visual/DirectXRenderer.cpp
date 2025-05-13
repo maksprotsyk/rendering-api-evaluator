@@ -1,4 +1,4 @@
-#include "DirectXRenderer.h"
+﻿#include "DirectXRenderer.h"
 
 #include <stdexcept>
 #include <d3dcompiler.h>
@@ -7,6 +7,9 @@
 #include <filesystem>
 
 #include "tiny_obj_loader.h"
+#include "imgui.h"
+#include "backends/imgui_impl_dx11.h"
+
 #include "Utils/DebugMacros.h"
 
 namespace Engine::Visual
@@ -20,6 +23,9 @@ namespace Engine::Visual
 		createShaders();
 		createViewport(window.getHandle());
 		createDefaultMaterial();
+#ifdef _SHOWUI
+		initUI();
+#endif
 	}
 
 	////////////////////////////////////////////////////////////////////////
@@ -96,9 +102,22 @@ namespace Engine::Visual
 
 	////////////////////////////////////////////////////////////////////////
 
+	void DirectXRenderer::startUIRender()
+	{
+		ImGui_ImplDX11_NewFrame();
+	}
+
+	////////////////////////////////////////////////////////////////////////
+
+	void DirectXRenderer::endUIRender()
+	{
+		ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+	}
+
+	////////////////////////////////////////////////////////////////////////
+
 	void DirectXRenderer::render()
 	{
-		// Present the frame
 		m_swapChain->Present(0, 0);
 	}
 
@@ -422,7 +441,7 @@ namespace Engine::Visual
 				{
 					vertex.texCoord = {
 						attrib.texcoords[2 * index.texcoord_index + 0],
-						1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
+						attrib.texcoords[2 * index.texcoord_index + 1]
 					};
 				}
 
@@ -518,6 +537,10 @@ namespace Engine::Visual
 
 	void DirectXRenderer::cleanUp()
 	{
+#ifdef _SHOWUI
+		cleanUpUI();
+#endif
+
 		for (const std::string& modelId : Utils::getKeys(m_models))
 		{
 			unloadModel(modelId);
@@ -607,6 +630,20 @@ namespace Engine::Visual
 		mb.specularColor = m_defaultMaterial.specularColor;
 		mb.shininess = m_defaultMaterial.shininess;
 		m_deviceContext->UpdateSubresource(m_defaultMaterial.materialBuffer.Get(), 0, nullptr, &mb, 0, 0);
+	}
+
+	////////////////////////////////////////////////////////////////////////
+
+	void DirectXRenderer::initUI()
+	{
+		ImGui_ImplDX11_Init(m_device.Get(), m_deviceContext.Get());
+	}
+
+	////////////////////////////////////////////////////////////////////////
+
+	void DirectXRenderer::cleanUpUI()
+	{
+		ImGui_ImplDX11_Shutdown();
 	}
 
 	////////////////////////////////////////////////////////////////////////

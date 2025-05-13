@@ -2,9 +2,12 @@
 
 #include <windowsx.h>
 
+extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
 namespace Engine::Visual
 {
     //////////////////////////////////////////////////////////////////////////
+
 
     bool Window::initWindow(HINSTANCE hInstance, int width, int height)
     {
@@ -16,6 +19,17 @@ namespace Engine::Visual
         wc.lpszClassName = CLASS_NAME;
 
         RegisterClass(&wc);
+
+        WNDCLASSEXW childWc = {};
+        childWc.cbSize = sizeof(childWc);
+        childWc.style = CS_OWNDC;
+        childWc.lpfnWndProc = windowProc;
+        childWc.hInstance = GetModuleHandle(nullptr);
+        childWc.hCursor = LoadCursor(nullptr, IDC_ARROW);
+        childWc.hbrBackground = nullptr;
+        childWc.lpszClassName = getChildWindowClassName();
+
+        RegisterClassExW(&childWc);
 
         m_window = CreateWindowEx(
             0,
@@ -123,10 +137,20 @@ namespace Engine::Visual
         return m_window;
     }
 
+    const wchar_t* Window::getChildWindowClassName()
+    {
+        return TEXT("ChildWindowClass");
+    }
+
     //////////////////////////////////////////////////////////////////////////
 
     LRESULT CALLBACK Window::windowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
+        if (ImGui_ImplWin32_WndProcHandler(hwnd, uMsg, wParam, lParam))
+        {
+            return true;
+        }
+
         Window* pThis;
 
         if (uMsg == WM_NCCREATE)

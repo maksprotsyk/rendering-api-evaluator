@@ -24,6 +24,9 @@ namespace Engine::Visual
             const Utils::Vector3& position,
             const Utils::Vector3& rotation,
             const Utils::Vector3& scale) override;
+
+		void startUIRender() override;
+		void endUIRender() override;
         void render() override;
 
         bool loadModel(const std::string& filename) override;
@@ -160,6 +163,7 @@ namespace Engine::Visual
         void createDepthResources();
         void createFramebuffers();
         void createDescriptorPool();
+
         VkDescriptorPool createInstancesDescriptorPool();
         EntityID getPoolToUse();
 
@@ -180,6 +184,8 @@ namespace Engine::Visual
         bool createVertexBuffer(ModelData& model);
         bool createIndexBuffer(ModelData& model);
         bool createDescriptorSet(Material& material);
+        void initUI();
+        void cleanUpUI();
 
 
         // Memory utils
@@ -216,7 +222,7 @@ namespace Engine::Visual
 
     private:
 
-        static const int MAX_MODEL_INSTANCES = 50;
+        static const int MAX_MODEL_INSTANCES = 500;
         static const int MAX_MATERIALS = 80;
         static const int MAX_TEXTURES = 80;
 
@@ -261,6 +267,7 @@ namespace Engine::Visual
 
         VkDescriptorPool m_materialsDescriptorPool{};
         VkDescriptorPool m_texturesDescriptorPool{};
+		VkDescriptorPool m_imguiDescriptorPool{};
 
         std::vector<VkCommandBuffer> m_commandBuffers;
 

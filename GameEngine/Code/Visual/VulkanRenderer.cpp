@@ -10,9 +10,12 @@
 
 #include "stb_image.h"
 #include "tiny_obj_loader.h"
+#include "imgui.h"
+#include "backends/imgui_impl_vulkan.h"
 
 #include "Window.h"
 #include "Utils/DebugMacros.h"
+
 
 namespace Engine::Visual
 {
@@ -38,6 +41,9 @@ namespace Engine::Visual
 		createTextureSampler();
 		createProjectionMatrix();
 		createDefaultMaterial();
+#ifdef _SHOWUI
+		initUI();
+#endif
 	}
 
 	////////////////////////////////////////////////////////////////////////
@@ -156,6 +162,21 @@ namespace Engine::Visual
 
 		}
 
+	}
+
+	////////////////////////////////////////////////////////////////////////
+
+	void VulkanRenderer::startUIRender()
+	{
+		ImGui_ImplVulkan_NewFrame();
+	}
+
+	////////////////////////////////////////////////////////////////////////
+
+	void VulkanRenderer::endUIRender()
+	{
+		VkCommandBuffer commandBuffer = m_commandBuffers[m_imageIndex];
+		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 	}
 
 	////////////////////////////////////////////////////////////////////////
@@ -1435,6 +1456,10 @@ namespace Engine::Visual
 
 	void VulkanRenderer::cleanUp()
 	{
+#ifdef _SHOWUI
+		cleanUpUI();
+#endif
+
 		for (const std::string& modelId : Utils::getKeys(m_models))
 		{
 			unloadModel(modelId);
@@ -2142,6 +2167,81 @@ namespace Engine::Visual
 		vkUpdateDescriptorSets(m_device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 
 		return true;
+	}
+
+	////////////////////////////////////////////////////////////////////////
+
+	void VulkanRenderer::initUI()
+	{
+		uint32_t poolSize = 1000;
+		VkDescriptorPoolSize pool_sizes[] = {
+			{ VK_DESCRIPTOR_TYPE_SAMPLER, poolSize },
+			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, poolSize },
+			{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, poolSize },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, poolSize },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, poolSize },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, poolSize },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, poolSize },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, poolSize },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, poolSize },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, poolSize },
+			{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, poolSize }
+		};
+
+		VkDescriptorPoolCreateInfo pool_info = {};
+		pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+		pool_info.maxSets = poolSize * IM_ARRAYSIZE(pool_sizes);
+		pool_info.poolSizeCount = (uint32_t)IM_ARRAYSIZE(pool_sizes);
+		pool_info.pPoolSizes = pool_sizes;
+
+		vkCreateDescriptorPool(m_device, &pool_info, nullptr, &m_imguiDescriptorPool);
+
+		QueueFamilyIndices indices = findQueueFamilies(m_physicalDevice);
+
+		SwapChainSupportDetails swapChainSupport = querySwapChainSupport(m_physicalDevice);
+		uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
+		if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount)
+		{
+			imageCount = swapChainSupport.capabilities.maxImageCount;
+		}
+
+		VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
+		VkPipelineRenderingCreateInfoKHR pipelineRenderingInfo = {};
+		pipelineRenderingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR;
+		pipelineRenderingInfo.pNext = nullptr;
+		pipelineRenderingInfo.colorAttachmentCount = 1;
+		pipelineRenderingInfo.pColorAttachmentFormats = &surfaceFormat.format;
+		pipelineRenderingInfo.depthAttachmentFormat = VK_FORMAT_UNDEFINED;
+		pipelineRenderingInfo.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
+
+		ImGui_ImplVulkan_InitInfo init_info = {};
+		init_info.Instance = m_instance;
+		init_info.PhysicalDevice = m_physicalDevice;
+		init_info.Device = m_device;
+		init_info.QueueFamily = indices.graphicsFamily.value();
+		init_info.Queue = m_graphicsQueue;
+		init_info.PipelineCache = VK_NULL_HANDLE;
+		init_info.DescriptorPool = m_imguiDescriptorPool;
+		init_info.Subpass = 0;
+		init_info.MinImageCount = imageCount;
+		init_info.ImageCount = MAX_FRAMES_IN_FLIGHT;
+		init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+		init_info.Allocator = nullptr;
+		init_info.UseDynamicRendering = true;
+		init_info.PipelineRenderingCreateInfo = pipelineRenderingInfo;
+		init_info.CheckVkResultFn = [](VkResult res) {validateResult(res, "UI returned error");};
+
+		ImGui_ImplVulkan_Init(&init_info);
+		ImGui_ImplVulkan_CreateFontsTexture();
+	}
+	
+	////////////////////////////////////////////////////////////////////////
+
+	void VulkanRenderer::cleanUpUI()
+	{
+		ImGui_ImplVulkan_Shutdown();
+		vkDestroyDescriptorPool(m_device, m_imguiDescriptorPool, nullptr);
 	}
 
 	////////////////////////////////////////////////////////////////////////

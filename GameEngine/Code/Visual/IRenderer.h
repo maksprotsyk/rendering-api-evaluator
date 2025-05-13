@@ -19,7 +19,10 @@ namespace Engine::Visual
             const Utils::Vector3& position,
             const Utils::Vector3& rotation,
             const Utils::Vector3& scale) = 0;
+
         virtual void setCameraProperties(const Utils::Vector3& position, const Utils::Vector3& rotation) = 0;
+        virtual void startUIRender() = 0;
+		virtual void endUIRender() = 0;
         virtual void render() = 0;
 
         

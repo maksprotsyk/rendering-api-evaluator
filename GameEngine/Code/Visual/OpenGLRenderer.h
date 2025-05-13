@@ -24,6 +24,9 @@ namespace Engine::Visual
             const Utils::Vector3& position,
             const Utils::Vector3& rotation,
             const Utils::Vector3& scale) override;
+
+        void startUIRender() override;
+        void endUIRender() override;
         void render() override;
 
         bool loadModel(const std::string& filename) override;
@@ -83,6 +86,8 @@ namespace Engine::Visual
         void createFrameBuffer();
         void createViewport();
         void createDefaultMaterial();
+        void initUI();
+        void cleanUpUI();
 
         GLuint createShader(const std::string& source, GLenum shaderType);
         const GLuint& getTexture(const std::string& textureId) const;

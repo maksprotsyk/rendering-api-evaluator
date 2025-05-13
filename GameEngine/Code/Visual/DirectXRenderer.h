@@ -29,6 +29,9 @@ namespace Engine::Visual
             const Utils::Vector3& position,
             const Utils::Vector3& rotation,
             const Utils::Vector3& scale) override;
+
+        void startUIRender() override;
+        void endUIRender() override;
         void render() override;
 
         bool loadModel(const std::string& filename) override;
@@ -108,6 +111,8 @@ namespace Engine::Visual
         void createShaders();
         void createViewport(HWND hwnd);
         void createDefaultMaterial();
+        void initUI();
+        void cleanUpUI();
         bool createBuffersForModel(ModelData& model);
         bool loadModelFromFile(ModelData& model, const std::string& filename);
 

@@ -1,4 +1,4 @@
-#define GLM_FORCE_LEFT_HANDED
+﻿#define GLM_FORCE_LEFT_HANDED
 #define WGL_WGLEXT_PROTOTYPES
 
 #include "OpenGLRenderer.h"
@@ -9,6 +9,8 @@
 
 #include "stb_image.h"
 #include "tiny_obj_loader.h"
+#include "imgui.h"
+#include "backends/imgui_impl_opengl3.h"
 
 #include "Utils/DebugMacros.h"
 
@@ -19,8 +21,28 @@ namespace Engine::Visual
     ////////////////////////////////////////////////////////////////////////
 
     void OpenGLRenderer::init(const Window& window)
-    {
-        m_hwnd = window.getHandle();
+    {       
+        RECT r;
+        GetClientRect(window.getHandle(), &r);
+
+        // create as child of main, hidden initially
+        m_hwnd = CreateWindowEx(
+            0,
+            window.getChildWindowClassName(),
+            L"",
+            WS_CHILD 
+            | WS_VISIBLE               // ← make it visible immediately
+            | WS_CLIPCHILDREN          // recommended for OpenGL children
+            | WS_CLIPSIBLINGS,
+            0, 0,
+            r.right - r.left,
+            r.bottom - r.top,
+            window.getHandle(),
+            nullptr,
+            GetModuleHandle(nullptr),
+            nullptr
+        );
+
         m_hdc = GetDC(m_hwnd);
     
         setPixelFormat();
@@ -31,6 +53,9 @@ namespace Engine::Visual
         createFrameBuffer();
         createViewport();
         createDefaultMaterial();   
+#ifdef _SHOWUI
+        initUI();
+#endif
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -99,6 +124,20 @@ namespace Engine::Visual
 		}
 
         glBindVertexArray(0);
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+
+    void OpenGLRenderer::startUIRender()
+    {
+        ImGui_ImplOpenGL3_NewFrame();
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+
+    void OpenGLRenderer::endUIRender()
+    {
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -347,6 +386,12 @@ namespace Engine::Visual
 
     void OpenGLRenderer::cleanUp()
     {
+        glFinish();
+
+#ifdef _SHOWUI
+        cleanUpUI();
+#endif
+
         for (const std::string& modelId : Utils::getKeys(m_models))
         {
             unloadModel(modelId);
@@ -356,6 +401,10 @@ namespace Engine::Visual
         {
             unloadTexture(textureId);
         }
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        glUseProgram(0);
 
         if (m_shaderProgram)
         {
@@ -388,6 +437,11 @@ namespace Engine::Visual
             m_hdc = 0;
         }
 
+		if (m_hwnd)
+		{
+			DestroyWindow(m_hwnd);
+			m_hwnd = 0;
+		}
 
     }
 
@@ -671,6 +725,20 @@ namespace Engine::Visual
         m_defaultMaterial.ambientColor = glm::vec3(0.5f, 0.5f, 0.5f);
         m_defaultMaterial.specularColor = glm::vec3(0.5f, 0.5f, 0.5f);
         m_defaultMaterial.shininess = 32.0f;
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+
+    void OpenGLRenderer::initUI()
+    {
+        ImGui_ImplOpenGL3_Init("#version 450");
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+
+    void OpenGLRenderer::cleanUpUI()
+    {
+        ImGui_ImplOpenGL3_Shutdown();
     }
 
     ////////////////////////////////////////////////////////////////////////
