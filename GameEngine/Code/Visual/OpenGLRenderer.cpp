@@ -25,14 +25,13 @@ namespace Engine::Visual
         RECT r;
         GetClientRect(window.getHandle(), &r);
 
-        // create as child of main, hidden initially
         m_hwnd = CreateWindowEx(
             0,
             window.getChildWindowClassName(),
             L"",
             WS_CHILD 
-            | WS_VISIBLE               // ← make it visible immediately
-            | WS_CLIPCHILDREN          // recommended for OpenGL children
+            | WS_VISIBLE
+            | WS_CLIPCHILDREN
             | WS_CLIPSIBLINGS,
             0, 0,
             r.right - r.left,

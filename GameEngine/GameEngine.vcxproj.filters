@@ -145,6 +145,9 @@
     <ClCompile Include="Externals\ImGui\backends\imgui_impl_win32.cpp">
       <Filter>Externals\ImGui\backends</Filter>
     </ClCompile>
+    <ClCompile Include="Code\Visual\UIController.cpp">
+      <Filter>Code\Visual</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Code\Components\Transform.h">
@@ -272,6 +275,15 @@
     </ClInclude>
     <ClInclude Include="Externals\ImGui\imstb_truetype.h">
       <Filter>Externals\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Events\StatsEvents.h">
+      <Filter>Code\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Visual\UIController.h">
+      <Filter>Code\Visual</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Events\UIEvents.h">
+      <Filter>Code\Events</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

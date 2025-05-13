@@ -17,6 +17,9 @@ namespace Engine::Systems
 		int getPriority() const override;
 
 	private:
+		void saveRecordedData();
+		void onRecordingStateChanged(bool recordData);
+	private:
 
 		constexpr static const float k_initialSleepTime = 1.0f;
 		constexpr static const float k_timeBetweenSamples = 1.0f;
@@ -36,7 +39,10 @@ namespace Engine::Systems
 		std::vector<float> m_gpuMemoryUsage;
 
 		bool m_firstUpdate;
+		bool m_recordData = true;
 		float m_timePassed;
+		std::vector<float> m_frameTimeChunk;
+		std::string m_outputPath;
 
 	};
 }

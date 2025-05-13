@@ -6,6 +6,7 @@
 #include "Components/Transform.h"
 #include "Components/Tag.h"
 #include "Components/Model.h"
+#include "Events/UIEvents.h"
 #include "Utils/BasicUtils.h"
 #include "Utils/DebugMacros.h"
 #include "Managers/GameController.h"
@@ -16,7 +17,7 @@ namespace Engine::Systems
 {
 	//////////////////////////////////////////////////////////////////////////
 
-	RenderingSystem::RenderingSystem(): m_window(GameController::get().getWindow())
+	RenderingSystem::RenderingSystem() : m_window(GameController::get().getWindow())
 	{
 		m_rendererCreators["DirectX"] = []() { return std::make_unique<Visual::DirectXRenderer>(); };
 		m_rendererCreators["Vulkan"] = []() { return std::make_unique<Visual::VulkanRenderer>(); };
@@ -27,6 +28,11 @@ namespace Engine::Systems
 		{
 			m_rendererNames.push_back(pair.first);
 		}
+
+		m_uiController = std::make_unique<Visual::UIController>(m_rendererNames);
+
+		EventsManager& eventsManager = GameController::get().getEventsManager();
+		eventsManager.subscribe<Events::RendererUpdate>([this](const Events::RendererUpdate& i_event) {m_nextRendererName = i_event.rendererName; });
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -35,7 +41,7 @@ namespace Engine::Systems
 	{
 
 #ifdef _SHOWUI
-		initUI();
+		m_uiController->init();
 #endif
 		if (m_config.contains("renderer"))
 		{
@@ -103,7 +109,7 @@ namespace Engine::Systems
 
 #ifdef _SHOWUI
 		m_renderer->startUIRender();
-		renderUI();
+		m_uiController->render();
 		m_renderer->endUIRender();
 #endif
 
@@ -122,7 +128,7 @@ namespace Engine::Systems
 	{
 		removeRenderer();
 #ifdef _SHOWUI
-		cleanUpUI();
+		m_uiController->cleanUp();
 #endif
 	}
 
@@ -131,92 +137,6 @@ namespace Engine::Systems
 	int RenderingSystem::getPriority() const
 	{
 		return 10;
-	}
-
-	//////////////////////////////////////////////////////////////////////////
-
-	void RenderingSystem::initUI()
-	{
-		IMGUI_CHECKVERSION();
-		ImGui::CreateContext();
-		ImGuiIO& io = ImGui::GetIO(); (void)io;
-		ImGui::StyleColorsDark();
-
-		ImGui_ImplWin32_Init(m_window.getHandle());
-	}
-
-	//////////////////////////////////////////////////////////////////////////
-
-	void RenderingSystem::renderUI()
-	{
-		ImGui_ImplWin32_NewFrame(); // or ImGui_ImplGLFW_NewFrame();
-		ImGui::NewFrame();
-
-		// Choose corner to attach (e.g., top-left)
-		const ImGuiViewport* viewport = ImGui::GetMainViewport();
-		ImVec2 work_pos = viewport->WorkPos; // Start of usable region
-		ImVec2 work_size = viewport->WorkSize;
-
-		ImVec2 window_pos = ImVec2(work_pos.x + 10, work_pos.y + 10); // Top-left with padding
-		ImVec2 window_pos_pivot = ImVec2(0.0f, 0.0f);
-
-		ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
-		ImGui::SetNextWindowBgAlpha(0.75f); // Optional: transparent bg
-
-		if (ImGui::Begin("Performance Monitor", nullptr,
-			ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse))
-		{
-			if (ImGui::BeginCombo("Renderer API", m_rendererName.c_str()))
-			{
-				for (int i = 0; i < m_rendererNames.size(); i++)
-				{
-					bool is_selected = (m_rendererNames[i] == m_rendererName);
-					if (ImGui::Selectable(m_rendererNames[i].c_str(), is_selected))
-					{
-						m_nextRendererName = m_rendererNames[i];
-					}
-					if (is_selected)
-					{
-						ImGui::SetItemDefaultFocus();
-					}
-				}
-				ImGui::EndCombo();
-			}
-
-			ImGui::Separator();
-
-			ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
-			ImGui::Text("Frame Time: %.2f ms", 1000.0f / ImGui::GetIO().Framerate);
-			ImGui::Text("Memory Usage: %.2f MB", 123.45); // Replace with real value
-
-			ImGui::Separator();
-
-			static char file1[256] = "";
-			static char file2[256] = "";
-
-			ImGui::InputText("Model File", file1, IM_ARRAYSIZE(file1));
-			ImGui::SameLine();
-			if (ImGui::Button("Browse##1")) {
-				// Call your file dialog here
-			}
-
-			ImGui::InputText("Texture File", file2, IM_ARRAYSIZE(file2));
-			ImGui::SameLine();
-			if (ImGui::Button("Browse##2")) {
-				// Call your file dialog here
-			}
-		}
-
-		ImGui::End();
-		ImGui::Render();
-	}
-
-	//////////////////////////////////////////////////////////////////////////
-
-	void RenderingSystem::cleanUpUI()
-	{
-		ImGui_ImplWin32_Shutdown();
-		ImGui::DestroyContext();
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -278,6 +198,8 @@ namespace Engine::Systems
 
 			model.instance = m_renderer->createModelInstance(gameController.getConfigRelativePath(model.path));
 		}
+
+		m_uiController->setRenderer(m_rendererName);
 	}
 
 	//////////////////////////////////////////////////////////////////////////

@@ -41,6 +41,7 @@
     <ClCompile Include="Code\Visual\DirectXRenderer.cpp" />
     <ClCompile Include="Code\Visual\ModelInstanceBase.cpp" />
     <ClCompile Include="Code\Visual\OpenGLRenderer.cpp" />
+    <ClCompile Include="Code\Visual\UIController.cpp" />
     <ClCompile Include="Code\Visual\VulkanRenderer.cpp" />
     <ClCompile Include="Code\Visual\Window.cpp" />
     <ClCompile Include="Externals\ImGui\backends\imgui_impl_dx11.cpp" />
@@ -59,6 +60,8 @@
     <ClInclude Include="Code\Components\Tag.h" />
     <ClInclude Include="Code\Components\Transform.h" />
     <ClInclude Include="Code\Events\NativeInputEvents.h" />
+    <ClInclude Include="Code\Events\StatsEvents.h" />
+    <ClInclude Include="Code\Events\UIEvents.h" />
     <ClInclude Include="Code\Managers\ComponentsManager.h" />
     <ClInclude Include="Code\Managers\EntitiesManager.h" />
     <ClInclude Include="Code\Managers\GameController.h" />
@@ -81,6 +84,7 @@
     <ClInclude Include="Code\Visual\IRenderer.h" />
     <ClInclude Include="Code\Visual\ModelInstanceBase.h" />
     <ClInclude Include="Code\Visual\OpenGLRenderer.h" />
+    <ClInclude Include="Code\Visual\UIController.h" />
     <ClInclude Include="Code\Visual\VulkanRenderer.h" />
     <ClInclude Include="Code\Visual\Window.h" />
     <ClInclude Include="Externals\GL\wglext.h" />
