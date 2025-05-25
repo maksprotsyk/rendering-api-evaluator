@@ -6,6 +6,7 @@
 
 #include "ISystem.h"
 #include "Managers/EntitiesManager.h"
+#include "Managers/EventsManager.h"
 
 namespace Engine::Systems
 {
@@ -26,5 +27,6 @@ namespace Engine::Systems
 		std::unordered_map<char, bool> m_keyStates;
 
 		EntityID m_cameraId = -1;
+		EventListenerID m_keyStateChangedListenerId = -1;
 	};
 }

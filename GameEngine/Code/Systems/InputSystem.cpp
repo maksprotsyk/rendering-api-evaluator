@@ -15,7 +15,7 @@ namespace Engine::Systems
 
 	void InputSystem::onStart()
 	{
-		GameController::get().getEventsManager().subscribe<Events::NativeKeyStateChanged>(
+		m_keyStateChangedListenerId = GameController::get().getEventsManager().subscribe<Events::NativeKeyStateChanged>(
 			[this](const Events::NativeKeyStateChanged& e)
 			{
 				m_keyStates[(char)e.key] = e.pressed;
@@ -69,7 +69,7 @@ namespace Engine::Systems
 
 	void InputSystem::onStop()
 	{
-
+		GameController::get().getEventsManager().unsubscribe<Events::NativeKeyStateChanged>(m_keyStateChangedListenerId);
 	}
 
 	//////////////////////////////////////////////////////////////////////////

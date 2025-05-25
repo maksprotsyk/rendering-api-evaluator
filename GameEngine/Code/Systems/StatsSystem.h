@@ -1,10 +1,13 @@
 #pragma once
 
 #include "ISystem.h"
+
 #include <vector>
 #include <string>
 #include <algorithm>
 #include <pdh.h>
+
+#include "Managers/EventsManager.h"
 
 namespace Engine::Systems
 {
@@ -43,6 +46,9 @@ namespace Engine::Systems
 		float m_timePassed;
 		std::vector<float> m_frameTimeChunk;
 		std::string m_outputPath;
+
+		EventListenerID m_recordingUpdateListenerId = -1;
+		EventListenerID m_outputFileUpdateListenerId = -1;
 
 	};
 }

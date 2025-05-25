@@ -9,5 +9,10 @@ namespace Engine::Events
 	{
 		std::string rendererName;
 	};
+
+	struct ConfigFileUpdate
+	{
+		std::string configPath;
+	};
 }
 

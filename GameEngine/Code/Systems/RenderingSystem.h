@@ -9,6 +9,7 @@
 #include "Visual/UIController.h"
 #include "Components/Transform.h"
 #include "Managers/EntitiesManager.h"
+#include "Managers/EventsManager.h"
 #include "Events/StatsEvents.h"
 
 namespace Engine::Systems
@@ -30,11 +31,13 @@ namespace Engine::Systems
 
 		const Visual::Window& m_window;
 		std::unique_ptr<Visual::UIController> m_uiController;
+
 		std::string m_rendererName;
 		std::string m_nextRendererName;
 		std::unique_ptr<Visual::IRenderer> m_renderer;
 
 		EntityID m_cameraId = -1;
+		EventListenerID m_rendererUpdateListenerId = -1;
 		
 	};
 }

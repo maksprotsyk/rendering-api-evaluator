@@ -4,6 +4,7 @@
 
 #include "Visual/Window.h"
 #include "Events/StatsEvents.h"
+#include "Managers/EventsManager.h"
 
 namespace Engine::Visual
 {
@@ -24,6 +25,8 @@ namespace Engine::Visual
 		bool m_isRecording;
 		float m_recordingTime;
 		StatsData m_statsData{};
+
+		EventListenerID m_statsUpdateListenerId = -1;
 	};
 
 }

@@ -78,12 +78,6 @@ namespace Engine::Visual
 		, m_outputFile("")
 		, m_rendererNames(std::move(rendererNames))
 	{
-		GameController::get().getEventsManager().subscribe<Events::StatsUpdate>(
-			[this](const Events::StatsUpdate& i_statsEvent)
-			{
-				m_statsData = i_statsEvent.stats;
-			}
-		);
 
 	}
 
@@ -91,6 +85,13 @@ namespace Engine::Visual
 
 	void UIController::init()
     {
+        m_statsUpdateListenerId = GameController::get().getEventsManager().subscribe<Events::StatsUpdate>(
+            [this](const Events::StatsUpdate& i_statsEvent)
+            {
+                m_statsData = i_statsEvent.stats;
+            }
+        );
+
 		GameController::get().getEventsManager().emit<Events::StatsRecordingUpdate>(Events::StatsRecordingUpdate{false});
 		m_isRecording = false;
 
@@ -214,19 +215,18 @@ namespace Engine::Visual
                 ImGui::BeginGroup();
                 if (ImGui::Button("Select config file", ImVec2(width, 20)))
                 {
-                    std::string res = Utils::wstringToString(OpenFileDialog(TEXT(".json")));
-                    if (!res.empty())
+                    std::string newConfigFile = Utils::wstringToString(OpenFileDialog(TEXT(".json")));
+                    if (!newConfigFile.empty())
                     {
-                        //m_outputFile = res;
-                        //GameController::get().getEventsManager().emit<Events::StatsOutputFileUpdate>(Events::StatsOutputFileUpdate{ m_outputFile });
+						GameController::get().getEventsManager().emit<Events::ConfigFileUpdate>(Events::ConfigFileUpdate{ newConfigFile });
                     }
                 }
-                std::filesystem::path configPath = std::filesystem::absolute(GameController::get().getConfigPath());
-                ImGui::Text("Config file: %s", shortenPath(configPath.string(), 30).c_str());
+				std::string configPath = GameController::get().getConfigPath();
+                ImGui::Text("Config file: %s", shortenPath(configPath, 30).c_str());
                 if (ImGui::IsItemHovered())
                 {
                     ImGui::BeginTooltip();
-                    ImGui::Text("%s", configPath.string().c_str());
+                    ImGui::Text("%s", configPath.c_str());
                     ImGui::EndTooltip();
                 }
                 ImGui::EndGroup();
@@ -247,6 +247,8 @@ namespace Engine::Visual
     {
         ImGui_ImplWin32_Shutdown();
         ImGui::DestroyContext();
+
+		GameController::get().getEventsManager().unsubscribe<Events::StatsUpdate>(m_statsUpdateListenerId);
     }
 
     ////////////////////////////////////////////////////////////////////////

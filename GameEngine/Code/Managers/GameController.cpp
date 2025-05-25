@@ -2,6 +2,7 @@
 
 #include "Utils/DebugMacros.h"
 #include "Events/NativeInputEvents.h"
+#include "Events/UIEvents.h"
 
 
 namespace Engine
@@ -39,7 +40,7 @@ namespace Engine
 
 	void GameController::setConfig(const std::string& configPath)
 	{
-		m_configPath = configPath;
+		m_configPath = std::filesystem::absolute(configPath).string();
 		m_config = Utils::Parser::readJson(configPath);
 	}
 
@@ -72,37 +73,62 @@ namespace Engine
 
 	void GameController::run()
 	{
-
 		bool nativeExitRequested = false;
-		m_eventsManager.subscribe<Engine::Events::NativeExitRequested>(
+		EventListenerID exitRequestedListenerId = m_eventsManager.subscribe<Engine::Events::NativeExitRequested>(
 			[&nativeExitRequested](const Engine::Events::NativeExitRequested&)
 			{
 				nativeExitRequested = true;
 			}
 		);
 
-		float dt = 0;
-		auto start = std::chrono::high_resolution_clock::now();
-		while (!nativeExitRequested)
+		bool configFileChangeRequested = false;
+		std::string newConfigPath = m_configPath;
+		EventListenerID configFileChangeListenerId = m_eventsManager.subscribe<Engine::Events::ConfigFileUpdate>(
+			[&configFileChangeRequested, &newConfigPath, this](const Engine::Events::ConfigFileUpdate& i_update)
+			{
+				newConfigPath = i_update.configPath;
+				configFileChangeRequested = newConfigPath != m_configPath;
+			}
+		);
+
+		while (true)
 		{
-			bool needToExit = m_window.update();
-			if (needToExit)
+			float dt = 0;
+			auto start = std::chrono::high_resolution_clock::now();
+			while (!nativeExitRequested && !configFileChangeRequested)
+			{
+				bool needToExit = m_window.update();
+				if (needToExit)
+				{
+					break;
+				}
+
+				m_systemsManager.processAddedSystems();
+				m_systemsManager.processRemovedSystems();
+
+				auto end = std::chrono::high_resolution_clock::now();
+				std::chrono::duration<float> elapsed = end - start;
+				dt = elapsed.count();
+
+				start = std::chrono::high_resolution_clock::now();
+				m_systemsManager.update(dt);
+			}
+
+			m_systemsManager.stop();
+			clear();
+
+			if (!configFileChangeRequested)
 			{
 				break;
 			}
 
-			m_systemsManager.processAddedSystems();
-			m_systemsManager.processRemovedSystems();
-			
-			auto end = std::chrono::high_resolution_clock::now();
-			std::chrono::duration<float> elapsed = end - start;
-			dt = elapsed.count();
-
-			start = std::chrono::high_resolution_clock::now();
-			m_systemsManager.update(dt);
+			setConfig(newConfigPath);
+			init();
+			configFileChangeRequested = false;
 		}
 
-		m_systemsManager.stop();
+		m_eventsManager.unsubscribe<Engine::Events::NativeExitRequested>(exitRequestedListenerId);
+		m_eventsManager.unsubscribe<Engine::Events::ConfigFileUpdate>(configFileChangeListenerId);
 	}
 
 	//////////////////////////////////////////////////////////////////////////

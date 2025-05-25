@@ -27,8 +27,8 @@ namespace Engine::Systems
 		}
 
 		EventsManager& eventsManager = GameController::get().getEventsManager();
-		eventsManager.subscribe<Events::StatsRecordingUpdate>([this](const Events::StatsRecordingUpdate& update) {onRecordingStateChanged(update.recordData);});
-		eventsManager.subscribe<Events::StatsOutputFileUpdate>([this](const Events::StatsOutputFileUpdate& update) {m_outputPath = update.outputPath;});
+		m_recordingUpdateListenerId = eventsManager.subscribe<Events::StatsRecordingUpdate>([this](const Events::StatsRecordingUpdate& update) {onRecordingStateChanged(update.recordData);});
+		m_outputFileUpdateListenerId = eventsManager.subscribe<Events::StatsOutputFileUpdate>([this](const Events::StatsOutputFileUpdate& update) {m_outputPath = update.outputPath;});
 
 		m_firstUpdate = true;
 
@@ -177,6 +177,10 @@ namespace Engine::Systems
 		PdhCloseQuery(m_gpuMemoryUsageQuery);
 
 		saveRecordedData();
+
+		EventsManager& eventsManager = GameController::get().getEventsManager();
+		eventsManager.unsubscribe<Events::StatsRecordingUpdate>(m_recordingUpdateListenerId);
+		eventsManager.unsubscribe<Events::StatsOutputFileUpdate>(m_outputFileUpdateListenerId);
 	}
 
 	//////////////////////////////////////////////////////////////////////////

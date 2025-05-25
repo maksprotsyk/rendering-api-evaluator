@@ -30,15 +30,15 @@ namespace Engine::Systems
 		}
 
 		m_uiController = std::make_unique<Visual::UIController>(m_rendererNames);
-
-		EventsManager& eventsManager = GameController::get().getEventsManager();
-		eventsManager.subscribe<Events::RendererUpdate>([this](const Events::RendererUpdate& i_event) {m_nextRendererName = i_event.rendererName; });
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 
 	void RenderingSystem::onStart()
 	{
+
+		EventsManager& eventsManager = GameController::get().getEventsManager();
+		m_rendererUpdateListenerId = eventsManager.subscribe<Events::RendererUpdate>([this](const Events::RendererUpdate& i_event) {m_nextRendererName = i_event.rendererName; });
 
 #ifdef _SHOWUI
 		m_uiController->init();
@@ -108,9 +108,9 @@ namespace Engine::Systems
 		}
 
 #ifdef _SHOWUI
-		m_renderer->postRenderUI();
-		m_uiController->render(dt);
 		m_renderer->preRenderUI();
+		m_uiController->render(dt);
+		m_renderer->postRenderUI();
 #endif
 
 		m_renderer->render();
@@ -130,6 +130,7 @@ namespace Engine::Systems
 #ifdef _SHOWUI
 		m_uiController->cleanUp();
 #endif
+		GameController::get().getEventsManager().unsubscribe<Events::RendererUpdate>(m_rendererUpdateListenerId);
 	}
 
 	//////////////////////////////////////////////////////////////////////////

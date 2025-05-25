@@ -7,10 +7,22 @@ namespace Engine
     //////////////////////////////////////////////////////////////////////////
 
     template <typename EventType>
-    void EventsManager::subscribe(EventCallback<EventType> callback)
+    EventListenerID EventsManager::subscribe(EventCallback<EventType> callback)
     {
-        auto& listeners = getListeners<EventType>();
-        listeners.push_back(std::move(callback));
+        ListenerHolder<EventType>& listenerHolder = getListenersHolder<EventType>();
+		EventListenerID id = listenerHolder.nextID++;
+        listenerHolder.listeners.emplace_back(id, std::move(callback));
+        return id;
+    }
+
+    //////////////////////////////////////////////////////////////////////////
+
+    template<typename EventType>
+    void EventsManager::unsubscribe(EventListenerID id)
+    {
+        ListenerHolder<EventType>& listenerHolder = getListenersHolder<EventType>();
+        auto itr = std::remove_if(listenerHolder.listeners.begin(), listenerHolder.listeners.end(), [id](const auto& listener) { return listener.first == id; });
+		listenerHolder.listeners.erase(itr, listenerHolder.listeners.end());
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -18,17 +30,17 @@ namespace Engine
     template <typename EventType>
     void EventsManager::emit(const EventType& event) const
     {
-        auto& listeners = getListeners<EventType>();
-        for (auto& listener : listeners) 
+        ListenerHolder<EventType>& listenerHolder = getListenersHolder<EventType>();
+        for (std::pair<EventListenerID, EventCallback<EventType>>& listener: listenerHolder.listeners)
         {
-            listener(event);
+            listener.second(event);
         }
     }
 
     //////////////////////////////////////////////////////////////////////////
 
     template <typename EventType>
-    std::vector<EventsManager::EventCallback<EventType>>& EventsManager::getListeners() const 
+    EventsManager::ListenerHolder<EventType>& EventsManager::getListenersHolder() const
     {
         auto type = std::type_index(typeid(EventType));
         auto it = m_eventsListeners.find(type);
@@ -36,7 +48,7 @@ namespace Engine
         {
             it = m_eventsListeners.emplace(type, std::make_unique<ListenerHolder<EventType>>()).first;
         }
-        return static_cast<ListenerHolder<EventType>*>(it->second.get())->listeners;
+        return *static_cast<ListenerHolder<EventType>*>(it->second.get());
     }
 
     //////////////////////////////////////////////////////////////////////////
