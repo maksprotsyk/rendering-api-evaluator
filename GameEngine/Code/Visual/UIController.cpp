@@ -28,6 +28,9 @@ namespace Engine::Visual
 
 	static std::wstring OpenFileDialog(const std::wstring& formats)
 	{
+        WCHAR originalDir[MAX_PATH];
+        GetCurrentDirectoryW(MAX_PATH, originalDir);
+
 		OPENFILENAMEW ofn;
 		wchar_t szFile[260] = { 0 };
 		ZeroMemory(&ofn, sizeof(ofn));
@@ -39,17 +42,22 @@ namespace Engine::Visual
 		ofn.nFilterIndex = 1;
 		ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
 
+        std::wstring res = L"";
 		if (GetOpenFileNameW(&ofn) == TRUE)
 		{
-			return ofn.lpstrFile;
+            res = ofn.lpstrFile;
 		}
-		return L"";
+        SetCurrentDirectoryW(originalDir);
+		return res;
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 
 	static std::wstring SaveFileDialog(const std::wstring& formats)
 	{
+        WCHAR originalDir[MAX_PATH];
+        GetCurrentDirectoryW(MAX_PATH, originalDir);
+
 		OPENFILENAMEW ofn;
 		wchar_t szFile[260] = { 0 };
 		ZeroMemory(&ofn, sizeof(ofn));
@@ -62,12 +70,13 @@ namespace Engine::Visual
 		ofn.nFilterIndex = 1;
 		ofn.lpstrDefExt = L"txt";
 		ofn.Flags = OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT;
-
+        std::wstring res = L"";
 		if (GetSaveFileNameW(&ofn) == TRUE)
 		{
-			return ofn.lpstrFile;
+            res = ofn.lpstrFile;
 		}
-		return L"";
+        SetCurrentDirectoryW(originalDir);
+		return res;
 	}
 
     //////////////////////////////////////////////////////////////////////////
