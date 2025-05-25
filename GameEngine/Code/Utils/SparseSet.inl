@@ -77,18 +77,14 @@ namespace Engine::Utils
         int denseIndex = m_sparse[entity];
         int lastDenseIndex = m_dense.size() - 1;
 
-        // Swap the component to delete with the last one in the dense array
         m_dense[denseIndex] = std::move(m_dense[lastDenseIndex]);
         m_denseEntities[denseIndex] = m_denseEntities[lastDenseIndex];
 
-        // Update the sparse array to reflect the new index of the swapped entity
         m_sparse[m_denseEntities[denseIndex]] = denseIndex;
 
-        // Remove the last element in the dense array
         m_dense.pop_back();
         m_denseEntities.pop_back();
 
-        // Mark the sparse array for the deleted entity as invalid
         m_sparse[entity] = -1;
 
         while (!m_sparse.empty() && m_sparse[m_sparse.size() - 1] == -1)

@@ -12,6 +12,20 @@ namespace Engine::Visual
 
     ////////////////////////////////////////////////////////////////////////
 
+    std::string shortenPath(const std::string& path, size_t maxLength)
+    {
+        if (path.length() <= maxLength)
+        {
+            return path;
+        }
+
+        size_t partLength = maxLength / 2 - 2;
+        std::string shortened = path.substr(0, partLength) + "..." + path.substr(path.length() - partLength);
+        return shortened;
+    }
+
+    //////////////////////////////////////////////////////////////////////////
+
 	static std::wstring OpenFileDialog(const std::wstring& formats)
 	{
 		OPENFILENAMEW ofn;
@@ -56,6 +70,7 @@ namespace Engine::Visual
 		return L"";
 	}
 
+    //////////////////////////////////////////////////////////////////////////
 
 	UIController::UIController(std::vector<std::string> rendererNames)
 		: m_window(GameController::get().getWindow())
@@ -77,7 +92,7 @@ namespace Engine::Visual
 	void UIController::init()
     {
 		GameController::get().getEventsManager().emit<Events::StatsRecordingUpdate>(Events::StatsRecordingUpdate{false});
-		m_isRecoring = false;
+		m_isRecording = false;
 
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -97,91 +112,132 @@ namespace Engine::Visual
 
     ////////////////////////////////////////////////////////////////////////
 
-    void UIController::render()
+    void UIController::render(float dt)
     {
-		ImGui_ImplWin32_NewFrame(); // or ImGui_ImplGLFW_NewFrame();
+		ImGui_ImplWin32_NewFrame();
 		ImGui::NewFrame();
+        ImGui::Begin("Performance Monitor", nullptr,
+            ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
+            ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse);
 
-		// Choose corner to attach (e.g., top-left)
-		const ImGuiViewport* viewport = ImGui::GetMainViewport();
-		ImVec2 work_pos = viewport->WorkPos; // Start of usable region
-		ImVec2 work_size = viewport->WorkSize;
+        if (ImGui::BeginTabBar("MainTabBar"))
+        {
+            // Performance Tab
+            if (ImGui::BeginTabItem("Performance"))
+            {
+                ImGui::Text("FPS: %.1f", m_statsData.avgFPS);
+                ImGui::Text("Frame Time: %.3f ms", 1000.0f * m_statsData.avgFrameTime);
+                ImGui::Text("99th Percentile Frame Time: %.3f ms", 1000.0f * m_statsData.frameTimePercentile99);
+                ImGui::Text("RAM Usage: %.2f MB", m_statsData.memoryUsage);
+                ImGui::Text("VRAM Usage: %.2f MB", m_statsData.gpuMemoryUsage);
+                ImGui::Text("CPU Usage: %.2f%%", m_statsData.cpuUsage);
+                ImGui::Text("GPU Usage: %.2f%%", m_statsData.gpuUsage);
 
-		ImVec2 window_pos = ImVec2(work_pos.x + 10, work_pos.y + 10); // Top-left with padding
-		ImVec2 window_pos_pivot = ImVec2(0.0f, 0.0f);
+                ImGui::EndTabItem();
+            }
 
-		ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
-		ImGui::SetNextWindowBgAlpha(0.75f); // Optional: transparent bg
+            if (ImGui::BeginTabItem("Recording Management"))
+            {
+                float width = ImGui::GetContentRegionAvail().x;
 
-		if (ImGui::Begin("Performance Monitor", nullptr,
-			ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse))
-		{
-			if (ImGui::BeginCombo("Renderer API", m_rendererName.c_str()))
-			{
-				for (int i = 0; i < m_rendererNames.size(); i++)
-				{
-					bool is_selected = (m_rendererNames[i] == m_rendererName);
-					if (ImGui::Selectable(m_rendererNames[i].c_str(), is_selected))
-					{
-						GameController::get().getEventsManager().emit(Events::RendererUpdate{ m_rendererNames[i] });
-					}
-					if (is_selected)
-					{
-						ImGui::SetItemDefaultFocus();
-					}
-				}
-				ImGui::EndCombo();
-			}
+                ImGui::BeginGroup();
 
-			ImGui::Separator();
+                if (ImGui::Button("Select output file", ImVec2(width, 20)))
+                {
+                    std::string res = Utils::wstringToString(SaveFileDialog(TEXT(".txt")));
+                    if (!res.empty())
+                    {
+                        m_outputFile = res;
+                        GameController::get().getEventsManager().emit<Events::StatsOutputFileUpdate>(Events::StatsOutputFileUpdate{ m_outputFile });
+                    }
+                }
 
-			ImGui::Text("FPS: %.1f", m_statsData.avgFPS);
-			ImGui::Text("Frame Time: %.3f ms", 1000.0f * m_statsData.avgFrameTime);
-			ImGui::Text("99th Percentile Frame Time: %.3f ms", 1000.0f * m_statsData.frameTimePercentile99);
-			ImGui::Text("RAM Usage: %.2f MB", m_statsData.memoryUsage);
-			ImGui::Text("VRAM Usage: %.2f MB", m_statsData.gpuMemoryUsage);
-			ImGui::Text("CPU Usage: %.2f%%", m_statsData.cpuUsage);
-			ImGui::Text("GPU Usage: %.2f%%", m_statsData.gpuUsage);
+                ImGui::Text("Output file: %s", shortenPath(m_outputFile, 30).c_str());
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::BeginTooltip();
+                    ImGui::Text("%s", m_outputFile.c_str());
+                    ImGui::EndTooltip();
+                }
 
-			ImGui::Separator();
+                ImGui::EndGroup();
 
-			static char file1[256] = "";
-			static char file2[256] = "";
+                ImGui::Separator();
 
-			if (ImGui::Button("Select stats output file"))
-			{
-				std::string res = Utils::wstringToString(SaveFileDialog(TEXT(".txt")));
-				if (!res.empty())
-				{
-					m_outputFile = res;
-					GameController::get().getEventsManager().emit<Events::StatsOutputFileUpdate>(Events::StatsOutputFileUpdate{ m_outputFile });
-				}
-			}
+				ImGui::BeginGroup();
 
-			ImGui::Text("Output file: %s", m_outputFile.c_str());
-			if (ImGui::Button("Start/Stop recording"))
-			{
-				m_isRecoring = !m_isRecoring;
-				GameController::get().getEventsManager().emit<Events::StatsRecordingUpdate>(Events::StatsRecordingUpdate{ m_isRecoring });
-			}
-			if (m_isRecoring)
-			{
-				ImGui::Text("Recording: ON");
-			}
-			else
-			{
-				ImGui::Text("Recording: OFF");
-			}
+                if (ImGui::Button(m_isRecording ? "Stop recording": "Start recording", ImVec2(width, 20)))
+                {
+                    m_isRecording = !m_isRecording;
+                    GameController::get().getEventsManager().emit<Events::StatsRecordingUpdate>(Events::StatsRecordingUpdate{ m_isRecording });
+                }
+
+                if (m_isRecording)
+                {
+                    m_recordingTime += dt;
+                }
+                else
+                {
+					m_recordingTime = 0.0f;
+                }
+
+                ImGui::Text("Recording time: %.2f s", m_recordingTime);
+                ImGui::EndGroup();
+                ImGui::EndTabItem();
+            }
+
+            if (ImGui::BeginTabItem("Settings"))
+            {
+                float width = ImGui::GetContentRegionAvail().x;
+
+                ImGui::BeginGroup();
+                if (ImGui::BeginCombo("Rendering API", m_rendererName.c_str()))
+                {
+                    for (int i = 0; i < m_rendererNames.size(); i++)
+                    {
+                        bool is_selected = (m_rendererNames[i] == m_rendererName);
+                        if (ImGui::Selectable(m_rendererNames[i].c_str(), is_selected))
+                        {
+                            GameController::get().getEventsManager().emit(Events::RendererUpdate{ m_rendererNames[i] });
+                        }
+                        if (is_selected)
+                        {
+                            ImGui::SetItemDefaultFocus();
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
+                ImGui::EndGroup();
+
+                ImGui::Separator();
+
+                ImGui::BeginGroup();
+                if (ImGui::Button("Select config file", ImVec2(width, 20)))
+                {
+                    std::string res = Utils::wstringToString(OpenFileDialog(TEXT(".json")));
+                    if (!res.empty())
+                    {
+                        //m_outputFile = res;
+                        //GameController::get().getEventsManager().emit<Events::StatsOutputFileUpdate>(Events::StatsOutputFileUpdate{ m_outputFile });
+                    }
+                }
+                std::filesystem::path configPath = std::filesystem::absolute(GameController::get().getConfigPath());
+                ImGui::Text("Config file: %s", shortenPath(configPath.string(), 30).c_str());
+                if (ImGui::IsItemHovered())
+                {
+                    ImGui::BeginTooltip();
+                    ImGui::Text("%s", configPath.string().c_str());
+                    ImGui::EndTooltip();
+                }
+                ImGui::EndGroup();
+                ImGui::EndTabItem();
+            }
+
+            ImGui::EndTabBar();
+        }
 
 
-			//ImGui::InputText("Texture File", file2, IM_ARRAYSIZE(file2));
-			//ImGui::SameLine();
-			//if (ImGui::Button("Browse##2")) {
-				// Call your file dialog here
-			//}
-		}
-
-		ImGui::End();
+        ImGui::End();
 		ImGui::Render();
     }
 

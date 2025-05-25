@@ -127,14 +127,14 @@ namespace Engine::Visual
 
     ////////////////////////////////////////////////////////////////////////
 
-    void OpenGLRenderer::startUIRender()
+    void OpenGLRenderer::preRenderUI()
     {
         ImGui_ImplOpenGL3_NewFrame();
     }
 
     ////////////////////////////////////////////////////////////////////////
 
-    void OpenGLRenderer::endUIRender()
+    void OpenGLRenderer::postRenderUI()
     {
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     }

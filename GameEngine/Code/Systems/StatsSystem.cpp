@@ -188,16 +188,12 @@ namespace Engine::Systems
 
 	//////////////////////////////////////////////////////////////////////////
 
-	//////////////////////////////////////////////////////////////////////////
-
 	void StatsSystem::saveRecordedData()
 	{
 		if (!m_recordData || m_frameTimes.empty())
 		{
 			return;
 		}
-
-		//std::string rendererName = m_config["renderer"];
 
 		auto& gameController = GameController::get();
 		auto& compManager = gameController.getComponentsManager();
@@ -226,15 +222,12 @@ namespace Engine::Systems
 		float maxGpuMemoryUsage = *std::max_element(m_gpuMemoryUsage.begin(), m_gpuMemoryUsage.end());
 		float minGpuMemoryUsage = *std::min_element(m_gpuMemoryUsage.begin(), m_gpuMemoryUsage.end());
 
-		//std::string filePath = gameController.getConfigRelativePath(outputPath);
 		std::ofstream outFile(m_outputPath);
-
 		if (!outFile.is_open())
 		{
 			return;
 		}
 
-		//outFile << "Renderer: " << rendererName << std::endl;
 		outFile << "Objects count: " << objectsCount << std::endl;
 		outFile << "Total number of vertices: " << totalNumberOfVertices << std::endl;
 		outFile << "Creation time: " << m_creationTime << std::endl;
@@ -257,6 +250,8 @@ namespace Engine::Systems
 		outFile << "1th percentile frame time: " << percentile1 << std::endl;
 
 	}
+
+	//////////////////////////////////////////////////////////////////////////
 
 	void StatsSystem::onRecordingStateChanged(bool recordData)
 	{

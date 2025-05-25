@@ -108,9 +108,9 @@ namespace Engine::Systems
 		}
 
 #ifdef _SHOWUI
-		m_renderer->startUIRender();
-		m_uiController->render();
-		m_renderer->endUIRender();
+		m_renderer->postRenderUI();
+		m_uiController->render(dt);
+		m_renderer->preRenderUI();
 #endif
 
 		m_renderer->render();

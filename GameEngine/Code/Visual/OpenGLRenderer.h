@@ -25,8 +25,8 @@ namespace Engine::Visual
             const Utils::Vector3& rotation,
             const Utils::Vector3& scale) override;
 
-        void startUIRender() override;
-        void endUIRender() override;
+        void preRenderUI() override;
+        void postRenderUI() override;
         void render() override;
 
         bool loadModel(const std::string& filename) override;

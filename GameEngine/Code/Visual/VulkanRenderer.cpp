@@ -166,14 +166,14 @@ namespace Engine::Visual
 
 	////////////////////////////////////////////////////////////////////////
 
-	void VulkanRenderer::startUIRender()
+	void VulkanRenderer::preRenderUI()
 	{
 		ImGui_ImplVulkan_NewFrame();
 	}
 
 	////////////////////////////////////////////////////////////////////////
 
-	void VulkanRenderer::endUIRender()
+	void VulkanRenderer::postRenderUI()
 	{
 		VkCommandBuffer commandBuffer = m_commandBuffers[m_imageIndex];
 		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);

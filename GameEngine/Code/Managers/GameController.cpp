@@ -54,6 +54,13 @@ namespace Engine
 
 	//////////////////////////////////////////////////////////////////////////
 
+	std::string GameController::getConfigPath() const
+	{
+		return m_configPath;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+
 	void GameController::init()
 	{
 		initPrefabs();
@@ -78,8 +85,6 @@ namespace Engine
 		auto start = std::chrono::high_resolution_clock::now();
 		while (!nativeExitRequested)
 		{
-			// Measure the time taken for the frame
-
 			bool needToExit = m_window.update();
 			if (needToExit)
 			{
@@ -89,7 +94,6 @@ namespace Engine
 			m_systemsManager.processAddedSystems();
 			m_systemsManager.processRemovedSystems();
 			
-			// calculating frame time
 			auto end = std::chrono::high_resolution_clock::now();
 			std::chrono::duration<float> elapsed = end - start;
 			dt = elapsed.count();

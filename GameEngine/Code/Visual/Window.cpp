@@ -66,7 +66,7 @@ namespace Engine::Visual
         case WM_KEYDOWN:
             if (wParam == VK_ESCAPE)
             {
-                PostQuitMessage(0); // Quit when Escape is pressed
+                PostQuitMessage(0);
             }
             if (m_onKeyStateChanged)
             {
@@ -85,7 +85,6 @@ namespace Engine::Visual
         {
             int xPos = GET_X_LPARAM(lParam);
             int yPos = GET_Y_LPARAM(lParam);
-            // Handle mouse movement at (xPos, yPos)
             return 0;
         }
 
@@ -155,21 +154,18 @@ namespace Engine::Visual
 
         if (uMsg == WM_NCCREATE)
         {
-            // Retrieve the "this" pointer from the CREATESTRUCT lParam
             CREATESTRUCT* pCreate = (CREATESTRUCT*)lParam;
             pThis = (Window*)pCreate->lpCreateParams;
-            // Store the pointer in the user data of the window
+
             SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)pThis);
         }
         else 
         {
-            // Retrieve the stored "this" pointer
             pThis = (Window*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
         }
 
         if (pThis)
         {
-            // Forward the message to the member function
             return pThis->handleMessage(hwnd, uMsg, wParam, lParam);
         }
         else 
