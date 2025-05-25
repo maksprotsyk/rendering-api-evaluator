@@ -33,6 +33,7 @@ namespace Engine::Visual
         bool loadTexture(const std::string& filename) override;
 
         void setCameraProperties(const Utils::Vector3& position, const Utils::Vector3& rotation) override;
+        void setLightProperties(const Utils::Vector3& direction, float intensity) override;
         std::unique_ptr<IModelInstance> createModelInstance(const std::string& filename) override;
 
         bool destroyModelInstance(IModelInstance& modelInstance) override;
@@ -100,6 +101,10 @@ namespace Engine::Visual
             glm::mat4 worldMatrix;
             glm::mat4 viewMatrix;
             glm::mat4 projectionMatrix;
+
+            glm::vec3 lightDirection;
+			float lightIntensity;
+
         };
 
         struct MaterialBufferObject

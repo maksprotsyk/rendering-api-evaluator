@@ -52,12 +52,9 @@ namespace Engine::Visual
 		ModelData& modelData = modelItr->second;
 
 		XMMATRIX worldMatrix = getWorldMatrix(position, rotation, scale);
+		m_constantBufferData.worldMatrix = XMMatrixTranspose(worldMatrix);
 
-		ConstantBuffer cb{};
-		cb.worldMatrix = XMMatrixTranspose(worldMatrix);
-		cb.viewMatrix = XMMatrixTranspose(m_viewMatrix);
-		cb.projectionMatrix = XMMatrixTranspose(m_projectionMatrix);
-		m_deviceContext->UpdateSubresource(m_constantBuffer.Get(), 0, nullptr, &cb, 0, 0);
+		m_deviceContext->UpdateSubresource(m_constantBuffer.Get(), 0, nullptr, &m_constantBufferData, 0, 0);
 
 		m_deviceContext->VSSetConstantBuffers(0, 1, m_constantBuffer.GetAddressOf());
 		m_deviceContext->PSSetConstantBuffers(0, 1, m_constantBuffer.GetAddressOf());
@@ -453,11 +450,11 @@ namespace Engine::Visual
 
 		forward = XMVector3Rotate(forward, rotationQuaternion);
 		up = XMVector3Rotate(up, rotationQuaternion);
-    
 		XMFLOAT3 positionX(position.x, position.y, position.z);
 		XMVECTOR target = XMVectorAdd(XMLoadFloat3(&positionX), forward);
     
 		m_viewMatrix = XMMatrixLookAtLH(XMLoadFloat3(&positionX), target, up);
+		m_constantBufferData.viewMatrix = XMMatrixTranspose(m_viewMatrix);
 	}
 
 	////////////////////////////////////////////////////////////////////////
@@ -555,7 +552,7 @@ namespace Engine::Visual
 
 		XMMATRIX translationMatrix = XMMatrixTranslation(position.x, position.y, position.z);
 
-		return XMMatrixMultiply(scalingMatrix, XMMatrixMultiply(rotationMatrix, translationMatrix));
+		return scalingMatrix * rotationMatrix * translationMatrix;
 	}
 
 	////////////////////////////////////////////////////////////////////////
@@ -578,6 +575,17 @@ namespace Engine::Visual
 
 		m_viewMatrix = XMMatrixLookAtLH(XMVectorSet(0.0f, 2.0f, -5.0f, 0.0f), XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f), XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f));
 		m_projectionMatrix = XMMatrixPerspectiveFovLH(XM_PIDIV4, width / height, 0.1f, 500.0f);
+		m_constantBufferData.viewMatrix = XMMatrixTranspose(m_viewMatrix);
+		m_constantBufferData.projectionMatrix = XMMatrixTranspose(m_projectionMatrix);
+	}
+
+	////////////////////////////////////////////////////////////////////////
+
+	void DirectXRenderer::setLightProperties(const Utils::Vector3& direction, float intensity)
+	{
+		Utils::Vector3 normalizedDirection = direction.normalized();
+		m_constantBufferData.lightDirection = XMFLOAT3(normalizedDirection.x, normalizedDirection.y, normalizedDirection.z);
+		m_constantBufferData.lightIntensity = intensity;
 	}
 
 	////////////////////////////////////////////////////////////////////////
@@ -588,8 +596,8 @@ namespace Engine::Visual
 		ASSERT(loadDefaultTexRes, "Can't load default texture");
 
 		m_defaultMaterial.diffuseTextureId = DEFAULT_TEXTURE;
-		m_defaultMaterial.diffuseColor = XMFLOAT3(0.1f, 0.1f, 0.1f);
-		m_defaultMaterial.ambientColor = XMFLOAT3(0.5f, 0.5f, 0.5f);
+		m_defaultMaterial.ambientColor = XMFLOAT3(0.1f, 0.1f, 0.1f);
+		m_defaultMaterial.diffuseColor = XMFLOAT3(0.8f, 0.8f, 0.8f);
 		m_defaultMaterial.specularColor = XMFLOAT3(0.5f, 0.5f, 0.5f);
 		m_defaultMaterial.shininess = 32.0f;
 

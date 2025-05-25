@@ -86,8 +86,6 @@ namespace Engine::Visual
         glBindVertexArray(modelData.vao);
         ASSERT_OPENGL("Unable to bind vertex buffer for model: {}", model.GetId());
 
-        glUniformMatrix4fv(m_viewMatrixLoc, 1, GL_FALSE, glm::value_ptr(m_viewMatrix));
-        glUniformMatrix4fv(m_projectionMatrixLoc, 1, GL_FALSE, glm::value_ptr(m_projectionMatrix));
         glUniformMatrix4fv(m_modelMatrixLoc, 1, GL_FALSE, glm::value_ptr(worldMatrix));
 
         std::unordered_map<int, std::vector<size_t>> materialMeshes;
@@ -99,10 +97,10 @@ namespace Engine::Visual
 		for (const auto& [materialId, meshIndices] : materialMeshes)
 		{
 			const Material& material = materialId != -1 ? modelData.materials[materialId]: m_defaultMaterial;
-			glUniform3fv(glGetUniformLocation(m_shaderProgram, "ambientColor"), 1, glm::value_ptr(material.ambientColor));
-			glUniform3fv(glGetUniformLocation(m_shaderProgram, "diffuseColor"), 1, glm::value_ptr(material.diffuseColor));
-			glUniform3fv(glGetUniformLocation(m_shaderProgram, "specularColor"), 1, glm::value_ptr(material.specularColor));
-			glUniform1f(glGetUniformLocation(m_shaderProgram, "shininess"), material.shininess);
+			glUniform3fv(m_ambientColorLoc, 1, glm::value_ptr(material.ambientColor));
+			glUniform3fv(m_diffuseColorLoc, 1, glm::value_ptr(material.diffuseColor));
+			glUniform3fv(m_specularColorLoc, 1, glm::value_ptr(material.specularColor));
+			glUniform1f(m_shininessLoc, material.shininess);
             ASSERT_OPENGL("Unable to set material properties for mesh of model: {}", model.GetId());
 
 			glActiveTexture(GL_TEXTURE0);
@@ -313,6 +311,8 @@ namespace Engine::Visual
             pos + forward,
             up
         );
+
+        glUniformMatrix4fv(m_viewMatrixLoc, 1, GL_FALSE, glm::value_ptr(m_viewMatrix));
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -649,6 +649,17 @@ namespace Engine::Visual
         float aspectRatio = (float)(width) / (float)(height);
 
         m_projectionMatrix = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 1000.0f);
+        glUniformMatrix4fv(m_projectionMatrixLoc, 1, GL_FALSE, glm::value_ptr(m_projectionMatrix));
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+
+    void OpenGLRenderer::setLightProperties(const Utils::Vector3& direction, float intensity)
+    {
+		Utils::Vector3 directionNormalized = direction.normalized();
+        glm::vec3 lightDirection = glm::vec3(directionNormalized.x, directionNormalized.y, directionNormalized.z);
+        glUniform3fv(m_lightDirectionLoc, 1, glm::value_ptr(lightDirection));
+        glUniform1f(m_lightIntensityLoc, intensity);
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -709,6 +720,14 @@ namespace Engine::Visual
         m_viewMatrixLoc = glGetUniformLocation(m_shaderProgram, "viewMatrix");
         m_projectionMatrixLoc = glGetUniformLocation(m_shaderProgram, "projectionMatrix");
         m_modelMatrixLoc = glGetUniformLocation(m_shaderProgram, "modelMatrix");
+		m_lightDirectionLoc = glGetUniformLocation(m_shaderProgram, "lightDirection");
+		m_lightIntensityLoc = glGetUniformLocation(m_shaderProgram, "lightIntensity");
+
+        m_ambientColorLoc = glGetUniformLocation(m_shaderProgram, "ambientColor");
+        m_diffuseColorLoc = glGetUniformLocation(m_shaderProgram, "diffuseColor");
+        m_specularColorLoc = glGetUniformLocation(m_shaderProgram, "specularColor");
+        m_shininessLoc = glGetUniformLocation(m_shaderProgram, "shininess");
+        m_diffuseTextureLoc = glGetUniformLocation(m_shaderProgram, "diffuseTexture");
     }
 
 
@@ -720,8 +739,8 @@ namespace Engine::Visual
         ASSERT(loadTextureRes, "Can't load default texture: {}", DEFAULT_TEXTURE);
 
         m_defaultMaterial.diffuseTextureId = DEFAULT_TEXTURE;
-        m_defaultMaterial.diffuseColor = glm::vec3(0.1f, 0.1f, 0.1f);
-        m_defaultMaterial.ambientColor = glm::vec3(0.5f, 0.5f, 0.5f);
+        m_defaultMaterial.ambientColor = glm::vec3(0.1f, 0.1f, 0.1f);
+        m_defaultMaterial.diffuseColor = glm::vec3(0.8f, 0.8f, 0.8f);
         m_defaultMaterial.specularColor = glm::vec3(0.5f, 0.5f, 0.5f);
         m_defaultMaterial.shininess = 32.0f;
     }

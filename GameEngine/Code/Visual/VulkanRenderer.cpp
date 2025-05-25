@@ -533,7 +533,7 @@ namespace Engine::Visual
 		ASSERT(loadTextureResult, "Failed to load default texture: {}", DEFAULT_TEXTURE);
 
 		m_defaultMaterial.ambientColor = glm::vec3(0.1f, 0.1f, 0.1f);
-		m_defaultMaterial.diffuseColor = glm::vec3(0.5f, 0.5f, 0.5f);
+		m_defaultMaterial.diffuseColor = glm::vec3(0.8f, 0.8f, 0.8f);
 		m_defaultMaterial.specularColor = glm::vec3(0.5f, 0.5f, 0.5f);
 		m_defaultMaterial.shininess = 32.0f;
 		m_defaultMaterial.diffuseTextureId = DEFAULT_TEXTURE;
@@ -577,6 +577,15 @@ namespace Engine::Visual
 		float aspectRatio = (float)m_swapChainExtent.width / (float)m_swapChainExtent.height;
 		m_ubo.projectionMatrix = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 1000.0f);
 		m_ubo.projectionMatrix[1][1] *= -1;
+	}
+
+	////////////////////////////////////////////////////////////////////////
+
+	void VulkanRenderer::setLightProperties(const Utils::Vector3& direction, float intensity)
+	{
+		Utils::Vector3 directionNormalized = direction.normalized();
+		m_ubo.lightDirection = glm::vec3(directionNormalized.x, directionNormalized.y, directionNormalized.z);
+		m_ubo.lightIntensity = intensity;
 	}
 
 	////////////////////////////////////////////////////////////////////////
@@ -1894,7 +1903,7 @@ namespace Engine::Visual
 		vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
 		vertShaderStageInfo.module = vertShaderModule;
 		vertShaderStageInfo.pName = "main";
-		vertShaderStageInfo.pSpecializationInfo = nullptr; // For constants
+		vertShaderStageInfo.pSpecializationInfo = nullptr;
 
 		VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
 		fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -2347,7 +2356,8 @@ namespace Engine::Visual
 		ModelInstanceBase(id),
 		descriptorSet(VK_NULL_HANDLE),
 		uniformBuffer(VK_NULL_HANDLE),
-		uniformBufferMemory(VK_NULL_HANDLE)
+		uniformBufferMemory(VK_NULL_HANDLE),
+		descriptorPoolID(-1)
 	{
 	}
 

@@ -181,6 +181,7 @@ namespace Engine::Systems
 		}
 
 		m_renderer->init(m_window);
+		m_renderer->setLightProperties(Utils::Vector3(0.0f, 0.0f, -1.0f), 1.0f);
 
 		auto& gameController = GameController::get();
 		auto& compManager = gameController.getComponentsManager();

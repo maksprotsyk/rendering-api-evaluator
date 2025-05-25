@@ -21,6 +21,7 @@ namespace Engine::Visual
             const Utils::Vector3& scale) = 0;
 
         virtual void setCameraProperties(const Utils::Vector3& position, const Utils::Vector3& rotation) = 0;
+        virtual void setLightProperties(const Utils::Vector3& direction, float intensity) = 0;
         virtual void render() = 0;
         virtual void preRenderUI() = 0;
         virtual void postRenderUI() = 0;

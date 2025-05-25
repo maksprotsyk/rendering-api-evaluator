@@ -33,6 +33,7 @@ namespace Engine::Visual
         bool loadTexture(const std::string& filename) override;
 
         void setCameraProperties(const Utils::Vector3& position, const Utils::Vector3& rotation) override;
+        void setLightProperties(const Utils::Vector3& direction, float intensity) override;
         std::unique_ptr<IModelInstance> createModelInstance(const std::string& filename) override;
 
         bool destroyModelInstance(IModelInstance& modelInstance) override;
@@ -103,6 +104,13 @@ namespace Engine::Visual
         GLuint m_viewMatrixLoc;
         GLuint m_projectionMatrixLoc;
         GLuint m_modelMatrixLoc;
+		GLuint m_lightDirectionLoc;
+		GLuint m_lightIntensityLoc;
+        GLuint m_ambientColorLoc;
+        GLuint m_diffuseColorLoc;
+        GLuint m_specularColorLoc;
+        GLuint m_shininessLoc;
+        GLuint m_diffuseTextureLoc;
         GLuint m_frameBuffer;
         GLuint m_frameBufferTexture;
 

@@ -38,6 +38,7 @@ namespace Engine::Visual
         bool loadTexture(const std::string& filename) override;
 
         void setCameraProperties(const Utils::Vector3& position, const Utils::Vector3& rotation) override;
+        void setLightProperties(const Utils::Vector3& direction, float intensity) override;
         std::unique_ptr<IModelInstance> createModelInstance(const std::string& filename) override;
 
         bool destroyModelInstance(IModelInstance& modelInstance) override;
@@ -85,6 +86,8 @@ namespace Engine::Visual
             XMMATRIX worldMatrix;
             XMMATRIX viewMatrix;
             XMMATRIX projectionMatrix;
+            XMFLOAT3 lightDirection;
+            float lightIntensity;
         };
 
         struct MaterialBuffer
@@ -137,6 +140,7 @@ namespace Engine::Visual
         XMMATRIX m_projectionMatrix;
 
         Material m_defaultMaterial;
+        ConstantBuffer m_constantBufferData;
 
         std::unordered_map<std::string, ModelData> m_models;
         std::unordered_map<std::string, ComPtr<ID3D11ShaderResourceView>> m_textures;
