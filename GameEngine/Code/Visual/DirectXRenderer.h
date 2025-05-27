@@ -69,6 +69,7 @@ namespace Engine::Visual
             XMFLOAT3 diffuseColor;
             XMFLOAT3 specularColor;
             float shininess;
+			float useDiffuseTexture;
             std::string diffuseTextureId;
             ComPtr<ID3D11Buffer> materialBuffer;
         };
@@ -96,7 +97,7 @@ namespace Engine::Visual
             float shininess;
 
             XMFLOAT3 diffuseColor;
-            float padding1;
+            float useDiffuseTexture;
 
             XMFLOAT3 specularColor;
             float padding2;
@@ -110,6 +111,7 @@ namespace Engine::Visual
         static inline void destroyComPtrSafe(ComPtr<T>& ptr);
 
         void createDeviceAndSwapChain(HWND hwnd);
+        void createSamplerState();
         void createRenderTarget(HWND hwnd);
         void createShaders();
         void createViewport(HWND hwnd);
@@ -123,7 +125,6 @@ namespace Engine::Visual
 
     private:
 
-        // DirectX components
         ComPtr<ID3D11Device> m_device;
         ComPtr<ID3D11DeviceContext> m_deviceContext;
         ComPtr<IDXGISwapChain> m_swapChain;
@@ -135,7 +136,6 @@ namespace Engine::Visual
         ComPtr<ID3D11Buffer> m_constantBuffer;
         ComPtr<ID3D11SamplerState> m_samplerState;
 
-        // Camera matrices
         XMMATRIX m_viewMatrix;
         XMMATRIX m_projectionMatrix;
 

@@ -136,6 +136,7 @@ namespace Engine::Visual
 			mbo.specularColor = mat.specularColor;
 			mbo.diffuseColor = mat.diffuseColor;
 			mbo.shininess = mat.shininess;
+			mbo.useDiffuseTexture = mat.useDiffuseTexture;
 
 			bool setMboMemoryResult = setBufferMemoryData(mat.materialBufferMemory, &mbo, sizeof(mbo));
 			ASSERT(setMboMemoryResult, "Failed to set memory data for material buffer");
@@ -150,7 +151,7 @@ namespace Engine::Visual
 		for (const auto& [materialId, meshIndices] : materialMeshes)
 		{
 			const Material& material = materialId != -1 ? modelData.materials[materialId] : m_defaultMaterial;
-			const TextureData& texture = getTexture(material.diffuseTextureId);
+			const TextureData& texture = getTexture(material.useDiffuseTexture ? material.diffuseTextureId: m_defaultMaterial.diffuseTextureId);
 			std::array<VkDescriptorSet, 2> materialDescriptorSets{ material.descriptorSet, texture.descriptorSet };
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 1, static_cast<uint32_t>(materialDescriptorSets.size()), materialDescriptorSets.data(), 0, nullptr);
 			for (size_t meshIndex : meshIndices)
@@ -330,7 +331,7 @@ namespace Engine::Visual
 			material.diffuseColor = glm::vec3(mat.diffuse[0], mat.diffuse[1], mat.diffuse[2]);
 			material.specularColor = glm::vec3(mat.specular[0], mat.specular[1], mat.specular[2]);
 			material.shininess = mat.shininess;
-
+			material.useDiffuseTexture = (float)!mat.diffuse_texname.empty();
 			if (!mat.diffuse_texname.empty())
 			{
 				std::string texturePath = (matDir / mat.diffuse_texname).string();
@@ -356,6 +357,8 @@ namespace Engine::Visual
 		for (const auto& shape : shapes)
 		{
 			SubMesh subMesh;
+			std::vector<Vertex> localVertices;
+			std::vector<uint32_t> localIndices;
 
 			for (const auto& index : shape.mesh.indices)
 			{
@@ -366,7 +369,8 @@ namespace Engine::Visual
 					attrib.vertices[3 * index.vertex_index + 2]
 				);
 
-				if (index.normal_index >= 0) {
+				if (index.normal_index >= 0)
+				{
 					vertex.normal = glm::vec3(
 						attrib.normals[3 * index.normal_index + 0],
 						attrib.normals[3 * index.normal_index + 1],
@@ -374,17 +378,43 @@ namespace Engine::Visual
 					);
 				}
 
-				if (index.texcoord_index >= 0) {
+				if (index.texcoord_index >= 0)
+				{
 					vertex.texCoord = glm::vec2(
 						attrib.texcoords[2 * index.texcoord_index + 0],
-						attrib.texcoords[2 * index.texcoord_index + 1]
+						1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
 					);
 				}
 
-				model.vertices.push_back(vertex);
-				subMesh.indices.push_back(static_cast<unsigned int>(model.vertices.size() - 1));
+				localVertices.push_back(vertex);
+				localIndices.push_back(localVertices.size() - 1);
+				subMesh.indices.push_back(model.vertices.size() + localIndices.back());
 			}
 
+			if (attrib.normals.empty())
+			{
+				for (size_t i = 0; i < localIndices.size(); i += 3)
+				{
+					Vertex& v0 = localVertices[localIndices[i + 0]];
+					Vertex& v1 = localVertices[localIndices[i + 1]];
+					Vertex& v2 = localVertices[localIndices[i + 2]];
+
+					glm::vec3 edge1 = v1.position - v0.position;
+					glm::vec3 edge2 = v2.position - v0.position;
+					glm::vec3 faceNormal = glm::normalize(glm::cross(edge1, edge2));
+
+					v0.normal += faceNormal;
+					v1.normal += faceNormal;
+					v2.normal += faceNormal;
+				}
+
+				for (auto& v : localVertices)
+				{
+					v.normal = glm::normalize(v.normal);
+				}
+			}
+
+			model.vertices.insert(model.vertices.end(), localVertices.begin(), localVertices.end());
 			subMesh.materialId = shape.mesh.material_ids.empty() ? 0 : shape.mesh.material_ids[0];
 			model.meshes.push_back(std::move(subMesh));
 		}
@@ -532,11 +562,12 @@ namespace Engine::Visual
 		bool loadTextureResult = loadTexture(DEFAULT_TEXTURE);
 		ASSERT(loadTextureResult, "Failed to load default texture: {}", DEFAULT_TEXTURE);
 
-		m_defaultMaterial.ambientColor = glm::vec3(0.1f, 0.1f, 0.1f);
-		m_defaultMaterial.diffuseColor = glm::vec3(0.8f, 0.8f, 0.8f);
-		m_defaultMaterial.specularColor = glm::vec3(0.5f, 0.5f, 0.5f);
-		m_defaultMaterial.shininess = 32.0f;
+		m_defaultMaterial.ambientColor = glm::vec3(DEFAULT_AMBIENT.x, DEFAULT_AMBIENT.y, DEFAULT_AMBIENT.z);
+		m_defaultMaterial.diffuseColor = glm::vec3(DEFAULT_DIFFUSE.x, DEFAULT_DIFFUSE.y, DEFAULT_DIFFUSE.z);
+		m_defaultMaterial.specularColor = glm::vec3(DEFAULT_SPECULAR.x, DEFAULT_SPECULAR.y, DEFAULT_SPECULAR.z);
+		m_defaultMaterial.shininess = DEFAULT_SHININESS;
 		m_defaultMaterial.diffuseTextureId = DEFAULT_TEXTURE;
+		m_defaultMaterial.useDiffuseTexture = 1.0f;
 
 		bool result = createBuffer(
 			sizeof(MaterialBufferObject),
@@ -556,6 +587,7 @@ namespace Engine::Visual
 		mbo.specularColor = m_defaultMaterial.specularColor;
 		mbo.diffuseColor = m_defaultMaterial.diffuseColor;
 		mbo.shininess = m_defaultMaterial.shininess;
+		mbo.useDiffuseTexture = m_defaultMaterial.useDiffuseTexture;
 		
 		result = createDescriptorSet(m_defaultMaterial);
 		if (!result)
@@ -886,22 +918,22 @@ namespace Engine::Visual
 
 		stbi_image_free(pixels);
 
-		if (!createImage(texWidth, texHeight, VK_FORMAT_B8G8R8A8_UNORM,
+		if (!createImage(texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB,
 			VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture.textureImage, texture.textureImageMemory))
 		{
 			return false;
 		}
 
-		transitionImageLayout(texture.textureImage, VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+		transitionImageLayout(texture.textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 		copyBufferToImage(stagingBuffer, texture.textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-		transitionImageLayout(texture.textureImage, VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		transitionImageLayout(texture.textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 		vkDestroyBuffer(m_device, stagingBuffer, nullptr);
 		vkFreeMemory(m_device, stagingBufferMemory, nullptr);
 
 		// create image view
-		texture.textureImageView = createImageView(texture.textureImage, VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT);
+		texture.textureImageView = createImageView(texture.textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
 
 		return true;
 	}
@@ -1181,7 +1213,7 @@ namespace Engine::Visual
 
 		for (const auto& availableFormat : availableFormats)
 		{
-			if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+			if (availableFormat.format == VK_FORMAT_R8G8B8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
 			{
 				return availableFormat;
 			}

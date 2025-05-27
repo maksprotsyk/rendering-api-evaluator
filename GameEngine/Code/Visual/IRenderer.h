@@ -41,6 +41,10 @@ namespace Engine::Visual
 
     protected:
         static inline const std::string DEFAULT_TEXTURE = "default.png";
+		static inline const Utils::Vector3 DEFAULT_AMBIENT = { 0.1f, 0.1f, 0.1f };
+		static inline const Utils::Vector3 DEFAULT_DIFFUSE = { 0.8f, 0.8f, 0.8f };
+		static inline const Utils::Vector3 DEFAULT_SPECULAR = { 0.5f, 0.5f, 0.5f };
+		static inline const float DEFAULT_SHININESS = 32.0f;
     };
 
 }

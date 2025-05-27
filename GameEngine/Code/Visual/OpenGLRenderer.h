@@ -63,6 +63,7 @@ namespace Engine::Visual
             glm::vec3 specularColor;
             float shininess;
             std::string diffuseTextureId;
+            float useDiffuseTexture;
         };
 
         struct ModelData
@@ -110,6 +111,7 @@ namespace Engine::Visual
         GLuint m_diffuseColorLoc;
         GLuint m_specularColorLoc;
         GLuint m_shininessLoc;
+        GLuint m_useDiffuseTextureLoc;
         GLuint m_diffuseTextureLoc;
         GLuint m_frameBuffer;
         GLuint m_frameBufferTexture;

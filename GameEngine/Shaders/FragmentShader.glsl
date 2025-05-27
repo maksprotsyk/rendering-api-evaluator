@@ -10,6 +10,8 @@ uniform vec3 ambientColor;
 uniform float shininess;
 
 uniform vec3 diffuseColor;
+uniform float useDiffuseTexture;
+
 uniform vec3 specularColor;
 
 uniform sampler2D texture0;
@@ -25,13 +27,13 @@ const float ambientIntensity = 0.1;
 void main()
 {
     vec4 texColor = texture(texture0, TexCoord);
+    vec3 baseDiffuseColor = mix(diffuseColor, texColor.rgb, useDiffuseTexture);
 
     vec3 normal = normalize(Normal);
-
-    vec3 ambient = ambientIntensity * ambientColor * texColor.rgb;
+    vec3 ambient = ambientIntensity * ambientColor * baseDiffuseColor;
 
     float diffuseFactor = max(dot(normal, lightDirection), 0.0);
-    vec3 diffuse = diffuseFactor * lightIntensity * diffuseColor * texColor.rgb;
+    vec3 diffuse = diffuseFactor * lightIntensity * baseDiffuseColor;
 
     vec3 viewDir = normalize(-FragPos);
     vec3 halfwayDir = normalize(lightDirection + viewDir);

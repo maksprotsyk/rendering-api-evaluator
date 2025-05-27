@@ -20,6 +20,7 @@ namespace Engine::Visual
 	{
 		createDeviceAndSwapChain(window.getHandle());
 		createRenderTarget(window.getHandle());
+		createSamplerState();
 		createShaders();
 		createViewport(window.getHandle());
 		createDefaultMaterial();
@@ -66,6 +67,7 @@ namespace Engine::Visual
 			mb.diffuseColor = material.diffuseColor;
 			mb.specularColor = material.specularColor;
 			mb.shininess = material.shininess;
+			mb.useDiffuseTexture = material.useDiffuseTexture;
 			m_deviceContext->UpdateSubresource(material.materialBuffer.Get(), 0, nullptr, &mb, 0, 0);
 		}
 
@@ -86,7 +88,7 @@ namespace Engine::Visual
 		{
 			const Material& material = materialId != -1 ? modelData.materials[materialId] : m_defaultMaterial;
 			m_deviceContext->PSSetConstantBuffers(1, 1, material.materialBuffer.GetAddressOf());
-			m_deviceContext->PSSetShaderResources(0, 1, getTexture(material.diffuseTextureId).GetAddressOf());
+			m_deviceContext->PSSetShaderResources(0, 1, getTexture(material.useDiffuseTexture ? material.diffuseTextureId: m_defaultMaterial.diffuseTextureId).GetAddressOf());
 			for (size_t meshIndex : meshIndices)
 			{
 				const SubMesh& mesh = modelData.meshes[meshIndex];
@@ -147,6 +149,23 @@ namespace Engine::Visual
 		);
 
 		ASSERT(!FAILED(hr), "Can't create device and swapchain, error code: {}", hr);
+	}
+
+	////////////////////////////////////////////////////////////////////////
+
+	void DirectXRenderer::createSamplerState()
+	{
+		D3D11_SAMPLER_DESC samplerDesc = {};
+		samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+		samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+		samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+		samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+		samplerDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
+		samplerDesc.MinLOD = 0;
+		samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
+
+		HRESULT hr = m_device->CreateSamplerState(&samplerDesc, m_samplerState.GetAddressOf());
+		ASSERT(!FAILED(hr), "Can't create sampler state, error code: {}", hr);
 	}
 
 	////////////////////////////////////////////////////////////////////////
@@ -344,7 +363,20 @@ namespace Engine::Visual
 		}
 
 		ComPtr<ID3D11ShaderResourceView> texture;
-		HRESULT hr = DirectX::CreateWICTextureFromFile(m_device.Get(), m_deviceContext.Get(), Utils::stringToWString(filename).c_str(), nullptr, texture.GetAddressOf());
+
+		HRESULT hr = DirectX::CreateWICTextureFromFileEx(
+			m_device.Get(),
+			m_deviceContext.Get(), 
+			Utils::stringToWString(filename).c_str(),
+			0,
+			D3D11_USAGE_DEFAULT,
+			D3D11_BIND_SHADER_RESOURCE,
+			0,
+			D3D11_RESOURCE_MISC_GENERATE_MIPS,
+			DirectX::WIC_LOADER_FORCE_SRGB,
+			nullptr,
+			texture.GetAddressOf()
+		);
 		ASSERT(!FAILED(hr), "Can't load texture: {}", filename);
 		if (FAILED(hr))
 		{
@@ -378,6 +410,7 @@ namespace Engine::Visual
 			Material matX;
 			matX.ambientColor = XMFLOAT3(mat.ambient);
 			matX.diffuseColor = XMFLOAT3(mat.diffuse);
+			matX.useDiffuseTexture = mat.diffuse_texname.empty() ? 0.0f: 1.0f;
 			matX.shininess = mat.shininess;
 			matX.specularColor = XMFLOAT3(mat.specular);
 			if (!mat.diffuse_texname.empty())
@@ -402,17 +435,20 @@ namespace Engine::Visual
 		for (const auto& shape : shapes)
 		{
 			SubMesh mesh;
+			std::vector<Vertex> localVertices;
+			std::vector<uint32_t> localIndices;
+
 			for (const auto& index : shape.mesh.indices)
 			{
 				Vertex vertex{};
-
 				vertex.position = {
 					attrib.vertices[3 * index.vertex_index + 0],
 					attrib.vertices[3 * index.vertex_index + 1],
 					attrib.vertices[3 * index.vertex_index + 2]
 				};
 
-				if (index.normal_index >= 0) {
+				if (index.normal_index >= 0) 
+				{
 					vertex.normal = {
 						attrib.normals[3 * index.normal_index + 0],
 						attrib.normals[3 * index.normal_index + 1],
@@ -420,18 +456,60 @@ namespace Engine::Visual
 					};
 				}
 
-				if (index.texcoord_index >= 0)
+				if (index.texcoord_index >= 0) 
 				{
 					vertex.texCoord = {
 						attrib.texcoords[2 * index.texcoord_index + 0],
-						attrib.texcoords[2 * index.texcoord_index + 1]
+						1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
 					};
 				}
 
-				model.vertices.emplace_back(vertex);
-				mesh.indices.push_back(model.vertices.size() - 1);
+				localVertices.push_back(vertex);
+				localIndices.push_back(localVertices.size() - 1);
+				mesh.indices.push_back(model.vertices.size() + localIndices.back());
 			}
 
+			if (attrib.normals.empty())
+			{
+				for (size_t i = 0; i < localIndices.size(); i += 3)
+				{
+					Vertex& v0 = localVertices[localIndices[i + 0]];
+					Vertex& v1 = localVertices[localIndices[i + 1]];
+					Vertex& v2 = localVertices[localIndices[i + 2]];
+
+					XMVECTOR p0 = XMLoadFloat3(&v0.position);
+					XMVECTOR p1 = XMLoadFloat3(&v1.position);
+					XMVECTOR p2 = XMLoadFloat3(&v2.position);
+
+					XMVECTOR edge1 = XMVectorSubtract(p1, p0);
+					XMVECTOR edge2 = XMVectorSubtract(p2, p0);
+					XMVECTOR faceNormal = XMVector3Normalize(XMVector3Cross(edge1, edge2));
+
+					XMFLOAT3 fn;
+					XMStoreFloat3(&fn, faceNormal);
+
+					v0.normal.x += fn.x;
+					v0.normal.y += fn.y;
+					v0.normal.z += fn.z;
+
+					v1.normal.x += fn.x;
+					v1.normal.y += fn.y;
+					v1.normal.z += fn.z;
+
+					v2.normal.x += fn.x;
+					v2.normal.y += fn.y;
+					v2.normal.z += fn.z;
+				}
+
+				for (Vertex& vertex : localVertices)
+				{
+					XMVECTOR normal = XMLoadFloat3(&vertex.normal);
+					normal = XMVector3Normalize(normal);
+					XMStoreFloat3(&vertex.normal, normal);
+				}
+			}
+
+			model.vertices.insert(model.vertices.end(), localVertices.begin(), localVertices.end());
 			mesh.materialId = shape.mesh.material_ids.empty() ? -1 : shape.mesh.material_ids[0];
 			model.meshes.emplace_back(std::move(mesh));
 		}
@@ -596,10 +674,11 @@ namespace Engine::Visual
 		ASSERT(loadDefaultTexRes, "Can't load default texture");
 
 		m_defaultMaterial.diffuseTextureId = DEFAULT_TEXTURE;
-		m_defaultMaterial.ambientColor = XMFLOAT3(0.1f, 0.1f, 0.1f);
-		m_defaultMaterial.diffuseColor = XMFLOAT3(0.8f, 0.8f, 0.8f);
-		m_defaultMaterial.specularColor = XMFLOAT3(0.5f, 0.5f, 0.5f);
-		m_defaultMaterial.shininess = 32.0f;
+		m_defaultMaterial.ambientColor = XMFLOAT3(DEFAULT_AMBIENT.x, DEFAULT_AMBIENT.y, DEFAULT_AMBIENT.z);
+		m_defaultMaterial.diffuseColor = XMFLOAT3(DEFAULT_DIFFUSE.x, DEFAULT_DIFFUSE.y, DEFAULT_DIFFUSE.z);
+		m_defaultMaterial.specularColor = XMFLOAT3(DEFAULT_SPECULAR.x, DEFAULT_SPECULAR.y, DEFAULT_SPECULAR.z);
+		m_defaultMaterial.shininess = DEFAULT_SHININESS;
+		m_defaultMaterial.useDiffuseTexture = 1.0f;
 
 		D3D11_BUFFER_DESC cbDesc = {};
 		cbDesc.Usage = D3D11_USAGE_DEFAULT;
@@ -614,6 +693,7 @@ namespace Engine::Visual
 		mb.diffuseColor = m_defaultMaterial.diffuseColor;
 		mb.specularColor = m_defaultMaterial.specularColor;
 		mb.shininess = m_defaultMaterial.shininess;
+		mb.useDiffuseTexture = m_defaultMaterial.useDiffuseTexture;
 		m_deviceContext->UpdateSubresource(m_defaultMaterial.materialBuffer.Get(), 0, nullptr, &mb, 0, 0);
 	}
 

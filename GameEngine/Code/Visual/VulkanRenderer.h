@@ -69,6 +69,7 @@ namespace Engine::Visual
             glm::vec3 diffuseColor;
             glm::vec3 specularColor;
             float shininess;
+            float useDiffuseTexture;
 
             VkBuffer materialBuffer;
             VkDeviceMemory materialBufferMemory;
@@ -113,7 +114,7 @@ namespace Engine::Visual
             float shininess;
 
             glm::vec3 diffuseColor;
-            float padding1;
+            float useDiffuseTexture;
 
             glm::vec3 specularColor;
             float padding2;

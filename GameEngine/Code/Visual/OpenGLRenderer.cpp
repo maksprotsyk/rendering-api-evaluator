@@ -101,10 +101,11 @@ namespace Engine::Visual
 			glUniform3fv(m_diffuseColorLoc, 1, glm::value_ptr(material.diffuseColor));
 			glUniform3fv(m_specularColorLoc, 1, glm::value_ptr(material.specularColor));
 			glUniform1f(m_shininessLoc, material.shininess);
+            glUniform1f(m_useDiffuseTextureLoc, material.useDiffuseTexture);
             ASSERT_OPENGL("Unable to set material properties for mesh of model: {}", model.GetId());
 
 			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, getTexture(material.diffuseTextureId));
+			glBindTexture(GL_TEXTURE_2D, getTexture(material.useDiffuseTexture ? material.diffuseTextureId: m_defaultMaterial.diffuseTextureId));
 			glUniform1i(glGetUniformLocation(m_shaderProgram, "diffuseTexture"), 0);
             ASSERT_OPENGL("Unable to set texture for mesh of model: {}", model.GetId());
 
@@ -220,7 +221,7 @@ namespace Engine::Visual
             material.diffuseColor = glm::vec3(mat.diffuse[0], mat.diffuse[1], mat.diffuse[2]);
             material.specularColor = glm::vec3(mat.specular[0], mat.specular[1], mat.specular[2]);
             material.shininess = mat.shininess;
-
+			material.useDiffuseTexture = (float)!mat.diffuse_texname.empty();
             if (!mat.diffuse_texname.empty())
             {
 
@@ -246,6 +247,8 @@ namespace Engine::Visual
         for (const auto& shape : shapes)
         {
             SubMesh subMesh;
+            std::vector<Vertex> localVertices;
+			std::vector<uint32_t> localIndices;
 
             for (const auto& index : shape.mesh.indices)
             {
@@ -256,7 +259,8 @@ namespace Engine::Visual
                     attrib.vertices[3 * index.vertex_index + 2]
                 );
 
-                if (index.normal_index >= 0) {
+                if (index.normal_index >= 0)
+                {
                     vertex.normal = glm::vec3(
                         attrib.normals[3 * index.normal_index + 0],
                         attrib.normals[3 * index.normal_index + 1],
@@ -264,17 +268,43 @@ namespace Engine::Visual
                     );
                 }
 
-                if (index.texcoord_index >= 0) {
+                if (index.texcoord_index >= 0)
+                {
                     vertex.texCoord = glm::vec2(
                         attrib.texcoords[2 * index.texcoord_index + 0],
                         attrib.texcoords[2 * index.texcoord_index + 1]
                     );
                 }
 
-                model.vertices.push_back(vertex);
-                subMesh.indices.push_back(static_cast<unsigned int>(model.vertices.size() - 1));
+                localVertices.push_back(vertex);
+				localIndices.push_back(localVertices.size() - 1);
+                subMesh.indices.push_back(model.vertices.size() + localIndices.back());
             }
 
+            if (attrib.normals.empty())
+            {
+                for (size_t i = 0; i < localIndices.size(); i += 3)
+                {
+                    Vertex& v0 = localVertices[localIndices[i + 0]];
+                    Vertex& v1 = localVertices[localIndices[i + 1]];
+                    Vertex& v2 = localVertices[localIndices[i + 2]];
+
+                    glm::vec3 edge1 = v1.position - v0.position;
+                    glm::vec3 edge2 = v2.position - v0.position;
+                    glm::vec3 faceNormal = glm::normalize(glm::cross(edge1, edge2));
+
+                    v0.normal += faceNormal;
+                    v1.normal += faceNormal;
+                    v2.normal += faceNormal;
+                }
+
+                for (auto& v : localVertices)
+                {
+                    v.normal = glm::normalize(v.normal);
+                }
+            }
+
+            model.vertices.insert(model.vertices.end(), localVertices.begin(), localVertices.end());
             subMesh.materialId = shape.mesh.material_ids.empty() ? 0 : shape.mesh.material_ids[0];
             model.meshes.push_back(std::move(subMesh));
         }
@@ -487,7 +517,9 @@ namespace Engine::Visual
         }
 
         int width, height, channels;
-        unsigned char* data = stbi_load(filename.c_str(), &width, &height, &channels, 0);
+        stbi_set_flip_vertically_on_load(true);
+        unsigned char* data = stbi_load(filename.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+        stbi_set_flip_vertically_on_load(false);
         if (!data) {
             return false;
         }
@@ -496,7 +528,7 @@ namespace Engine::Visual
         glGenTextures(1, &texture);
         glBindTexture(GL_TEXTURE_2D, texture);
 
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
         stbi_image_free(data);
 
@@ -727,6 +759,7 @@ namespace Engine::Visual
         m_diffuseColorLoc = glGetUniformLocation(m_shaderProgram, "diffuseColor");
         m_specularColorLoc = glGetUniformLocation(m_shaderProgram, "specularColor");
         m_shininessLoc = glGetUniformLocation(m_shaderProgram, "shininess");
+		m_useDiffuseTextureLoc = glGetUniformLocation(m_shaderProgram, "useDiffuseTexture");
         m_diffuseTextureLoc = glGetUniformLocation(m_shaderProgram, "diffuseTexture");
     }
 
@@ -739,10 +772,11 @@ namespace Engine::Visual
         ASSERT(loadTextureRes, "Can't load default texture: {}", DEFAULT_TEXTURE);
 
         m_defaultMaterial.diffuseTextureId = DEFAULT_TEXTURE;
-        m_defaultMaterial.ambientColor = glm::vec3(0.1f, 0.1f, 0.1f);
-        m_defaultMaterial.diffuseColor = glm::vec3(0.8f, 0.8f, 0.8f);
-        m_defaultMaterial.specularColor = glm::vec3(0.5f, 0.5f, 0.5f);
-        m_defaultMaterial.shininess = 32.0f;
+        m_defaultMaterial.ambientColor = glm::vec3(DEFAULT_AMBIENT.x, DEFAULT_AMBIENT.y, DEFAULT_AMBIENT.z);
+        m_defaultMaterial.diffuseColor = glm::vec3(DEFAULT_DIFFUSE.x, DEFAULT_DIFFUSE.y, DEFAULT_DIFFUSE.z);
+        m_defaultMaterial.specularColor = glm::vec3(DEFAULT_SPECULAR.x, DEFAULT_SPECULAR.y, DEFAULT_SPECULAR.z);
+        m_defaultMaterial.shininess = DEFAULT_SHININESS;
+        m_defaultMaterial.useDiffuseTexture = 1.0f;
     }
 
     ////////////////////////////////////////////////////////////////////////

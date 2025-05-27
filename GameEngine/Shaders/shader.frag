@@ -15,7 +15,7 @@ layout (set = 1, binding = 0) uniform MaterialBufferObject {
     float shininess;
 
     vec3 diffuseColor;
-    float padding1;
+    float useDiffuseTexture;
 
     vec3 specularColor;
     float padding2;
@@ -35,13 +35,13 @@ const float ambientIntensity = 0.1;
 void main()
 {
     vec4 texColor = texture(texture0, TexCoord);
-
+    vec3 baseDiffuseColor = mix(mbo.diffuseColor, texColor.rgb, mbo.useDiffuseTexture);
     vec3 normal = normalize(Normal);
 
-    vec3 ambient = ambientIntensity * mbo.ambientColor * texColor.rgb;
+    vec3 ambient = ambientIntensity * mbo.ambientColor * baseDiffuseColor;
 
     float diffuseFactor = max(dot(normal, ubo.lightDirection), 0.0);
-    vec3 diffuse = diffuseFactor * ubo.lightIntensity * mbo.diffuseColor * texColor.rgb;
+    vec3 diffuse = diffuseFactor * ubo.lightIntensity * mbo.diffuseColor * baseDiffuseColor;
 
     vec3 viewDir = normalize(-FragPos);
     vec3 halfwayDir = normalize(ubo.lightDirection + viewDir);

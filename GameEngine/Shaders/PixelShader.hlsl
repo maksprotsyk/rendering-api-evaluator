@@ -13,7 +13,7 @@ cbuffer MaterialBuffer : register(b1)
     float shininess;
     
     float3 diffuseColor;
-    float padding1;
+    float useDiffuseTexture;
     
     float3 specularColor;
     float padding2;
@@ -38,10 +38,11 @@ float4 main(PSInput input) : SV_TARGET
 
     float3 normal = normalize(input.normal);
     
-    float3 ambient = ambientIntensity * ambientColor * texColor.rgb;
+    float3 baseDiffuseColor = texColor.rgb * useDiffuseTexture + diffuseColor * (1.0 - useDiffuseTexture);
+    float3 ambient = ambientIntensity * ambientColor * baseDiffuseColor;
 
     float diffuseFactor = max(dot(normal, lightDirection), 0.0f);
-    float3 diffuse = diffuseFactor * lightIntensity * diffuseColor * texColor.rgb;
+    float3 diffuse = diffuseFactor * lightIntensity * baseDiffuseColor;
 
     float3 viewDir = normalize(-input.worldPos.xyz);
     float3 halfwayDir = normalize(lightDirection + viewDir);
