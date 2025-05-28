@@ -21,7 +21,7 @@ namespace Engine
 
 	//////////////////////////////////////////////////////////////////////////
 
-	void SystemsManager::loadSystemFromJson(const nlohmann::json& systemJson)
+	void SystemsFactory::loadSystemFromJson(SystemsManager& manager, const nlohmann::json& systemJson)
 	{
 		ASSERT(systemJson.contains(k_typenameField), "System must have a {} field", k_typenameField);
 		if (!systemJson.contains(k_typenameField))
@@ -34,7 +34,7 @@ namespace Engine
 		{
 			return;
 		}
-		creator->second(systemJson);
+		creator->second(manager, systemJson);
 	}
 
 	//////////////////////////////////////////////////////////////////////////

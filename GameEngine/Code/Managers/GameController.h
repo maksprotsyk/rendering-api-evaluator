@@ -37,6 +37,11 @@ namespace Engine
 		const SystemsManager& getSystemsManager() const;
 		const EntitiesManager& getEntitiesManager() const;
 
+		ComponentsFactory& getComponentsFactory();
+		const ComponentsFactory& getComponentsFactory() const;
+		SystemsFactory& getSystemsFactory();
+		const SystemsFactory& getSystemsFactory() const;
+
 		EntityID createPrefab(const std::string& prefabName);
 
 
@@ -67,7 +72,8 @@ namespace Engine
 		ComponentsManager m_componentsManager;
 		SystemsManager m_systemsManager;
 		EntitiesManager m_entitiesManager;
-
+		ComponentsFactory m_componentsFactory;
+		SystemsFactory m_systemsFactory;
 	};
 
 
@@ -95,18 +101,19 @@ namespace Engine
 	template <typename Component>
 	ComponentRegisterer<Component>::ComponentRegisterer()
 	{
-		GameController::get().getComponentsManager().registerComponent<Component>();
+		GameController::get().getComponentsManager().createSet<Component>();
 	}
 
 	template <typename Component, typename Serializer>
 	SerializableComponentRegisterer<Component, Serializer>::SerializableComponentRegisterer()
 	{
-		GameController::get().getComponentsManager().registerComponent<Component, Serializer>();
+		GameController::get().getComponentsManager().createSet<Component>();
+		GameController::get().getComponentsFactory().registerComponent<Component, Serializer>();
 	}
 	template<typename System>
 	SystemRegisterer<System>::SystemRegisterer()
 	{
-		GameController::get().getSystemsManager().registerSystem<System>();
+		GameController::get().getSystemsFactory().registerSystem<System>();
 	}
 }
 
