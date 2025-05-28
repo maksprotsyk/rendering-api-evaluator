@@ -6,17 +6,17 @@ namespace Engine
 {
 	//////////////////////////////////////////////////////////////////////////
 
-	template<class T>
-	void SystemsManager::registerSystem()
+	template<typename System>
+	void SystemsFactory::registerSystem()
 	{
-		auto creatorMethod = [this](const nlohmann::json& val)
+		auto creatorMethod = [this](SystemsManager& manager, const nlohmann::json& val)
 		{
-			std::unique_ptr<T> system = std::make_unique<T>();
+			std::unique_ptr<System> system = std::make_unique<System>();
 			system->setConfig(val);
-			addSystem(std::move(system));
+			manager.addSystem(std::move(system));
 		};
 
-		m_systemCreators[Utils::getTypeName<T>()] = creatorMethod;
+		m_systemCreators[Utils::getTypeName<System>()] = creatorMethod;
 	}
 
 	//////////////////////////////////////////////////////////////////////////

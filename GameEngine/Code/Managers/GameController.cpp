@@ -196,6 +196,34 @@ namespace Engine
 
 	//////////////////////////////////////////////////////////////////////////
 
+	ComponentsFactory& GameController::getComponentsFactory()
+	{
+		return m_componentsFactory;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+
+	const ComponentsFactory& GameController::getComponentsFactory() const
+	{
+		return m_componentsFactory;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+
+	SystemsFactory& GameController::getSystemsFactory()
+	{
+		return m_systemsFactory;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+
+	const SystemsFactory& GameController::getSystemsFactory() const
+	{
+		return m_systemsFactory;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+
 	EntityID GameController::createPrefab(const std::string& prefabName)
 	{
 		Engine::EntityID id = m_entitiesManager.createEntity();
@@ -216,7 +244,7 @@ namespace Engine
 
 		for (const nlohmann::json& compJson : prefabJson[k_componentsField])
 		{
-			m_componentsManager.createComponentFromJson(id, compJson);
+			m_componentsFactory.createComponentFromJson(m_componentsManager, id, compJson);
 		}
 
 		return id;
@@ -232,7 +260,7 @@ namespace Engine
 		{
 			for (const nlohmann::json& compJson : entityJson[k_componentsField])
 			{
-				m_componentsManager.createComponentFromJson(id, compJson);
+				m_componentsFactory.createComponentFromJson(m_componentsManager, id, compJson);
 			}
 		}
 
@@ -256,7 +284,7 @@ namespace Engine
 
 		for (const nlohmann::json& compJson : prefabJson[k_componentsField])
 		{
-			m_componentsManager.createComponentFromJson(id, compJson);
+			m_componentsFactory.createComponentFromJson(m_componentsManager, id, compJson);
 		}		
 		
 	}
@@ -293,7 +321,7 @@ namespace Engine
 	{
 		for (const nlohmann::json& entityJson : m_config[k_systemsField])
 		{
-			m_systemsManager.loadSystemFromJson(entityJson);
+			m_systemsFactory.loadSystemFromJson(m_systemsManager, entityJson);
 		}
 	}
 

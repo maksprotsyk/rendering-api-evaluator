@@ -4,26 +4,17 @@
 
 namespace Engine
 {
-	//////////////////////////////////////////////////////////////////////////
-
-	template<typename Component>
-	void ComponentsManager::registerComponent()
-	{
-		auto sparseSet = std::make_unique<Utils::SparseSet<Component, EntityID>>();
-		m_sparseSets[Utils::getTypeName<Component>()] = std::move(sparseSet);
-	}
 
 	//////////////////////////////////////////////////////////////////////////
 
 	template<typename Component, typename Serializer>
-	void ComponentsManager::registerComponent()
+	void ComponentsFactory::registerComponent()
 	{
-		registerComponent<Component>();
-		auto creatorMethod = [this](EntityID id, const nlohmann::json& val)
+		auto creatorMethod = [this](ComponentsManager& manager, EntityID id, const nlohmann::json& val)
 			{
 				Serializer serializer{};
 				Utils::Parser::fillFromJson(serializer, val);
-				Utils::SparseSet<Component, EntityID>& compSet = getComponentSet<Component>();
+				Utils::SparseSet<Component, EntityID>& compSet = manager.getComponentSet<Component>();
 
 				if constexpr (std::is_same<Component, Serializer>::value)
 				{
@@ -111,6 +102,15 @@ namespace Engine
 		}
 
 		return result;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+
+	template<typename Component>
+	void ComponentsManager::createSet()
+	{
+		auto sparseSet = std::make_unique<Utils::SparseSet<Component, EntityID>>();
+		m_sparseSets[Utils::getTypeName<Component>()] = std::move(sparseSet);
 	}
 
 	//////////////////////////////////////////////////////////////////////////

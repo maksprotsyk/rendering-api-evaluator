@@ -6,7 +6,7 @@ namespace Engine
 {
 	//////////////////////////////////////////////////////////////////////////
 
-	void ComponentsManager::createComponentFromJson(EntityID id, const nlohmann::json& value)
+	void ComponentsFactory::createComponentFromJson(ComponentsManager& manager, EntityID id, const nlohmann::json& value)
 	{
 		ASSERT(value.contains(k_typenameField), "Component must have a {} field", k_typenameField);
 		if (!value.contains(k_typenameField))
@@ -21,7 +21,7 @@ namespace Engine
 			return;
 		}
 
-		creator->second(id, value);
+		creator->second(manager, id, value);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -43,6 +43,6 @@ namespace Engine
 			componentsSet->clear();
 		}
 	}
-
+	
 	//////////////////////////////////////////////////////////////////////////
 }

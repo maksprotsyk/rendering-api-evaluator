@@ -12,20 +12,30 @@
 
 namespace Engine
 {
+	class SystemsManager;
+
+	class SystemsFactory
+	{
+	public:
+		void loadSystemFromJson(SystemsManager& manager, const nlohmann::json& systemJson);
+		template <class System>
+		void registerSystem();
+
+	private:
+		static constexpr const char* k_typenameField = "typename";
+		std::unordered_map<std::string, std::function<void(SystemsManager&, const nlohmann::json&)>> m_systemCreators;
+	};
+
 	class SystemsManager
 	{
 	public:
 		void addSystem(std::unique_ptr<Systems::ISystem>&& system);
 		void removeSystem(Systems::ISystem* system);
-		void loadSystemFromJson(const nlohmann::json& systemJson);
 		void update(float dt) const;
 		void stop() const;
 		void clear();
 		void processAddedSystems();
 		void processRemovedSystems();
-
-		template <class T>
-		void registerSystem();
 
 	private:
 
@@ -35,13 +45,9 @@ namespace Engine
 		};
 
 	private:
-		static constexpr const char* k_typenameField = "typename";
-
 		std::set<std::unique_ptr<Systems::ISystem>, LessPriority> m_systems;
 		std::queue<Systems::ISystem*> m_removedSystems;
 		std::queue<std::unique_ptr<Systems::ISystem>> m_addedSystems;
-
-		std::unordered_map<std::string, std::function<void(const nlohmann::json&)>> m_systemCreators;
 	};
 
 }
