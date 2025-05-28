@@ -24,12 +24,16 @@ namespace Engine::Visual
             const Utils::Vector3& position,
             const Utils::Vector3& rotation,
             const Utils::Vector3& scale) override;
+
+        void preRenderUI() override;
+        void postRenderUI() override;
         void render() override;
 
         bool loadModel(const std::string& filename) override;
         bool loadTexture(const std::string& filename) override;
 
         void setCameraProperties(const Utils::Vector3& position, const Utils::Vector3& rotation) override;
+        void setLightProperties(const Utils::Vector3& direction, float intensity) override;
         std::unique_ptr<IModelInstance> createModelInstance(const std::string& filename) override;
 
         bool destroyModelInstance(IModelInstance& modelInstance) override;
@@ -65,6 +69,7 @@ namespace Engine::Visual
             glm::vec3 diffuseColor;
             glm::vec3 specularColor;
             float shininess;
+            float useDiffuseTexture;
 
             VkBuffer materialBuffer;
             VkDeviceMemory materialBufferMemory;
@@ -97,6 +102,10 @@ namespace Engine::Visual
             glm::mat4 worldMatrix;
             glm::mat4 viewMatrix;
             glm::mat4 projectionMatrix;
+
+            glm::vec3 lightDirection;
+			float lightIntensity;
+
         };
 
         struct MaterialBufferObject
@@ -105,7 +114,7 @@ namespace Engine::Visual
             float shininess;
 
             glm::vec3 diffuseColor;
-            float padding1;
+            float useDiffuseTexture;
 
             glm::vec3 specularColor;
             float padding2;
@@ -160,6 +169,7 @@ namespace Engine::Visual
         void createDepthResources();
         void createFramebuffers();
         void createDescriptorPool();
+
         VkDescriptorPool createInstancesDescriptorPool();
         EntityID getPoolToUse();
 
@@ -180,6 +190,8 @@ namespace Engine::Visual
         bool createVertexBuffer(ModelData& model);
         bool createIndexBuffer(ModelData& model);
         bool createDescriptorSet(Material& material);
+        void initUI();
+        void cleanUpUI();
 
 
         // Memory utils
@@ -216,7 +228,7 @@ namespace Engine::Visual
 
     private:
 
-        static const int MAX_MODEL_INSTANCES = 50;
+        static const int MAX_MODEL_INSTANCES = 500;
         static const int MAX_MATERIALS = 80;
         static const int MAX_TEXTURES = 80;
 
@@ -261,6 +273,7 @@ namespace Engine::Visual
 
         VkDescriptorPool m_materialsDescriptorPool{};
         VkDescriptorPool m_texturesDescriptorPool{};
+		VkDescriptorPool m_imguiDescriptorPool{};
 
         std::vector<VkCommandBuffer> m_commandBuffers;
 

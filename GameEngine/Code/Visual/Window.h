@@ -13,6 +13,7 @@ namespace Engine::Visual
 		bool update();
 		void SetOnKetStateChanged(const std::function<void(WPARAM, bool)>& callback);
 		HWND getHandle() const;
+		static const wchar_t* getChildWindowClassName();
 
 	private:
 		static LRESULT CALLBACK windowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);

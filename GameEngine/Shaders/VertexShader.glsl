@@ -11,18 +11,13 @@ out vec2 TexCoord;
 uniform mat4 modelMatrix;
 uniform mat4 viewMatrix;
 uniform mat4 projectionMatrix;
+uniform vec3 lightDirection;
+uniform float lightIntensity;
 
 void main()
 {
-    // Transform vertex position to world space using model matrix
     FragPos = vec3(modelMatrix * vec4(aPos, 1.0));
-    
-    // Pass normal transformed by model matrix (no translation)
-    Normal = mat3(transpose(inverse(modelMatrix))) * aNormal;
-
-    // Pass texture coordinate
+    Normal = mat3(modelMatrix) * aNormal;
     TexCoord = aTexCoord;
-
-    // Apply model, view, and projection transformations
     gl_Position = projectionMatrix * viewMatrix * vec4(FragPos, 1.0);
 }

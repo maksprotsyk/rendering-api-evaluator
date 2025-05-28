@@ -2,9 +2,12 @@
 
 #include <windowsx.h>
 
+extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
 namespace Engine::Visual
 {
     //////////////////////////////////////////////////////////////////////////
+
 
     bool Window::initWindow(HINSTANCE hInstance, int width, int height)
     {
@@ -16,6 +19,17 @@ namespace Engine::Visual
         wc.lpszClassName = CLASS_NAME;
 
         RegisterClass(&wc);
+
+        WNDCLASSEXW childWc = {};
+        childWc.cbSize = sizeof(childWc);
+        childWc.style = CS_OWNDC;
+        childWc.lpfnWndProc = windowProc;
+        childWc.hInstance = GetModuleHandle(nullptr);
+        childWc.hCursor = LoadCursor(nullptr, IDC_ARROW);
+        childWc.hbrBackground = nullptr;
+        childWc.lpszClassName = getChildWindowClassName();
+
+        RegisterClassExW(&childWc);
 
         m_window = CreateWindowEx(
             0,
@@ -52,7 +66,7 @@ namespace Engine::Visual
         case WM_KEYDOWN:
             if (wParam == VK_ESCAPE)
             {
-                PostQuitMessage(0); // Quit when Escape is pressed
+                PostQuitMessage(0);
             }
             if (m_onKeyStateChanged)
             {
@@ -71,7 +85,6 @@ namespace Engine::Visual
         {
             int xPos = GET_X_LPARAM(lParam);
             int yPos = GET_Y_LPARAM(lParam);
-            // Handle mouse movement at (xPos, yPos)
             return 0;
         }
 
@@ -123,29 +136,36 @@ namespace Engine::Visual
         return m_window;
     }
 
+    const wchar_t* Window::getChildWindowClassName()
+    {
+        return TEXT("ChildWindowClass");
+    }
+
     //////////////////////////////////////////////////////////////////////////
 
     LRESULT CALLBACK Window::windowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
+        if (ImGui_ImplWin32_WndProcHandler(hwnd, uMsg, wParam, lParam))
+        {
+            return true;
+        }
+
         Window* pThis;
 
         if (uMsg == WM_NCCREATE)
         {
-            // Retrieve the "this" pointer from the CREATESTRUCT lParam
             CREATESTRUCT* pCreate = (CREATESTRUCT*)lParam;
             pThis = (Window*)pCreate->lpCreateParams;
-            // Store the pointer in the user data of the window
+
             SetWindowLongPtr(hwnd, GWLP_USERDATA, (LONG_PTR)pThis);
         }
         else 
         {
-            // Retrieve the stored "this" pointer
             pThis = (Window*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
         }
 
         if (pThis)
         {
-            // Forward the message to the member function
             return pThis->handleMessage(hwnd, uMsg, wParam, lParam);
         }
         else 

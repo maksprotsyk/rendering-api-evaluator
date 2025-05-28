@@ -41,8 +41,17 @@
     <ClCompile Include="Code\Visual\DirectXRenderer.cpp" />
     <ClCompile Include="Code\Visual\ModelInstanceBase.cpp" />
     <ClCompile Include="Code\Visual\OpenGLRenderer.cpp" />
+    <ClCompile Include="Code\Visual\UIController.cpp" />
     <ClCompile Include="Code\Visual\VulkanRenderer.cpp" />
     <ClCompile Include="Code\Visual\Window.cpp" />
+    <ClCompile Include="Externals\ImGui\backends\imgui_impl_dx11.cpp" />
+    <ClCompile Include="Externals\ImGui\backends\imgui_impl_opengl3.cpp" />
+    <ClCompile Include="Externals\ImGui\backends\imgui_impl_vulkan.cpp" />
+    <ClCompile Include="Externals\ImGui\backends\imgui_impl_win32.cpp" />
+    <ClCompile Include="Externals\ImGui\imgui.cpp" />
+    <ClCompile Include="Externals\ImGui\imgui_draw.cpp" />
+    <ClCompile Include="Externals\ImGui\imgui_tables.cpp" />
+    <ClCompile Include="Externals\ImGui\imgui_widgets.cpp" />
     <ClCompile Include="Externals\stb_image.cc" />
     <ClCompile Include="Externals\tiny_obj_loader.cc" />
   </ItemGroup>
@@ -51,6 +60,8 @@
     <ClInclude Include="Code\Components\Tag.h" />
     <ClInclude Include="Code\Components\Transform.h" />
     <ClInclude Include="Code\Events\NativeInputEvents.h" />
+    <ClInclude Include="Code\Events\StatsEvents.h" />
+    <ClInclude Include="Code\Events\UIEvents.h" />
     <ClInclude Include="Code\Managers\ComponentsManager.h" />
     <ClInclude Include="Code\Managers\EntitiesManager.h" />
     <ClInclude Include="Code\Managers\GameController.h" />
@@ -73,9 +84,21 @@
     <ClInclude Include="Code\Visual\IRenderer.h" />
     <ClInclude Include="Code\Visual\ModelInstanceBase.h" />
     <ClInclude Include="Code\Visual\OpenGLRenderer.h" />
+    <ClInclude Include="Code\Visual\UIController.h" />
     <ClInclude Include="Code\Visual\VulkanRenderer.h" />
     <ClInclude Include="Code\Visual\Window.h" />
     <ClInclude Include="Externals\GL\wglext.h" />
+    <ClInclude Include="Externals\ImGui\backends\imgui_impl_dx11.h" />
+    <ClInclude Include="Externals\ImGui\backends\imgui_impl_opengl3.h" />
+    <ClInclude Include="Externals\ImGui\backends\imgui_impl_opengl3_loader.h" />
+    <ClInclude Include="Externals\ImGui\backends\imgui_impl_vulkan.h" />
+    <ClInclude Include="Externals\ImGui\backends\imgui_impl_win32.h" />
+    <ClInclude Include="Externals\ImGui\imconfig.h" />
+    <ClInclude Include="Externals\ImGui\imgui.h" />
+    <ClInclude Include="Externals\ImGui\imgui_internal.h" />
+    <ClInclude Include="Externals\ImGui\imstb_rectpack.h" />
+    <ClInclude Include="Externals\ImGui\imstb_textedit.h" />
+    <ClInclude Include="Externals\ImGui\imstb_truetype.h" />
     <ClInclude Include="Externals\stb_image.h" />
     <ClInclude Include="Externals\tiny_obj_loader.h" />
   </ItemGroup>
@@ -178,7 +201,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>Code;Externals;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>Code;Externals;Externals/ImGui;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
     <SourcePath>Code;Externals;$(VC_SourcePath);</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -193,7 +216,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)_CRT_SECURE_NO_WARNINGS;_SHOWUI</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
@@ -218,7 +241,7 @@ glslc $(OutDir)shader.frag -o $(OutDir)frag.spv</Command>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)_CRT_SECURE_NO_WARNINGS;_SHOWUI</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <LanguageStandard>stdcpp20</LanguageStandard>
@@ -243,7 +266,7 @@ glslc $(OutDir)shader.frag -o $(OutDir)frag.spv</Command>
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions);_SHOWUI</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
@@ -267,7 +290,7 @@ glslc $(OutDir)shader.frag -o $(OutDir)frag.spv</Command>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_SHOWUI</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>

@@ -68,7 +68,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	gameController.setConfig(jsonPath);
 	gameController.init();
 	gameController.run();
-	gameController.clear();
 
     return 0;
 }

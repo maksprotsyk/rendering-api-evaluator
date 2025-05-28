@@ -10,9 +10,12 @@
 
 #include "stb_image.h"
 #include "tiny_obj_loader.h"
+#include "imgui.h"
+#include "backends/imgui_impl_vulkan.h"
 
 #include "Window.h"
 #include "Utils/DebugMacros.h"
+
 
 namespace Engine::Visual
 {
@@ -38,6 +41,9 @@ namespace Engine::Visual
 		createTextureSampler();
 		createProjectionMatrix();
 		createDefaultMaterial();
+#ifdef _SHOWUI
+		initUI();
+#endif
 	}
 
 	////////////////////////////////////////////////////////////////////////
@@ -130,6 +136,7 @@ namespace Engine::Visual
 			mbo.specularColor = mat.specularColor;
 			mbo.diffuseColor = mat.diffuseColor;
 			mbo.shininess = mat.shininess;
+			mbo.useDiffuseTexture = mat.useDiffuseTexture;
 
 			bool setMboMemoryResult = setBufferMemoryData(mat.materialBufferMemory, &mbo, sizeof(mbo));
 			ASSERT(setMboMemoryResult, "Failed to set memory data for material buffer");
@@ -144,7 +151,7 @@ namespace Engine::Visual
 		for (const auto& [materialId, meshIndices] : materialMeshes)
 		{
 			const Material& material = materialId != -1 ? modelData.materials[materialId] : m_defaultMaterial;
-			const TextureData& texture = getTexture(material.diffuseTextureId);
+			const TextureData& texture = getTexture(material.useDiffuseTexture ? material.diffuseTextureId: m_defaultMaterial.diffuseTextureId);
 			std::array<VkDescriptorSet, 2> materialDescriptorSets{ material.descriptorSet, texture.descriptorSet };
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 1, static_cast<uint32_t>(materialDescriptorSets.size()), materialDescriptorSets.data(), 0, nullptr);
 			for (size_t meshIndex : meshIndices)
@@ -156,6 +163,21 @@ namespace Engine::Visual
 
 		}
 
+	}
+
+	////////////////////////////////////////////////////////////////////////
+
+	void VulkanRenderer::preRenderUI()
+	{
+		ImGui_ImplVulkan_NewFrame();
+	}
+
+	////////////////////////////////////////////////////////////////////////
+
+	void VulkanRenderer::postRenderUI()
+	{
+		VkCommandBuffer commandBuffer = m_commandBuffers[m_imageIndex];
+		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 	}
 
 	////////////////////////////////////////////////////////////////////////
@@ -309,7 +331,7 @@ namespace Engine::Visual
 			material.diffuseColor = glm::vec3(mat.diffuse[0], mat.diffuse[1], mat.diffuse[2]);
 			material.specularColor = glm::vec3(mat.specular[0], mat.specular[1], mat.specular[2]);
 			material.shininess = mat.shininess;
-
+			material.useDiffuseTexture = (float)!mat.diffuse_texname.empty();
 			if (!mat.diffuse_texname.empty())
 			{
 				std::string texturePath = (matDir / mat.diffuse_texname).string();
@@ -335,6 +357,8 @@ namespace Engine::Visual
 		for (const auto& shape : shapes)
 		{
 			SubMesh subMesh;
+			std::vector<Vertex> localVertices;
+			std::vector<uint32_t> localIndices;
 
 			for (const auto& index : shape.mesh.indices)
 			{
@@ -345,7 +369,8 @@ namespace Engine::Visual
 					attrib.vertices[3 * index.vertex_index + 2]
 				);
 
-				if (index.normal_index >= 0) {
+				if (index.normal_index >= 0)
+				{
 					vertex.normal = glm::vec3(
 						attrib.normals[3 * index.normal_index + 0],
 						attrib.normals[3 * index.normal_index + 1],
@@ -353,17 +378,43 @@ namespace Engine::Visual
 					);
 				}
 
-				if (index.texcoord_index >= 0) {
+				if (index.texcoord_index >= 0)
+				{
 					vertex.texCoord = glm::vec2(
 						attrib.texcoords[2 * index.texcoord_index + 0],
-						attrib.texcoords[2 * index.texcoord_index + 1]
+						1.0f - attrib.texcoords[2 * index.texcoord_index + 1]
 					);
 				}
 
-				model.vertices.push_back(vertex);
-				subMesh.indices.push_back(static_cast<unsigned int>(model.vertices.size() - 1));
+				localVertices.push_back(vertex);
+				localIndices.push_back(localVertices.size() - 1);
+				subMesh.indices.push_back(model.vertices.size() + localIndices.back());
 			}
 
+			if (attrib.normals.empty())
+			{
+				for (size_t i = 0; i < localIndices.size(); i += 3)
+				{
+					Vertex& v0 = localVertices[localIndices[i + 0]];
+					Vertex& v1 = localVertices[localIndices[i + 1]];
+					Vertex& v2 = localVertices[localIndices[i + 2]];
+
+					glm::vec3 edge1 = v1.position - v0.position;
+					glm::vec3 edge2 = v2.position - v0.position;
+					glm::vec3 faceNormal = glm::normalize(glm::cross(edge1, edge2));
+
+					v0.normal += faceNormal;
+					v1.normal += faceNormal;
+					v2.normal += faceNormal;
+				}
+
+				for (auto& v : localVertices)
+				{
+					v.normal = glm::normalize(v.normal);
+				}
+			}
+
+			model.vertices.insert(model.vertices.end(), localVertices.begin(), localVertices.end());
 			subMesh.materialId = shape.mesh.material_ids.empty() ? 0 : shape.mesh.material_ids[0];
 			model.meshes.push_back(std::move(subMesh));
 		}
@@ -511,11 +562,12 @@ namespace Engine::Visual
 		bool loadTextureResult = loadTexture(DEFAULT_TEXTURE);
 		ASSERT(loadTextureResult, "Failed to load default texture: {}", DEFAULT_TEXTURE);
 
-		m_defaultMaterial.ambientColor = glm::vec3(0.1f, 0.1f, 0.1f);
-		m_defaultMaterial.diffuseColor = glm::vec3(0.5f, 0.5f, 0.5f);
-		m_defaultMaterial.specularColor = glm::vec3(0.5f, 0.5f, 0.5f);
-		m_defaultMaterial.shininess = 32.0f;
+		m_defaultMaterial.ambientColor = glm::vec3(DEFAULT_AMBIENT.x, DEFAULT_AMBIENT.y, DEFAULT_AMBIENT.z);
+		m_defaultMaterial.diffuseColor = glm::vec3(DEFAULT_DIFFUSE.x, DEFAULT_DIFFUSE.y, DEFAULT_DIFFUSE.z);
+		m_defaultMaterial.specularColor = glm::vec3(DEFAULT_SPECULAR.x, DEFAULT_SPECULAR.y, DEFAULT_SPECULAR.z);
+		m_defaultMaterial.shininess = DEFAULT_SHININESS;
 		m_defaultMaterial.diffuseTextureId = DEFAULT_TEXTURE;
+		m_defaultMaterial.useDiffuseTexture = 1.0f;
 
 		bool result = createBuffer(
 			sizeof(MaterialBufferObject),
@@ -535,6 +587,7 @@ namespace Engine::Visual
 		mbo.specularColor = m_defaultMaterial.specularColor;
 		mbo.diffuseColor = m_defaultMaterial.diffuseColor;
 		mbo.shininess = m_defaultMaterial.shininess;
+		mbo.useDiffuseTexture = m_defaultMaterial.useDiffuseTexture;
 		
 		result = createDescriptorSet(m_defaultMaterial);
 		if (!result)
@@ -556,6 +609,15 @@ namespace Engine::Visual
 		float aspectRatio = (float)m_swapChainExtent.width / (float)m_swapChainExtent.height;
 		m_ubo.projectionMatrix = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 1000.0f);
 		m_ubo.projectionMatrix[1][1] *= -1;
+	}
+
+	////////////////////////////////////////////////////////////////////////
+
+	void VulkanRenderer::setLightProperties(const Utils::Vector3& direction, float intensity)
+	{
+		Utils::Vector3 directionNormalized = direction.normalized();
+		m_ubo.lightDirection = glm::vec3(directionNormalized.x, directionNormalized.y, directionNormalized.z);
+		m_ubo.lightIntensity = intensity;
 	}
 
 	////////////////////////////////////////////////////////////////////////
@@ -856,22 +918,22 @@ namespace Engine::Visual
 
 		stbi_image_free(pixels);
 
-		if (!createImage(texWidth, texHeight, VK_FORMAT_B8G8R8A8_UNORM,
+		if (!createImage(texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB,
 			VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture.textureImage, texture.textureImageMemory))
 		{
 			return false;
 		}
 
-		transitionImageLayout(texture.textureImage, VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+		transitionImageLayout(texture.textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 		copyBufferToImage(stagingBuffer, texture.textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
-		transitionImageLayout(texture.textureImage, VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		transitionImageLayout(texture.textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 		vkDestroyBuffer(m_device, stagingBuffer, nullptr);
 		vkFreeMemory(m_device, stagingBufferMemory, nullptr);
 
 		// create image view
-		texture.textureImageView = createImageView(texture.textureImage, VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT);
+		texture.textureImageView = createImageView(texture.textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
 
 		return true;
 	}
@@ -1151,7 +1213,7 @@ namespace Engine::Visual
 
 		for (const auto& availableFormat : availableFormats)
 		{
-			if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+			if (availableFormat.format == VK_FORMAT_R8G8B8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
 			{
 				return availableFormat;
 			}
@@ -1435,6 +1497,10 @@ namespace Engine::Visual
 
 	void VulkanRenderer::cleanUp()
 	{
+#ifdef _SHOWUI
+		cleanUpUI();
+#endif
+
 		for (const std::string& modelId : Utils::getKeys(m_models))
 		{
 			unloadModel(modelId);
@@ -1869,7 +1935,7 @@ namespace Engine::Visual
 		vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
 		vertShaderStageInfo.module = vertShaderModule;
 		vertShaderStageInfo.pName = "main";
-		vertShaderStageInfo.pSpecializationInfo = nullptr; // For constants
+		vertShaderStageInfo.pSpecializationInfo = nullptr;
 
 		VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
 		fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -2146,6 +2212,81 @@ namespace Engine::Visual
 
 	////////////////////////////////////////////////////////////////////////
 
+	void VulkanRenderer::initUI()
+	{
+		uint32_t poolSize = 1000;
+		VkDescriptorPoolSize pool_sizes[] = {
+			{ VK_DESCRIPTOR_TYPE_SAMPLER, poolSize },
+			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, poolSize },
+			{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, poolSize },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, poolSize },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, poolSize },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, poolSize },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, poolSize },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, poolSize },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, poolSize },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, poolSize },
+			{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, poolSize }
+		};
+
+		VkDescriptorPoolCreateInfo pool_info = {};
+		pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+		pool_info.maxSets = poolSize * IM_ARRAYSIZE(pool_sizes);
+		pool_info.poolSizeCount = (uint32_t)IM_ARRAYSIZE(pool_sizes);
+		pool_info.pPoolSizes = pool_sizes;
+
+		vkCreateDescriptorPool(m_device, &pool_info, nullptr, &m_imguiDescriptorPool);
+
+		QueueFamilyIndices indices = findQueueFamilies(m_physicalDevice);
+
+		SwapChainSupportDetails swapChainSupport = querySwapChainSupport(m_physicalDevice);
+		uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
+		if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount)
+		{
+			imageCount = swapChainSupport.capabilities.maxImageCount;
+		}
+
+		VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
+		VkPipelineRenderingCreateInfoKHR pipelineRenderingInfo = {};
+		pipelineRenderingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR;
+		pipelineRenderingInfo.pNext = nullptr;
+		pipelineRenderingInfo.colorAttachmentCount = 1;
+		pipelineRenderingInfo.pColorAttachmentFormats = &surfaceFormat.format;
+		pipelineRenderingInfo.depthAttachmentFormat = VK_FORMAT_UNDEFINED;
+		pipelineRenderingInfo.stencilAttachmentFormat = VK_FORMAT_UNDEFINED;
+
+		ImGui_ImplVulkan_InitInfo init_info = {};
+		init_info.Instance = m_instance;
+		init_info.PhysicalDevice = m_physicalDevice;
+		init_info.Device = m_device;
+		init_info.QueueFamily = indices.graphicsFamily.value();
+		init_info.Queue = m_graphicsQueue;
+		init_info.PipelineCache = VK_NULL_HANDLE;
+		init_info.DescriptorPool = m_imguiDescriptorPool;
+		init_info.Subpass = 0;
+		init_info.MinImageCount = imageCount;
+		init_info.ImageCount = MAX_FRAMES_IN_FLIGHT;
+		init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+		init_info.Allocator = nullptr;
+		init_info.UseDynamicRendering = true;
+		init_info.PipelineRenderingCreateInfo = pipelineRenderingInfo;
+		init_info.CheckVkResultFn = [](VkResult res) {validateResult(res, "UI returned error");};
+
+		ImGui_ImplVulkan_Init(&init_info);
+		ImGui_ImplVulkan_CreateFontsTexture();
+	}
+	
+	////////////////////////////////////////////////////////////////////////
+
+	void VulkanRenderer::cleanUpUI()
+	{
+		ImGui_ImplVulkan_Shutdown();
+		vkDestroyDescriptorPool(m_device, m_imguiDescriptorPool, nullptr);
+	}
+
+	////////////////////////////////////////////////////////////////////////
+
 	VkDescriptorPool VulkanRenderer::createInstancesDescriptorPool()
 	{
 		std::array<VkDescriptorPoolSize, 1> instancesPoolSizes{};
@@ -2247,7 +2388,8 @@ namespace Engine::Visual
 		ModelInstanceBase(id),
 		descriptorSet(VK_NULL_HANDLE),
 		uniformBuffer(VK_NULL_HANDLE),
-		uniformBufferMemory(VK_NULL_HANDLE)
+		uniformBufferMemory(VK_NULL_HANDLE),
+		descriptorPoolID(-1)
 	{
 	}
 

@@ -1,4 +1,4 @@
-#define GLM_FORCE_LEFT_HANDED
+﻿#define GLM_FORCE_LEFT_HANDED
 #define WGL_WGLEXT_PROTOTYPES
 
 #include "OpenGLRenderer.h"
@@ -9,6 +9,8 @@
 
 #include "stb_image.h"
 #include "tiny_obj_loader.h"
+#include "imgui.h"
+#include "backends/imgui_impl_opengl3.h"
 
 #include "Utils/DebugMacros.h"
 
@@ -19,8 +21,27 @@ namespace Engine::Visual
     ////////////////////////////////////////////////////////////////////////
 
     void OpenGLRenderer::init(const Window& window)
-    {
-        m_hwnd = window.getHandle();
+    {       
+        RECT r;
+        GetClientRect(window.getHandle(), &r);
+
+        m_hwnd = CreateWindowEx(
+            0,
+            window.getChildWindowClassName(),
+            L"",
+            WS_CHILD 
+            | WS_VISIBLE
+            | WS_CLIPCHILDREN
+            | WS_CLIPSIBLINGS,
+            0, 0,
+            r.right - r.left,
+            r.bottom - r.top,
+            window.getHandle(),
+            nullptr,
+            GetModuleHandle(nullptr),
+            nullptr
+        );
+
         m_hdc = GetDC(m_hwnd);
     
         setPixelFormat();
@@ -31,6 +52,9 @@ namespace Engine::Visual
         createFrameBuffer();
         createViewport();
         createDefaultMaterial();   
+#ifdef _SHOWUI
+        initUI();
+#endif
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -62,8 +86,6 @@ namespace Engine::Visual
         glBindVertexArray(modelData.vao);
         ASSERT_OPENGL("Unable to bind vertex buffer for model: {}", model.GetId());
 
-        glUniformMatrix4fv(m_viewMatrixLoc, 1, GL_FALSE, glm::value_ptr(m_viewMatrix));
-        glUniformMatrix4fv(m_projectionMatrixLoc, 1, GL_FALSE, glm::value_ptr(m_projectionMatrix));
         glUniformMatrix4fv(m_modelMatrixLoc, 1, GL_FALSE, glm::value_ptr(worldMatrix));
 
         std::unordered_map<int, std::vector<size_t>> materialMeshes;
@@ -75,14 +97,15 @@ namespace Engine::Visual
 		for (const auto& [materialId, meshIndices] : materialMeshes)
 		{
 			const Material& material = materialId != -1 ? modelData.materials[materialId]: m_defaultMaterial;
-			glUniform3fv(glGetUniformLocation(m_shaderProgram, "ambientColor"), 1, glm::value_ptr(material.ambientColor));
-			glUniform3fv(glGetUniformLocation(m_shaderProgram, "diffuseColor"), 1, glm::value_ptr(material.diffuseColor));
-			glUniform3fv(glGetUniformLocation(m_shaderProgram, "specularColor"), 1, glm::value_ptr(material.specularColor));
-			glUniform1f(glGetUniformLocation(m_shaderProgram, "shininess"), material.shininess);
+			glUniform3fv(m_ambientColorLoc, 1, glm::value_ptr(material.ambientColor));
+			glUniform3fv(m_diffuseColorLoc, 1, glm::value_ptr(material.diffuseColor));
+			glUniform3fv(m_specularColorLoc, 1, glm::value_ptr(material.specularColor));
+			glUniform1f(m_shininessLoc, material.shininess);
+            glUniform1f(m_useDiffuseTextureLoc, material.useDiffuseTexture);
             ASSERT_OPENGL("Unable to set material properties for mesh of model: {}", model.GetId());
 
 			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, getTexture(material.diffuseTextureId));
+			glBindTexture(GL_TEXTURE_2D, getTexture(material.useDiffuseTexture ? material.diffuseTextureId: m_defaultMaterial.diffuseTextureId));
 			glUniform1i(glGetUniformLocation(m_shaderProgram, "diffuseTexture"), 0);
             ASSERT_OPENGL("Unable to set texture for mesh of model: {}", model.GetId());
 
@@ -99,6 +122,20 @@ namespace Engine::Visual
 		}
 
         glBindVertexArray(0);
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+
+    void OpenGLRenderer::preRenderUI()
+    {
+        ImGui_ImplOpenGL3_NewFrame();
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+
+    void OpenGLRenderer::postRenderUI()
+    {
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -184,7 +221,7 @@ namespace Engine::Visual
             material.diffuseColor = glm::vec3(mat.diffuse[0], mat.diffuse[1], mat.diffuse[2]);
             material.specularColor = glm::vec3(mat.specular[0], mat.specular[1], mat.specular[2]);
             material.shininess = mat.shininess;
-
+			material.useDiffuseTexture = (float)!mat.diffuse_texname.empty();
             if (!mat.diffuse_texname.empty())
             {
 
@@ -210,6 +247,8 @@ namespace Engine::Visual
         for (const auto& shape : shapes)
         {
             SubMesh subMesh;
+            std::vector<Vertex> localVertices;
+			std::vector<uint32_t> localIndices;
 
             for (const auto& index : shape.mesh.indices)
             {
@@ -220,7 +259,8 @@ namespace Engine::Visual
                     attrib.vertices[3 * index.vertex_index + 2]
                 );
 
-                if (index.normal_index >= 0) {
+                if (index.normal_index >= 0)
+                {
                     vertex.normal = glm::vec3(
                         attrib.normals[3 * index.normal_index + 0],
                         attrib.normals[3 * index.normal_index + 1],
@@ -228,17 +268,43 @@ namespace Engine::Visual
                     );
                 }
 
-                if (index.texcoord_index >= 0) {
+                if (index.texcoord_index >= 0)
+                {
                     vertex.texCoord = glm::vec2(
                         attrib.texcoords[2 * index.texcoord_index + 0],
                         attrib.texcoords[2 * index.texcoord_index + 1]
                     );
                 }
 
-                model.vertices.push_back(vertex);
-                subMesh.indices.push_back(static_cast<unsigned int>(model.vertices.size() - 1));
+                localVertices.push_back(vertex);
+				localIndices.push_back(localVertices.size() - 1);
+                subMesh.indices.push_back(model.vertices.size() + localIndices.back());
             }
 
+            if (attrib.normals.empty())
+            {
+                for (size_t i = 0; i < localIndices.size(); i += 3)
+                {
+                    Vertex& v0 = localVertices[localIndices[i + 0]];
+                    Vertex& v1 = localVertices[localIndices[i + 1]];
+                    Vertex& v2 = localVertices[localIndices[i + 2]];
+
+                    glm::vec3 edge1 = v1.position - v0.position;
+                    glm::vec3 edge2 = v2.position - v0.position;
+                    glm::vec3 faceNormal = glm::normalize(glm::cross(edge1, edge2));
+
+                    v0.normal += faceNormal;
+                    v1.normal += faceNormal;
+                    v2.normal += faceNormal;
+                }
+
+                for (auto& v : localVertices)
+                {
+                    v.normal = glm::normalize(v.normal);
+                }
+            }
+
+            model.vertices.insert(model.vertices.end(), localVertices.begin(), localVertices.end());
             subMesh.materialId = shape.mesh.material_ids.empty() ? 0 : shape.mesh.material_ids[0];
             model.meshes.push_back(std::move(subMesh));
         }
@@ -275,6 +341,8 @@ namespace Engine::Visual
             pos + forward,
             up
         );
+
+        glUniformMatrix4fv(m_viewMatrixLoc, 1, GL_FALSE, glm::value_ptr(m_viewMatrix));
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -347,6 +415,12 @@ namespace Engine::Visual
 
     void OpenGLRenderer::cleanUp()
     {
+        glFinish();
+
+#ifdef _SHOWUI
+        cleanUpUI();
+#endif
+
         for (const std::string& modelId : Utils::getKeys(m_models))
         {
             unloadModel(modelId);
@@ -356,6 +430,10 @@ namespace Engine::Visual
         {
             unloadTexture(textureId);
         }
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        glUseProgram(0);
 
         if (m_shaderProgram)
         {
@@ -388,6 +466,11 @@ namespace Engine::Visual
             m_hdc = 0;
         }
 
+		if (m_hwnd)
+		{
+			DestroyWindow(m_hwnd);
+			m_hwnd = 0;
+		}
 
     }
 
@@ -434,7 +517,9 @@ namespace Engine::Visual
         }
 
         int width, height, channels;
-        unsigned char* data = stbi_load(filename.c_str(), &width, &height, &channels, 0);
+        stbi_set_flip_vertically_on_load(true);
+        unsigned char* data = stbi_load(filename.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+        stbi_set_flip_vertically_on_load(false);
         if (!data) {
             return false;
         }
@@ -443,7 +528,7 @@ namespace Engine::Visual
         glGenTextures(1, &texture);
         glBindTexture(GL_TEXTURE_2D, texture);
 
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
         stbi_image_free(data);
 
@@ -596,6 +681,17 @@ namespace Engine::Visual
         float aspectRatio = (float)(width) / (float)(height);
 
         m_projectionMatrix = glm::perspective(glm::radians(45.0f), aspectRatio, 0.1f, 1000.0f);
+        glUniformMatrix4fv(m_projectionMatrixLoc, 1, GL_FALSE, glm::value_ptr(m_projectionMatrix));
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+
+    void OpenGLRenderer::setLightProperties(const Utils::Vector3& direction, float intensity)
+    {
+		Utils::Vector3 directionNormalized = direction.normalized();
+        glm::vec3 lightDirection = glm::vec3(directionNormalized.x, directionNormalized.y, directionNormalized.z);
+        glUniform3fv(m_lightDirectionLoc, 1, glm::value_ptr(lightDirection));
+        glUniform1f(m_lightIntensityLoc, intensity);
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -656,6 +752,15 @@ namespace Engine::Visual
         m_viewMatrixLoc = glGetUniformLocation(m_shaderProgram, "viewMatrix");
         m_projectionMatrixLoc = glGetUniformLocation(m_shaderProgram, "projectionMatrix");
         m_modelMatrixLoc = glGetUniformLocation(m_shaderProgram, "modelMatrix");
+		m_lightDirectionLoc = glGetUniformLocation(m_shaderProgram, "lightDirection");
+		m_lightIntensityLoc = glGetUniformLocation(m_shaderProgram, "lightIntensity");
+
+        m_ambientColorLoc = glGetUniformLocation(m_shaderProgram, "ambientColor");
+        m_diffuseColorLoc = glGetUniformLocation(m_shaderProgram, "diffuseColor");
+        m_specularColorLoc = glGetUniformLocation(m_shaderProgram, "specularColor");
+        m_shininessLoc = glGetUniformLocation(m_shaderProgram, "shininess");
+		m_useDiffuseTextureLoc = glGetUniformLocation(m_shaderProgram, "useDiffuseTexture");
+        m_diffuseTextureLoc = glGetUniformLocation(m_shaderProgram, "diffuseTexture");
     }
 
 
@@ -667,10 +772,25 @@ namespace Engine::Visual
         ASSERT(loadTextureRes, "Can't load default texture: {}", DEFAULT_TEXTURE);
 
         m_defaultMaterial.diffuseTextureId = DEFAULT_TEXTURE;
-        m_defaultMaterial.diffuseColor = glm::vec3(0.1f, 0.1f, 0.1f);
-        m_defaultMaterial.ambientColor = glm::vec3(0.5f, 0.5f, 0.5f);
-        m_defaultMaterial.specularColor = glm::vec3(0.5f, 0.5f, 0.5f);
-        m_defaultMaterial.shininess = 32.0f;
+        m_defaultMaterial.ambientColor = glm::vec3(DEFAULT_AMBIENT.x, DEFAULT_AMBIENT.y, DEFAULT_AMBIENT.z);
+        m_defaultMaterial.diffuseColor = glm::vec3(DEFAULT_DIFFUSE.x, DEFAULT_DIFFUSE.y, DEFAULT_DIFFUSE.z);
+        m_defaultMaterial.specularColor = glm::vec3(DEFAULT_SPECULAR.x, DEFAULT_SPECULAR.y, DEFAULT_SPECULAR.z);
+        m_defaultMaterial.shininess = DEFAULT_SHININESS;
+        m_defaultMaterial.useDiffuseTexture = 1.0f;
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+
+    void OpenGLRenderer::initUI()
+    {
+        ImGui_ImplOpenGL3_Init("#version 450");
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+
+    void OpenGLRenderer::cleanUpUI()
+    {
+        ImGui_ImplOpenGL3_Shutdown();
     }
 
     ////////////////////////////////////////////////////////////////////////

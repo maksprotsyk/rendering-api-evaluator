@@ -6,6 +6,7 @@
 
 #include "Managers/GameController.h"
 #include "Events/NativeInputEvents.h"
+#include "Events/StatsEvents.h"
 #include "Utils/DebugMacros.h"
 #include "Components/Transform.h"
 #include "Components/Tag.h"
@@ -20,6 +21,15 @@ namespace Engine::Systems
 
 	void StatsSystem::onStart()
 	{
+		if (m_config.contains("outputFile"))
+		{
+			m_outputPath = GameController::get().getConfigRelativePath(m_config["outputFile"]);
+		}
+
+		EventsManager& eventsManager = GameController::get().getEventsManager();
+		m_recordingUpdateListenerId = eventsManager.subscribe<Events::StatsRecordingUpdate>([this](const Events::StatsRecordingUpdate& update) {onRecordingStateChanged(update.recordData);});
+		m_outputFileUpdateListenerId = eventsManager.subscribe<Events::StatsOutputFileUpdate>([this](const Events::StatsOutputFileUpdate& update) {m_outputPath = update.outputPath;});
+
 		m_firstUpdate = true;
 
 		PDH_STATUS cpuOpenRes = PdhOpenQuery(nullptr, 0, &m_cpuQuery);
@@ -61,13 +71,19 @@ namespace Engine::Systems
 			return;
 		}
 
-		m_frameTimes.push_back(dt);
+		if (m_recordData)
+		{
+			m_frameTimes.push_back(dt);
+		}
+
+		m_frameTimeChunk.push_back(dt);
 
 		m_timePassed += dt;
 		if (m_timePassed > k_timeBetweenSamples)
 		{
 			m_timePassed = 0.0f;
 
+			float cpuUsage = 0.0f;
 			PDH_STATUS res = PdhCollectQueryData(m_cpuQuery);
 			ASSERT(res == ERROR_SUCCESS, "Failed to collect CPU query data");
 			if (res == ERROR_SUCCESS)
@@ -77,10 +93,15 @@ namespace Engine::Systems
 				ASSERT(res == ERROR_SUCCESS, "Failed to format CPU query data");
 				if (res == ERROR_SUCCESS)
 				{
-					m_cpuUsage.push_back((float)cpuCounterVal.doubleValue);
+					cpuUsage = (float)cpuCounterVal.doubleValue;
+					if (m_recordData)
+					{
+						m_cpuUsage.push_back(cpuUsage);
+					}
 				}
 			}
 
+			float gpuUsage = 0.0f;
 			res = PdhCollectQueryData(m_gpuUsageQuery);
 			ASSERT(res == ERROR_SUCCESS, "Failed to collect GPU query data");
 			if (res == ERROR_SUCCESS)
@@ -90,10 +111,15 @@ namespace Engine::Systems
 				ASSERT(res == ERROR_SUCCESS, "Failed to format GPU query data");
 				if (res == ERROR_SUCCESS)
 				{
-					m_gpuUsage.push_back((float)gpuLoadCounterVal.doubleValue);
+					gpuUsage = (float)gpuLoadCounterVal.doubleValue;
+					if (m_recordData)
+					{
+						m_gpuUsage.push_back(gpuUsage);
+					}
 				}
 			}
 
+			float gpuMemoryUsage = 0.0f;
 			res = PdhCollectQueryData(m_gpuMemoryUsageQuery);
 			ASSERT(res == ERROR_SUCCESS, "Failed to collect GPU query data");
 			if (res == ERROR_SUCCESS)
@@ -103,17 +129,41 @@ namespace Engine::Systems
 				ASSERT(res == ERROR_SUCCESS, "Failed to format GPU query data");
 				if (res == ERROR_SUCCESS)
 				{
-					m_gpuMemoryUsage.push_back((float)gpuMemoryLoadCounterVal.doubleValue / (1024.0 * 1024.0));
+					gpuMemoryUsage = (float)gpuMemoryLoadCounterVal.doubleValue / (1024.0 * 1024.0);
+					if (m_recordData)
+					{
+						m_gpuMemoryUsage.push_back(gpuMemoryUsage);
+					}
 				}
 			}
 
-
-			// Memory usage data collection
+			float memoryUsage = 0.0f;
 			PROCESS_MEMORY_COUNTERS memCounter;
 			if (GetProcessMemoryInfo(GetCurrentProcess(), &memCounter, sizeof(memCounter)))
 			{
-				m_memoryUsage.push_back(memCounter.WorkingSetSize / (1024.0 * 1024.0)); // in MB
+				memoryUsage = memCounter.WorkingSetSize / (1024.0 * 1024.0);
+				if (m_recordData)
+				{
+					m_memoryUsage.push_back(memoryUsage);
+				}
 			}
+
+			StatsData statsData{};
+			statsData.cpuUsage = cpuUsage;
+			statsData.gpuUsage = gpuUsage;
+			statsData.memoryUsage = memoryUsage;
+			statsData.gpuMemoryUsage = gpuMemoryUsage;
+			statsData.avgFrameTime = std::accumulate(m_frameTimeChunk.begin(), m_frameTimeChunk.end(), 0.0) / m_frameTimeChunk.size();
+			statsData.avgFPS = 1.0f / statsData.avgFrameTime;
+
+			std::sort(m_frameTimeChunk.begin(), m_frameTimeChunk.end());
+			size_t onePercent = m_frameTimeChunk.size() / 100;
+			float percentile99 = onePercent > 0 ? m_frameTimeChunk[m_frameTimeChunk.size() - onePercent] : m_frameTimeChunk.back();
+			statsData.frameTimePercentile99 = percentile99;
+
+			m_frameTimeChunk.clear();
+			GameController::get().getEventsManager().emit<Events::StatsUpdate>(Events::StatsUpdate{ statsData });
+
 		}
 
 	}
@@ -126,10 +176,25 @@ namespace Engine::Systems
 		PdhCloseQuery(m_cpuQuery);
 		PdhCloseQuery(m_gpuMemoryUsageQuery);
 
-		std::string rendererName = m_config["renderer"];
-		std::string outputPath = m_config["outputFile"];
+		saveRecordedData();
 
-		if (outputPath.empty())
+		EventsManager& eventsManager = GameController::get().getEventsManager();
+		eventsManager.unsubscribe<Events::StatsRecordingUpdate>(m_recordingUpdateListenerId);
+		eventsManager.unsubscribe<Events::StatsOutputFileUpdate>(m_outputFileUpdateListenerId);
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+
+	int StatsSystem::getPriority() const
+	{
+		return 1;
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+
+	void StatsSystem::saveRecordedData()
+	{
+		if (!m_recordData || m_frameTimes.empty())
 		{
 			return;
 		}
@@ -143,9 +208,9 @@ namespace Engine::Systems
 		std::sort(m_frameTimes.begin(), m_frameTimes.end());
 		float medianFrameTime = m_frameTimes[m_frameTimes.size() / 2];
 		float averageFrameTime = std::accumulate(m_frameTimes.begin(), m_frameTimes.end(), 0.0f) / m_frameTimes.size();
-		
+
 		size_t onePercent = m_frameTimes.size() / 100;
-		float percentile99 = onePercent > 0? m_frameTimes[m_frameTimes.size() - onePercent]: m_frameTimes.back();
+		float percentile99 = onePercent > 0 ? m_frameTimes[m_frameTimes.size() - onePercent] : m_frameTimes.back();
 		float percentile1 = m_frameTimes[onePercent];
 
 		float averageCPUUsage = std::accumulate(m_cpuUsage.begin(), m_cpuUsage.end(), 0.0) / m_cpuUsage.size();
@@ -161,15 +226,12 @@ namespace Engine::Systems
 		float maxGpuMemoryUsage = *std::max_element(m_gpuMemoryUsage.begin(), m_gpuMemoryUsage.end());
 		float minGpuMemoryUsage = *std::min_element(m_gpuMemoryUsage.begin(), m_gpuMemoryUsage.end());
 
-		std::string filePath = gameController.getConfigRelativePath(outputPath);
-		std::ofstream outFile(filePath);
-
+		std::ofstream outFile(m_outputPath);
 		if (!outFile.is_open())
 		{
 			return;
 		}
 
-		outFile << "Renderer: " << rendererName << std::endl;
 		outFile << "Objects count: " << objectsCount << std::endl;
 		outFile << "Total number of vertices: " << totalNumberOfVertices << std::endl;
 		outFile << "Creation time: " << m_creationTime << std::endl;
@@ -190,13 +252,29 @@ namespace Engine::Systems
 		outFile << "Median frame time: " << medianFrameTime << std::endl;
 		outFile << "99th percentile frame time: " << percentile99 << std::endl;
 		outFile << "1th percentile frame time: " << percentile1 << std::endl;
+
 	}
 
 	//////////////////////////////////////////////////////////////////////////
 
-	int StatsSystem::getPriority() const
+	void StatsSystem::onRecordingStateChanged(bool recordData)
 	{
-		return 1;
+		if (m_recordData == recordData)
+		{
+			return;
+		}
+		if (m_recordData)
+		{
+			saveRecordedData();
+		}
+
+		m_recordData = recordData;
+
+		m_frameTimes.clear();
+		m_cpuUsage.clear();
+		m_gpuUsage.clear();
+		m_memoryUsage.clear();
+		m_gpuMemoryUsage.clear();
 	}
 
 	//////////////////////////////////////////////////////////////////////////

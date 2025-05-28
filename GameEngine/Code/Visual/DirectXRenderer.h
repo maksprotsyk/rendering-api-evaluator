@@ -29,12 +29,16 @@ namespace Engine::Visual
             const Utils::Vector3& position,
             const Utils::Vector3& rotation,
             const Utils::Vector3& scale) override;
+
+        void preRenderUI() override;
+        void postRenderUI() override;
         void render() override;
 
         bool loadModel(const std::string& filename) override;
         bool loadTexture(const std::string& filename) override;
 
         void setCameraProperties(const Utils::Vector3& position, const Utils::Vector3& rotation) override;
+        void setLightProperties(const Utils::Vector3& direction, float intensity) override;
         std::unique_ptr<IModelInstance> createModelInstance(const std::string& filename) override;
 
         bool destroyModelInstance(IModelInstance& modelInstance) override;
@@ -65,6 +69,7 @@ namespace Engine::Visual
             XMFLOAT3 diffuseColor;
             XMFLOAT3 specularColor;
             float shininess;
+			float useDiffuseTexture;
             std::string diffuseTextureId;
             ComPtr<ID3D11Buffer> materialBuffer;
         };
@@ -82,6 +87,8 @@ namespace Engine::Visual
             XMMATRIX worldMatrix;
             XMMATRIX viewMatrix;
             XMMATRIX projectionMatrix;
+            XMFLOAT3 lightDirection;
+            float lightIntensity;
         };
 
         struct MaterialBuffer
@@ -90,7 +97,7 @@ namespace Engine::Visual
             float shininess;
 
             XMFLOAT3 diffuseColor;
-            float padding1;
+            float useDiffuseTexture;
 
             XMFLOAT3 specularColor;
             float padding2;
@@ -104,10 +111,13 @@ namespace Engine::Visual
         static inline void destroyComPtrSafe(ComPtr<T>& ptr);
 
         void createDeviceAndSwapChain(HWND hwnd);
+        void createSamplerState();
         void createRenderTarget(HWND hwnd);
         void createShaders();
         void createViewport(HWND hwnd);
         void createDefaultMaterial();
+        void initUI();
+        void cleanUpUI();
         bool createBuffersForModel(ModelData& model);
         bool loadModelFromFile(ModelData& model, const std::string& filename);
 
@@ -115,7 +125,6 @@ namespace Engine::Visual
 
     private:
 
-        // DirectX components
         ComPtr<ID3D11Device> m_device;
         ComPtr<ID3D11DeviceContext> m_deviceContext;
         ComPtr<IDXGISwapChain> m_swapChain;
@@ -127,11 +136,11 @@ namespace Engine::Visual
         ComPtr<ID3D11Buffer> m_constantBuffer;
         ComPtr<ID3D11SamplerState> m_samplerState;
 
-        // Camera matrices
         XMMATRIX m_viewMatrix;
         XMMATRIX m_projectionMatrix;
 
         Material m_defaultMaterial;
+        ConstantBuffer m_constantBufferData;
 
         std::unordered_map<std::string, ModelData> m_models;
         std::unordered_map<std::string, ComPtr<ID3D11ShaderResourceView>> m_textures;

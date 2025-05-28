@@ -1,52 +1,45 @@
 #version 450 core
 
-// Uniforms
 uniform mat4 worldMatrix;
 uniform mat4 viewMatrix;
 uniform mat4 projectionMatrix;
+uniform vec3 lightDirection;
+uniform float lightIntensity;
 
 uniform vec3 ambientColor;
 uniform float shininess;
 
 uniform vec3 diffuseColor;
+uniform float useDiffuseTexture;
+
 uniform vec3 specularColor;
 
-// Sampler for texture
 uniform sampler2D texture0;
 
-// Inputs from the vertex shader
-in vec3 FragPos;    // Position in world space from vertex shader
-in vec3 Normal;     // Interpolated normal from vertex shader
-in vec2 TexCoord;   // Texture coordinates from vertex shader
+in vec3 FragPos;
+in vec3 Normal;
+in vec2 TexCoord;
 
-// Output color
 out vec4 fragColor;
+
+const float ambientIntensity = 0.1;
 
 void main()
 {
-    // Sample the diffuse texture
     vec4 texColor = texture(texture0, TexCoord);
+    vec3 baseDiffuseColor = mix(diffuseColor, texColor.rgb, useDiffuseTexture);
 
-    // Light direction (assuming a directional light)
-    vec3 lightDir = normalize(vec3(0.0, 0.0, -1.0)); // Direction towards the light
-
-    // Normalized normal vector from the fragment
     vec3 normal = normalize(Normal);
+    vec3 ambient = ambientIntensity * ambientColor * baseDiffuseColor;
 
-    // Ambient component
-    vec3 ambient = ambientColor * texColor.rgb;
+    float diffuseFactor = max(dot(normal, lightDirection), 0.0);
+    vec3 diffuse = diffuseFactor * lightIntensity * baseDiffuseColor;
 
-    // Diffuse component
-    float diffuseFactor = max(dot(normal, lightDir), 0.0);
-    vec3 diffuse = diffuseFactor * diffuseColor * texColor.rgb;
-
-    // Specular component (using Blinn-Phong model)
-    vec3 viewDir = normalize(-FragPos); // Assume the camera is at (0, 0, 0)
-    vec3 halfwayDir = normalize(lightDir + viewDir);
+    vec3 viewDir = normalize(-FragPos);
+    vec3 halfwayDir = normalize(lightDirection + viewDir);
     float specFactor = pow(max(dot(normal, halfwayDir), 0.0), shininess);
-    vec3 specular = specFactor * specularColor;
+    vec3 specular = specFactor * lightIntensity * specularColor;
 
-    // Combine all components
     vec3 finalColor = ambient + diffuse + specular;
     finalColor = clamp(finalColor, 0.0, 1.0);
 

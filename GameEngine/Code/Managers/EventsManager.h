@@ -6,6 +6,8 @@
 
 namespace Engine
 {
+    using EventListenerID = int;
+
     class EventsManager 
     {
     public:
@@ -14,7 +16,10 @@ namespace Engine
         using EventCallback = std::function<void(const EventType&)>;
 
         template <typename EventType>
-        void subscribe(EventCallback<EventType> callback);
+        EventListenerID subscribe(EventCallback<EventType> callback);
+
+        template <typename EventType>
+		void unsubscribe(EventListenerID id);
 
         template <typename EventType>
         void emit(const EventType& event) const;
@@ -28,12 +33,13 @@ namespace Engine
         template <typename EventType>
         struct ListenerHolder : IListenerHolder
         {
-            std::vector<EventCallback<EventType>> listeners;
+            std::vector<std::pair<EventListenerID, EventCallback<EventType>>> listeners;
+			EventListenerID nextID = 0;
         };
 
     private:
         template <typename EventType>
-        std::vector<EventCallback<EventType>>& getListeners() const;
+        ListenerHolder<EventType>& getListenersHolder() const;
 
     private:
         mutable std::unordered_map<std::type_index, std::unique_ptr<IListenerHolder>> m_eventsListeners;

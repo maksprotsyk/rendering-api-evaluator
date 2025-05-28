@@ -35,6 +35,12 @@
     <Filter Include="Externals\GL">
       <UniqueIdentifier>{c5f77ae7-f56e-4cb2-8026-715ffa57a606}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Externals\ImGui">
+      <UniqueIdentifier>{8f5e4eab-939a-4127-ab91-b2a0e263d77a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Externals\ImGui\backends">
+      <UniqueIdentifier>{e859878c-cdf1-45f9-bab5-1b7ebd22a1e1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Code\GameEngine.cpp">
@@ -114,6 +120,33 @@
     </ClCompile>
     <ClCompile Include="Code\Systems\Experiment2System.cpp">
       <Filter>Code\Systems</Filter>
+    </ClCompile>
+    <ClCompile Include="Externals\ImGui\imgui.cpp">
+      <Filter>Externals\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="Externals\ImGui\imgui_draw.cpp">
+      <Filter>Externals\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="Externals\ImGui\imgui_tables.cpp">
+      <Filter>Externals\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="Externals\ImGui\imgui_widgets.cpp">
+      <Filter>Externals\ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="Externals\ImGui\backends\imgui_impl_dx11.cpp">
+      <Filter>Externals\ImGui\backends</Filter>
+    </ClCompile>
+    <ClCompile Include="Externals\ImGui\backends\imgui_impl_opengl3.cpp">
+      <Filter>Externals\ImGui\backends</Filter>
+    </ClCompile>
+    <ClCompile Include="Externals\ImGui\backends\imgui_impl_vulkan.cpp">
+      <Filter>Externals\ImGui\backends</Filter>
+    </ClCompile>
+    <ClCompile Include="Externals\ImGui\backends\imgui_impl_win32.cpp">
+      <Filter>Externals\ImGui\backends</Filter>
+    </ClCompile>
+    <ClCompile Include="Code\Visual\UIController.cpp">
+      <Filter>Code\Visual</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -209,6 +242,48 @@
     </ClInclude>
     <ClInclude Include="Code\Systems\Experiment2System.h">
       <Filter>Code\Systems</Filter>
+    </ClInclude>
+    <ClInclude Include="Externals\ImGui\imgui.h">
+      <Filter>Externals\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Externals\ImGui\imgui_internal.h">
+      <Filter>Externals\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Externals\ImGui\backends\imgui_impl_dx11.h">
+      <Filter>Externals\ImGui\backends</Filter>
+    </ClInclude>
+    <ClInclude Include="Externals\ImGui\backends\imgui_impl_opengl3.h">
+      <Filter>Externals\ImGui\backends</Filter>
+    </ClInclude>
+    <ClInclude Include="Externals\ImGui\backends\imgui_impl_opengl3_loader.h">
+      <Filter>Externals\ImGui\backends</Filter>
+    </ClInclude>
+    <ClInclude Include="Externals\ImGui\backends\imgui_impl_vulkan.h">
+      <Filter>Externals\ImGui\backends</Filter>
+    </ClInclude>
+    <ClInclude Include="Externals\ImGui\backends\imgui_impl_win32.h">
+      <Filter>Externals\ImGui\backends</Filter>
+    </ClInclude>
+    <ClInclude Include="Externals\ImGui\imconfig.h">
+      <Filter>Externals\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Externals\ImGui\imstb_rectpack.h">
+      <Filter>Externals\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Externals\ImGui\imstb_textedit.h">
+      <Filter>Externals\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Externals\ImGui\imstb_truetype.h">
+      <Filter>Externals\ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Events\StatsEvents.h">
+      <Filter>Code\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Visual\UIController.h">
+      <Filter>Code\Visual</Filter>
+    </ClInclude>
+    <ClInclude Include="Code\Events\UIEvents.h">
+      <Filter>Code\Events</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

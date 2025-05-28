@@ -1,10 +1,13 @@
 #pragma once
 
 #include "ISystem.h"
+
 #include <vector>
 #include <string>
 #include <algorithm>
 #include <pdh.h>
+
+#include "Managers/EventsManager.h"
 
 namespace Engine::Systems
 {
@@ -16,6 +19,9 @@ namespace Engine::Systems
 		void onStop() override;
 		int getPriority() const override;
 
+	private:
+		void saveRecordedData();
+		void onRecordingStateChanged(bool recordData);
 	private:
 
 		constexpr static const float k_initialSleepTime = 1.0f;
@@ -36,7 +42,13 @@ namespace Engine::Systems
 		std::vector<float> m_gpuMemoryUsage;
 
 		bool m_firstUpdate;
+		bool m_recordData = true;
 		float m_timePassed;
+		std::vector<float> m_frameTimeChunk;
+		std::string m_outputPath;
+
+		EventListenerID m_recordingUpdateListenerId = -1;
+		EventListenerID m_outputFileUpdateListenerId = -1;
 
 	};
 }

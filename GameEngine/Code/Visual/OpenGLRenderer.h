@@ -24,12 +24,16 @@ namespace Engine::Visual
             const Utils::Vector3& position,
             const Utils::Vector3& rotation,
             const Utils::Vector3& scale) override;
+
+        void preRenderUI() override;
+        void postRenderUI() override;
         void render() override;
 
         bool loadModel(const std::string& filename) override;
         bool loadTexture(const std::string& filename) override;
 
         void setCameraProperties(const Utils::Vector3& position, const Utils::Vector3& rotation) override;
+        void setLightProperties(const Utils::Vector3& direction, float intensity) override;
         std::unique_ptr<IModelInstance> createModelInstance(const std::string& filename) override;
 
         bool destroyModelInstance(IModelInstance& modelInstance) override;
@@ -59,6 +63,7 @@ namespace Engine::Visual
             glm::vec3 specularColor;
             float shininess;
             std::string diffuseTextureId;
+            float useDiffuseTexture;
         };
 
         struct ModelData
@@ -83,6 +88,8 @@ namespace Engine::Visual
         void createFrameBuffer();
         void createViewport();
         void createDefaultMaterial();
+        void initUI();
+        void cleanUpUI();
 
         GLuint createShader(const std::string& source, GLenum shaderType);
         const GLuint& getTexture(const std::string& textureId) const;
@@ -98,6 +105,14 @@ namespace Engine::Visual
         GLuint m_viewMatrixLoc;
         GLuint m_projectionMatrixLoc;
         GLuint m_modelMatrixLoc;
+		GLuint m_lightDirectionLoc;
+		GLuint m_lightIntensityLoc;
+        GLuint m_ambientColorLoc;
+        GLuint m_diffuseColorLoc;
+        GLuint m_specularColorLoc;
+        GLuint m_shininessLoc;
+        GLuint m_useDiffuseTextureLoc;
+        GLuint m_diffuseTextureLoc;
         GLuint m_frameBuffer;
         GLuint m_frameBufferTexture;
 
