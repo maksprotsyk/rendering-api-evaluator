@@ -36,7 +36,9 @@ namespace Engine::Systems
 		std::string m_nextRendererName;
 		std::unique_ptr<Visual::IRenderer> m_renderer;
 
+		Utils::Vector3 m_lightDirection = Utils::Vector3(0, 0, -1);
 		EntityID m_cameraId = -1;
+
 		EventListenerID m_rendererUpdateListenerId = -1;
 		
 	};

@@ -6,6 +6,7 @@
 #include "Components/Transform.h"
 #include "Components/Tag.h"
 #include "Components/Model.h"
+#include "Utils/Parser.h"
 #include "Events/UIEvents.h"
 #include "Utils/BasicUtils.h"
 #include "Utils/DebugMacros.h"
@@ -43,6 +44,12 @@ namespace Engine::Systems
 #ifdef _SHOWUI
 		m_uiController->init();
 #endif
+
+		if (m_config.contains("lightDirection"))
+		{
+			Utils::Parser::fillFromJson(m_lightDirection, m_config["lightDirection"]);
+		}
+
 		if (m_config.contains("renderer"))
 		{
 			setRenderer(m_config["renderer"]);
@@ -181,7 +188,7 @@ namespace Engine::Systems
 		}
 
 		m_renderer->init(m_window);
-		m_renderer->setLightProperties(Utils::Vector3(0.0f, 0.0f, -1.0f), 1.0f);
+		m_renderer->setLightProperties(m_lightDirection, 1.0f);
 
 		auto& gameController = GameController::get();
 		auto& compManager = gameController.getComponentsManager();

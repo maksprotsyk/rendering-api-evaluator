@@ -42,7 +42,7 @@ namespace Engine::Systems
 		std::vector<float> m_gpuMemoryUsage;
 
 		bool m_firstUpdate;
-		bool m_recordData = true;
+		bool m_recordData = false;
 		float m_timePassed;
 		std::vector<float> m_frameTimeChunk;
 		std::string m_outputPath;

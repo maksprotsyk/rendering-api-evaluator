@@ -135,6 +135,7 @@ namespace Engine
 
 	void GameController::clear()
 	{
+		m_prefabs.clear();
 		m_systemsManager.clear();
 		m_componentsManager.clear();
 		m_entitiesManager.clear();

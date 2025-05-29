@@ -60,7 +60,20 @@ namespace Engine::Visual
     {
 		ImGui_ImplWin32_NewFrame();
 		ImGui::NewFrame();
-        ImGui::Begin("Performance Monitor", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize);
+
+        ImVec2 windowPos = ImVec2(10.0f, 10.0f);
+        ImVec2 windowPosPivot = ImVec2(0.0f, 0.0f);
+
+        ImGui::SetNextWindowPos(windowPos, ImGuiCond_Always, windowPosPivot);
+        ImGui::SetNextWindowBgAlpha(0.7f);
+
+        ImGui::Begin("Performance Monitor", nullptr,
+            ImGuiWindowFlags_NoMove |
+            ImGuiWindowFlags_NoResize |
+            ImGuiWindowFlags_AlwaysAutoResize |
+            ImGuiWindowFlags_NoCollapse |
+            ImGuiWindowFlags_NoTitleBar |
+            ImGuiWindowFlags_NoSavedSettings);
 
         if (ImGui::BeginTabBar("MainTabBar"))
         {
