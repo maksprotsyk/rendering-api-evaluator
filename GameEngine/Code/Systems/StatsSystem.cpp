@@ -4,10 +4,11 @@
 #include <fstream>
 #include <psapi.h>
 
+#include "Utils/DebugMacros.h"
 #include "Managers/GameController.h"
 #include "Events/NativeInputEvents.h"
 #include "Events/StatsEvents.h"
-#include "Utils/DebugMacros.h"
+#include "Events/UIEvents.h"
 #include "Components/Transform.h"
 #include "Components/Tag.h"
 #include "Components/Model.h"
@@ -27,11 +28,10 @@ namespace Engine::Systems
 		}
 
 		EventsManager& eventsManager = GameController::get().getEventsManager();
-		m_recordingUpdateListenerId = eventsManager.subscribe<Events::StatsRecordingUpdate>([this](const Events::StatsRecordingUpdate& update) {onRecordingStateChanged(update.recordData);});
+		m_recordingUpdateListenerId = eventsManager.subscribe<Events::StatsRecordingUpdate>([this](const Events::StatsRecordingUpdate& update) {onRecordingStateChanged(update.rendererName, update.recordData);});
 		m_outputFileUpdateListenerId = eventsManager.subscribe<Events::StatsOutputFileUpdate>([this](const Events::StatsOutputFileUpdate& update) {m_outputPath = update.outputPath;});
 
 		m_firstUpdate = true;
-
 		PDH_STATUS cpuOpenRes = PdhOpenQuery(nullptr, 0, &m_cpuQuery);
 		ASSERT(cpuOpenRes == ERROR_SUCCESS, "Failed to open CPU query");
 		PDH_STATUS cpuAddRes = PdhAddCounter(m_cpuQuery, TEXT("\\Processor(_Total)\\% Processor Time"), 0, &m_cpuUsageCounter);
@@ -194,8 +194,14 @@ namespace Engine::Systems
 
 	void StatsSystem::saveRecordedData()
 	{
-		if (!m_recordData || m_frameTimes.empty())
+		if (!m_recordData)
 		{
+			return;
+		}
+
+		if (m_frameTimes.empty() || m_cpuUsage.empty() || m_gpuUsage.empty() || m_memoryUsage.empty() || m_gpuMemoryUsage.empty())
+		{
+			GameController::get().getEventsManager().emit<Events::SendWarning>(Events::SendWarning{ "No data to save. Please record some data first." });
 			return;
 		}
 
@@ -232,8 +238,8 @@ namespace Engine::Systems
 			return;
 		}
 
+		outFile << "Renderer: " << m_rendererName << std::endl;
 		outFile << "Objects count: " << objectsCount << std::endl;
-		outFile << "Total number of vertices: " << totalNumberOfVertices << std::endl;
 		outFile << "Creation time: " << m_creationTime << std::endl;
 		outFile << "Average CPU usage: " << averageCPUUsage << std::endl;
 		outFile << "Max CPU usage: " << maxCpuUsage << std::endl;
@@ -257,12 +263,15 @@ namespace Engine::Systems
 
 	//////////////////////////////////////////////////////////////////////////
 
-	void StatsSystem::onRecordingStateChanged(bool recordData)
+	void StatsSystem::onRecordingStateChanged(const std::string& rendererName, bool recordData)
 	{
 		if (m_recordData == recordData)
 		{
 			return;
 		}
+
+		m_rendererName = rendererName;
+
 		if (m_recordData)
 		{
 			saveRecordedData();

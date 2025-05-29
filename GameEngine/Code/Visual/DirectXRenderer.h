@@ -135,6 +135,7 @@ namespace Engine::Visual
         ComPtr<ID3D11InputLayout> m_inputLayout;
         ComPtr<ID3D11Buffer> m_constantBuffer;
         ComPtr<ID3D11SamplerState> m_samplerState;
+        ComPtr<ID3D11RasterizerState> m_rasterizerState;
 
         XMMATRIX m_viewMatrix;
         XMMATRIX m_projectionMatrix;

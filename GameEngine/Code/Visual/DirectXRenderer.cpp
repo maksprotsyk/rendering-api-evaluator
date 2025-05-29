@@ -237,11 +237,10 @@ namespace Engine::Visual
 		rasterizerDesc.FrontCounterClockwise = FALSE;
 		rasterizerDesc.DepthClipEnable = TRUE;
 
-		ID3D11RasterizerState* rasterizerState;
-		hr = m_device->CreateRasterizerState(&rasterizerDesc, &rasterizerState);
+		hr = m_device->CreateRasterizerState(&rasterizerDesc, m_rasterizerState.GetAddressOf());
 		ASSERT(!FAILED(hr), "Can't create rasterizer state, error code: {}", hr);
 
-		m_deviceContext->RSSetState(rasterizerState);
+		m_deviceContext->RSSetState(m_rasterizerState.Get());
 
 		D3D11_DEPTH_STENCIL_DESC depthStencilDesc;
 		ZeroMemory(&depthStencilDesc, sizeof(D3D11_DEPTH_STENCIL_DESC));
@@ -582,6 +581,11 @@ namespace Engine::Visual
 			mesh.indexBuffer.Reset();
 		}
 
+		for (Material& mat : modelData.materials)
+		{
+			mat.materialBuffer.Reset();
+		}
+
 		modelData.vertexBuffer.Reset();
 
 		m_models.erase(itr);
@@ -598,6 +602,31 @@ namespace Engine::Visual
 		cleanUpUI();
 #endif
 
+		ID3D11ShaderResourceView* nullSRV[] = { nullptr };
+		m_deviceContext->PSSetShaderResources(0, 1, nullSRV);
+
+		ID3D11Buffer* nullCB[] = { nullptr };
+		m_deviceContext->VSSetConstantBuffers(0, 1, nullCB);
+		m_deviceContext->PSSetConstantBuffers(0, 1, nullCB);
+
+		ID3D11SamplerState* nullSampler[] = { nullptr };
+		m_deviceContext->PSSetSamplers(0, 1, nullSampler);
+
+		m_deviceContext->IASetInputLayout(nullptr);
+
+		UINT strides[] = { 0 };
+		UINT offsets[] = { 0 };
+		ID3D11Buffer* nullBuffer[] = { nullptr };
+
+		m_deviceContext->IASetVertexBuffers(0, 1, nullBuffer, strides, offsets);
+		m_deviceContext->IASetIndexBuffer(nullptr, DXGI_FORMAT_R32_UINT, 0);
+		m_deviceContext->VSSetShader(nullptr, nullptr, 0);
+		m_deviceContext->PSSetShader(nullptr, nullptr, 0);
+		m_deviceContext->OMSetRenderTargets(0, nullptr, nullptr);
+
+		m_deviceContext->ClearState();
+		m_deviceContext->Flush();
+
 		for (const std::string& modelId : Utils::getKeys(m_models))
 		{
 			unloadModel(modelId);
@@ -608,10 +637,13 @@ namespace Engine::Visual
 			unloadTexture(textureId);
 		}
 
+		m_defaultMaterial.materialBuffer.Reset();
+
 		destroyComPtrSafe(m_samplerState);
 		destroyComPtrSafe(m_constantBuffer);
 		destroyComPtrSafe(m_vertexShader);
 		destroyComPtrSafe(m_pixelShader);
+		destroyComPtrSafe(m_rasterizerState);
 		destroyComPtrSafe(m_inputLayout);
 		destroyComPtrSafe(m_depthStencilView);
 		destroyComPtrSafe(m_renderTargetView);

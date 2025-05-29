@@ -14,5 +14,10 @@ namespace Engine::Events
 	{
 		std::string configPath;
 	};
+
+	struct SendWarning
+	{
+		std::string message;
+	};
 }
 

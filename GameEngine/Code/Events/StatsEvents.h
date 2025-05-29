@@ -27,6 +27,7 @@ namespace Engine::Events
 	struct StatsRecordingUpdate
 	{
 		bool recordData;
+		std::string rendererName;
 	};
 
 	struct StatsOutputFileUpdate

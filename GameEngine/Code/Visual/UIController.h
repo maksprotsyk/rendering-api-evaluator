@@ -18,7 +18,20 @@ namespace Engine::Visual
 		void render(float dt);
 		void cleanUp();
 	private:
+
+		inline static const float k_warningTime = 5.0f;
+		inline static const float k_maxRecordingTime = 60.0f;
+
+	private:
+		void drawStat(const std::string& label, const std::string& unit, float value, size_t precision, size_t totalWidth = 43);
+		void onWarningRequested(const std::string& message);
+		void renderPerformance();
+		void renderSettings();
+		void renderStatsRecorder();
+
+	private:
 		const Visual::Window& m_window;
+		EventsManager& m_eventsManager;
 		std::vector<std::string> m_rendererNames;
 		std::string m_rendererName;
 		std::string m_outputFile;
@@ -27,6 +40,10 @@ namespace Engine::Visual
 		StatsData m_statsData{};
 
 		EventListenerID m_statsUpdateListenerId = -1;
+		EventListenerID m_warningListenerId = -1;
+
+		float m_warningTimer;
+		std::string m_warningMessage;
 	};
 
 }

@@ -34,7 +34,7 @@ namespace Engine::Visual
         m_window = CreateWindowEx(
             0,
             CLASS_NAME,
-            TEXT("Render Tester"),
+            TEXT("Rendering Evaluator"),
             WS_OVERLAPPEDWINDOW,
             CW_USEDEFAULT, CW_USEDEFAULT, width, height,
             nullptr,

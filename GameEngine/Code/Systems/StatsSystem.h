@@ -21,7 +21,7 @@ namespace Engine::Systems
 
 	private:
 		void saveRecordedData();
-		void onRecordingStateChanged(bool recordData);
+		void onRecordingStateChanged(const std::string& rendererName, bool recordData);
 	private:
 
 		constexpr static const float k_initialSleepTime = 1.0f;
@@ -46,6 +46,7 @@ namespace Engine::Systems
 		float m_timePassed;
 		std::vector<float> m_frameTimeChunk;
 		std::string m_outputPath;
+		std::string m_rendererName;
 
 		EventListenerID m_recordingUpdateListenerId = -1;
 		EventListenerID m_outputFileUpdateListenerId = -1;

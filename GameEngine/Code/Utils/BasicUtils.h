@@ -34,6 +34,10 @@ namespace Engine::Utils
 	template <typename Key, typename Value>
 	std::vector<Key> getKeys(std::unordered_map<Key, Value> items);
 
+	std::string shortenPath(const std::string& path, size_t maxLength);
+	std::wstring openFileDialog(const std::wstring& formats);
+	std::wstring saveFileDialog(const std::wstring& formats);
+
 }
 
 #include "BasicUtils.inl"

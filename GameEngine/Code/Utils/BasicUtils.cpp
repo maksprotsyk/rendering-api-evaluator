@@ -84,4 +84,73 @@ namespace Engine::Utils
 
     //////////////////////////////////////////////////////////////////////////
 
+    std::string shortenPath(const std::string& path, size_t maxLength)
+    {
+        if (path.length() <= maxLength)
+        {
+            return path;
+        }
+
+        size_t partLength = maxLength / 2 - 2;
+        std::string shortened = path.substr(0, partLength) + "..." + path.substr(path.length() - partLength);
+        return shortened;
+    }
+
+    //////////////////////////////////////////////////////////////////////////
+
+    std::wstring openFileDialog(const std::wstring& formats)
+    {
+        WCHAR originalDir[MAX_PATH];
+        GetCurrentDirectoryW(MAX_PATH, originalDir);
+
+        OPENFILENAMEW ofn;
+        wchar_t szFile[260] = { 0 };
+        ZeroMemory(&ofn, sizeof(ofn));
+        ofn.lStructSize = sizeof(ofn);
+        ofn.hwndOwner = nullptr;
+        ofn.lpstrFile = szFile;
+        ofn.nMaxFile = sizeof(szFile);
+        ofn.lpstrFilter = formats.data();
+        ofn.nFilterIndex = 1;
+        ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR;
+
+        std::wstring res = L"";
+        if (GetOpenFileNameW(&ofn) == TRUE)
+        {
+            res = ofn.lpstrFile;
+        }
+        SetCurrentDirectoryW(originalDir);
+        return res;
+    }
+
+    //////////////////////////////////////////////////////////////////////////
+
+    std::wstring saveFileDialog(const std::wstring& formats)
+    {
+        WCHAR originalDir[MAX_PATH];
+        GetCurrentDirectoryW(MAX_PATH, originalDir);
+
+        OPENFILENAMEW ofn;
+        wchar_t szFile[260] = { 0 };
+        ZeroMemory(&ofn, sizeof(ofn));
+
+        ofn.lStructSize = sizeof(ofn);
+        ofn.hwndOwner = nullptr;
+        ofn.lpstrFile = szFile;
+        ofn.nMaxFile = sizeof(szFile);
+        ofn.lpstrFilter = formats.data();
+        ofn.nFilterIndex = 1;
+        ofn.lpstrDefExt = L"txt";
+        ofn.Flags = OFN_PATHMUSTEXIST | OFN_OVERWRITEPROMPT;
+        std::wstring res = L"";
+        if (GetSaveFileNameW(&ofn) == TRUE)
+        {
+            res = ofn.lpstrFile;
+        }
+        SetCurrentDirectoryW(originalDir);
+        return res;
+    }
+
+    //////////////////////////////////////////////////////////////////////////
+
 }
